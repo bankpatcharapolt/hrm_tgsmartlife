@@ -48,7 +48,8 @@
         <table class="table table-sm mb-0">
           <tr><th style="width:35%">ชื่อจริง-นามสกุล</th><td><?=$e->first_name.' '.$e->last_name?></td></tr>
           <tr><th>วันเกิด</th><td><?=$e->date_of_birth?date('d/m/Y',strtotime($e->date_of_birth)):'-'?></td></tr>
-          <tr><th>เลขบัตรประชาชน</th><td><?=$e->id_card_number?str_repeat('*',9).substr($e->id_card_number,-4):'-'?></td></tr>
+          <!-- <tr><th>เลขบัตรประชาชน</th><td><?=$e->id_card_number?str_repeat('*',9).substr($e->id_card_number,-4):'-'?></td></tr> -->
+            <tr><th>เลขบัตรประชาชน</th><td><?=$e->id_card_number?$e->id_card_number:'-'?></td></tr>
           <tr><th>เลขผู้เสียภาษี</th><td><?=$e->tax_id??'-'?></td></tr>
           <tr><th>ประกันสังคม</th><td><?=$e->social_security_id??'-'?></td></tr>
         </table>

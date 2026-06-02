@@ -11,11 +11,11 @@
       <option value="<?= $k ?>" <?= $month == $k ? 'selected' : '' ?>><?= $v ?></option>
     <?php endforeach; ?>
   </select>
-  <!-- <div class="ms-auto">
+  <div class="ms-auto">
     <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
-      <i class="bi bi-plus-lg me-1"></i>บันทึกด้วยตนเอง
+      <i class="bi bi-plus-lg me-1"></i>ลงข้อมูลการมาทำงานย้อนหลัง
     </button>
-  </div> -->
+  </div>
 </div>
 
 <!-- สรุปเดือน -->

@@ -38,7 +38,7 @@
         <li class="nav-item"><a class="nav-link <?=$c==='dashboard'?'on':''?>" href="<?=base_url('employee/dashboard')?>"><i class="bi bi-house me-1"></i>หน้าหลัก</a></li>
         <?php if(!empty($current_user->can_checkin)):?><li class="nav-item"><a class="nav-link <?=$c==='attendance'?'on':''?>" href="<?=base_url('employee/attendance')?>"><i class="bi bi-clock me-1"></i>การเข้างาน</a></li><?php endif;?>
         <li class="nav-item"><a class="nav-link <?=$c==='leave'?'on':''?>" href="<?=base_url('employee/leave')?>"><i class="bi bi-calendar-check me-1"></i>การลา</a></li>
-        <?php if(!empty($current_user->can_view_own_salary)):?><li class="nav-item"><a class="nav-link <?=$c==='salary'?'on':''?>" href="<?=base_url('employee/salary')?>"><i class="bi bi-cash me-1"></i>เงินเดือน</a></li><?php endif;?>
+        <?php if(!empty($current_user->can_view_own_salary)):?><li class="nav-item"><a class="nav-link <?=$c==='salary'?'on':''?>" href="<?=base_url('employee/salary')?>"><i class="bi bi-cash me-1"></i>ข้อมูลการจ่ายเงิน</a></li><?php endif;?>
         <?php if(!empty($current_user->can_approve_leave)):?><li class="nav-item"><a class="nav-link" href="<?=base_url('manager/leave')?>"><i class="bi bi-check2-circle me-1"></i>อนุมัติการลา</a></li><?php endif;?>
         <?php if(!empty($current_user->can_manage_employees)):?><li class="nav-item"><a class="nav-link" href="<?=base_url('admin/dashboard')?>"><i class="bi bi-gear me-1"></i>จัดการระบบ</a></li><?php endif;?>
       </ul>
