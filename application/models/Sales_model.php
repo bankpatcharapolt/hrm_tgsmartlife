@@ -17,7 +17,7 @@ class Sales_model extends CI_Model {
     }
     public function delete($id) { $this->db->where('id',$id)->delete('sales_records'); return $this->db->affected_rows()>0; }
     public function get_yearly($y) {
-        return $this->db->select('record_month,SUM(actual_amount) AS actual,SUM(target_amount) AS target')
+        return $this->db->select('record_month,SUM(actual_amount) AS actual,SUM(target_amount) AS target,SUM(customer_count) AS customers')
             ->where('record_year',$y)->group_by('record_month')->order_by('record_month','ASC')->get('sales_records')->result();
     }
     public function get_top($y,$m,$n=5) {

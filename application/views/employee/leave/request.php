@@ -63,7 +63,7 @@
       </div>
 
       <div class="col-12">
-        <label class="form-label">เอกสารประกอบ ไฟล์ PDF/รูปภาพ (ถ้ามี)</label>
+        <label class="form-label">เอกสารประกอบอื่นๆ (รองรับไฟล์ PDF/รูปภาพ) (ถ้ามี)</label>
         <input type="file" name="document" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
         <div class="form-text text-muted">ขนาดไม่เกิน 5MB</div>
       </div>

@@ -171,7 +171,7 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>บันทึกการเข้างาน</h5>
+        <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>บันทึกการเข้างานย้อนหลัง</h5>
         <button class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <?= form_open('employee/attendance/add') ?>
@@ -233,40 +233,72 @@
           </div>
 
           <div class="col-12">
-            <label class="form-label small">หมายเหตุ</label>
+            <label class="form-label small">เหตุผล</label>
             <input type="text" name="note" class="form-control form-control-sm">
           </div>
         </div>
       </div>
       <div class="modal-footer py-2">
         <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-save me-1"></i>บันทึก</button>
-        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+        <span class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</span>
       </div>
       <?= form_close() ?>
     </div>
   </div>
 </div>
+<script>
+// บังคับให้เป็น Global Function ด้วย window.
+window.goF = function(el, k) {
+    var url = new URL(window.location);
+    url.searchParams.set(k, el.value);
+    window.location = url;
+};
 
-<?php $extra_js = '<script>
-function goF(el,k){var url=new URL(window.location);url.searchParams.set(k,el.value);window.location=url;}
-
-// [ข้อ 7] จัดการ status change
-function onStatusChange(v){
-  document.getElementById("halfDaySection").style.display  = (v==="half_day") ? "" : "none";
-  document.getElementById("hourlySection").style.display   = (v==="hourly")   ? "" : "none";
-  if(v==="hourly") calcHourly();
-}
+// จัดการ status change
+window.onStatusChange = function(v) {
+    var halfDaySec = document.getElementById("halfDaySection");
+    var hourlySec = document.getElementById("hourlySection");
+    
+    if (halfDaySec) halfDaySec.style.display = (v === "half_day") ? "" : "none";
+    if (hourlySec) hourlySec.style.display = (v === "hourly") ? "" : "none";
+    
+    if (v === "hourly") window.calcHourly();
+};
 
 // คำนวณชั่วโมงรายชั่วโมง
-function calcHourly(){
-  var ci = document.getElementById("addCheckIn").value;
-  var co = document.getElementById("addCheckOut").value;
-  var el = document.getElementById("hourlyCalc");
-  if(!ci || !co){ el.textContent=""; return; }
-  var diff = (new Date(co) - new Date(ci)) / 3600000;
-  if(diff <= 0){ el.textContent="⚠ เวลาออกต้องหลังเวลาเข้า"; return; }
-  el.textContent = "ชั่วโมงทำงาน: " + diff.toFixed(2) + " ชม.";
-}
-document.getElementById("addCheckIn").addEventListener("change", function(){ if(document.getElementById("addStatus").value==="hourly") calcHourly(); });
-document.getElementById("addCheckOut").addEventListener("change", function(){ if(document.getElementById("addStatus").value==="hourly") calcHourly(); });
-</script>'; ?>
+window.calcHourly = function() {
+    var ci = document.getElementById("addCheckIn").value;
+    var co = document.getElementById("addCheckOut").value;
+    var el = document.getElementById("hourlyCalc");
+    
+    if (!ci || !co) { 
+        if (el) el.textContent = ""; 
+        return; 
+    }
+    
+    var diff = (new Date(co) - new Date(ci)) / 3600000;
+    if (diff <= 0) { 
+        if (el) el.textContent = "⚠ เวลาออกต้องหลังเวลาเข้า"; 
+        return; 
+    }
+    if (el) el.textContent = "ชั่วโมงทำงาน: " + diff.toFixed(2) + " ชม.";
+};
+
+// ผูก Event Listener เช็คเวลาพิมพ์
+document.addEventListener("DOMContentLoaded", function() {
+    var addCheckIn = document.getElementById("addCheckIn");
+    var addCheckOut = document.getElementById("addCheckOut");
+    var addStatus = document.getElementById("addStatus");
+
+    if (addCheckIn && addStatus) {
+        addCheckIn.addEventListener("change", function() { 
+            if (addStatus.value === "hourly") window.calcHourly(); 
+        });
+    }
+    if (addCheckOut && addStatus) {
+        addCheckOut.addEventListener("change", function() { 
+            if (addStatus.value === "hourly") window.calcHourly(); 
+        });
+    }
+});
+</script>

@@ -92,3 +92,6 @@ $route['api/notifications/stream'] = 'api/notifications/stream';
 
 // โบนัส 3 ประเภท
 $route['admin/salary/delete_bonus/(:num)'] = 'admin/salary/delete_bonus/$1';
+
+// Employee Sales Dashboard
+$route['employee/sales'] = 'employee/sales/index';
