@@ -9,38 +9,78 @@ class Attendance_model extends CI_Model {
             ->join('shifts s','s.id=a.shift_id','left')
             ->where('a.id',$id)->get()->row();
     }
-    public function checkin($uid, $shift_id=null) {
+  public function checkin($uid,$role = null, $shift_id=null) {
         $this->load->model('Shift_model');
-        $shift = $shift_id
-            ? $this->Shift_model->get_by_id($shift_id)
-            : $this->Shift_model->get_for_user($uid);
+        
+        $shift = null;
+        if ($shift_id) {
+            $shift = $this->Shift_model->get_by_id($shift_id);
+        } else {
+            // 1. ลองหากะจาก user
+            $shift = $this->Shift_model->get_for_user($uid);
+            
+            // 2. ถ้าไม่ได้ ให้ไปหาจากประวัติล่าสุด
+            if (!$shift) {
+                $last_att = $this->db->where('user_id', $uid)
+                                     ->where('shift_id IS NOT NULL')
+                                     ->order_by('date', 'DESC')
+                                     ->get('attendance')->row();
+                if ($last_att) {
+                    $shift = $this->Shift_model->get_by_id($last_att->shift_id);
+                }
+            }
+            // 3. Fallback ท้ายสุด ป้องกัน Error
+            if (!$shift) {
+                $shift = $this->db->order_by('id', 'ASC')->get('shifts')->row();
+            }
+        }
+
         $now  = date('H:i:s');
         $is_late = 0; $lm = 0;
+        
         if ($shift) {
             $diff = (strtotime($now) - strtotime($shift->start_time)) / 60;
             $threshold = $shift->late_threshold_minutes ?? 15;
             if ($diff > $threshold) { $is_late=1; $lm=round($diff); }
         }
+
         $this->db->insert('attendance',array(
-            'user_id'=>$uid, 'shift_id'=>$shift_id??($shift?$shift->id??null:null),
-            'date'=>date('Y-m-d'), 'check_in_time'=>date('Y-m-d H:i:s'),
-            'is_late'=>$is_late, 'late_minutes'=>$lm, 'status'=>'present',
-            'created_at'=>date('Y-m-d H:i:s'), 'updated_at'=>date('Y-m-d H:i:s')
+            'user_id'       => $uid, 
+            'shift_id'      => $shift ? $shift->id : null,
+            'date'          => date('Y-m-d'), 
+            'check_in_time' => date('Y-m-d H:i:s'),
+            'is_late'       => $is_late, 
+            'late_minutes'  => $lm, 
+            'status'        => 'present',
+            'created_at'    => date('Y-m-d H:i:s'), 
+            'updated_at'    => date('Y-m-d H:i:s')
         ));
+        
         return $this->db->insert_id();
     }
+
     public function checkout($att_id, $uid) {
         $att = $this->db->where('id',$att_id)->where('user_id',$uid)->get('attendance')->row();
         if (!$att) return false;
+        
         $this->load->model('Shift_model');
-        $shift = $att->shift_id
-            ? $this->Shift_model->get_by_id($att->shift_id)
-            : $this->Shift_model->get_for_user($uid);
+        $shift = null;
+        
+        // ยึดกะที่บันทึกไว้ตอน check-in เป็นหลักก่อน
+        if ($att->shift_id) {
+            $shift = $this->Shift_model->get_by_id($att->shift_id);
+        } else {
+            $shift = $this->Shift_model->get_for_user($uid);
+        }
+
         $ot = $shift ? $this->Shift_model->calc_ot($shift, date('Y-m-d H:i:s')) : 0;
+        
         $this->db->where('id',$att_id)->update('attendance',array(
-            'check_out_time'=>date('Y-m-d H:i:s'), 'ot_hours'=>$ot,
-            'updated_at'=>date('Y-m-d H:i:s')
+            'check_out_time' => date('Y-m-d H:i:s'), 
+            'ot_hours'       => $ot,
+            'updated_at'     => date('Y-m-d H:i:s')
         ));
+        
         return true;
     }
     public function get_monthly($uid,$y,$m) {

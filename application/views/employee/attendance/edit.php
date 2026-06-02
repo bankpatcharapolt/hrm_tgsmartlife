@@ -16,11 +16,8 @@
       <div class="col-md-6">
         <label class="form-label">สถานะ</label>
         <select name="status" class="form-select" onchange="toggleLeave(this.value)">
-          <option value="present" <?=$r->status==='present'?'selected':''?>>มาทำงาน</option>
-          <option value="absent"  <?=$r->status==='absent' ?'selected':''?>>ขาดงาน</option>
-          <option value="leave"   <?=$r->status==='leave'  ?'selected':''?>>ลา</option>
-          <option value="holiday" <?=$r->status==='holiday'?'selected':''?>>วันหยุด</option>
-          <option value="half_day"<?=$r->status==='half_day'?'selected':''?>>ครึ่งวัน</option>
+          <option value="present" <?=$r->status==='present'?'selected':''?>>มาทำงานเต็มวัน</option>
+          <option value="half_day"<?=$r->status==='half_day'?'selected':''?>>มาทำงานครึ่งวัน</option>
         </select>
       </div>
       <div class="col-md-6">

@@ -35,7 +35,9 @@ $config['cookie_path']      = '/';
 $config['cookie_secure']    = FALSE;
 $config['cookie_httponly']  = FALSE;
 
-$config['csrf_protection']  = TRUE;
+// จากเดิมที่เป็น TRUE ให้แก้เป็น FALSE ครับ
+$config['csrf_protection'] = FALSE; 
+
 $config['csrf_token_name']  = 'csrf_token';
 $config['csrf_cookie_name'] = 'csrf_cookie';
 $config['csrf_expire']      = 7200;

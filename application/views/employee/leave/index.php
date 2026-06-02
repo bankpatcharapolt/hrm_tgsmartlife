@@ -30,7 +30,7 @@
               <?php if(!empty($r->leave_unit) && $r->leave_unit==='hour'):?>
               <span class="badge bg-primary"><?=number_format($r->total_hours??0,1)?> ชม.</span>
               <?php else:?>
-              <?=$r->total_days?> วัน
+              <?=number_format($r->total_days,0)?> วัน
               <?php endif;?>
             </td>
             <td style="font-size:.82rem;max-width:160px"><?=htmlspecialchars(mb_substr($r->reason,0,50))?><?=mb_strlen($r->reason)>50?'...':''?></td>

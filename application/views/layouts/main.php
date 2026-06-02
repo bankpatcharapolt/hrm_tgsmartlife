@@ -30,7 +30,7 @@
 </style></head><body>
 <nav class="navbar navbar-expand-lg">
   <div class="container-fluid">
-    <a class="navbar-brand" href="<?=base_url('employee/dashboard')?>"><div class="b-ico"></div>ระบบ HRM</a>
+    <a class="navbar-brand" href="<?=base_url('employee/dashboard')?>">ระบบ HRM</a>
     <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#nm" style="color:rgba(255,255,255,.7)"><i class="bi bi-list fs-4"></i></button>
     <div class="collapse navbar-collapse" id="nm">
       <ul class="navbar-nav me-auto">

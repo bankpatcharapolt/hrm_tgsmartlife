@@ -84,7 +84,6 @@
     </div>
   </div>
 </div>
-<?php ob_start(); ?>
 <script>
 var CSRF_NAME = "<?=$this->security->get_csrf_token_name()?>", 
     CSRF_HASH = "<?=$this->security->get_csrf_hash()?>";
@@ -124,4 +123,3 @@ function doCheckOut() {
     });
 }
 </script>
-<?php $extra_js = ob_get_clean(); ?>

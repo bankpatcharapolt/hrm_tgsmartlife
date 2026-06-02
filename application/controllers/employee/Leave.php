@@ -1,9 +1,33 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
+
 class Leave extends Employee_Controller {
 
     public function __construct() {
         parent::__construct();
         $this->load->model('Leave_model');
+    }
+
+    // ── ฟังก์ชันตัวช่วยดึงข้อมูลกะและเวลาพัก ──────────────────
+    private function _get_user_shift($uid) {
+        $this->db->select('shifts.*');
+        $this->db->from('users');
+        $this->db->join('shifts', 'shifts.id = users.shift_id', 'left');
+        $this->db->where('users.id', $uid);
+        $shift = $this->db->get()->row();
+
+        // ถ้าไม่มีกะ หรือใน DB ไม่มีคอลัมน์เบรก ให้ตั้ง Default เป็น 08.30-17.30 (พัก 12.30-13.30)
+        if (!$shift || empty($shift->start_time)) {
+            $shift = (object)[
+                'start_time'       => '08:30:00',
+                'end_time'         => '17:30:00',
+                'break_start_time' => '12:30:00',
+                'break_end_time'   => '13:30:00'
+            ];
+        } else {
+            if (empty($shift->break_start_time)) $shift->break_start_time = '12:30:00';
+            if (empty($shift->break_end_time)) $shift->break_end_time = '13:30:00';
+        }
+        return $shift;
     }
 
     // ── รายการลาของตัวเอง ─────────────────────────────────
@@ -19,10 +43,14 @@ class Leave extends Employee_Controller {
 
     // ── ยื่นคำขอลา ────────────────────────────────────────
     public function request() {
+        $uid = $this->current_user->user_id;
+        $shift_data = $this->_get_user_shift($uid); // ดึงค่าจาก DB
+
         $this->render('employee/leave/request', array(
             'title'       => 'ยื่นคำขอลา',
             'page_title'  => 'ยื่นคำขอลา',
             'leave_types' => $this->Leave_model->get_types(),
+            'shift'       => $shift_data, // ส่งไปให้ JS
         ));
     }
 
@@ -32,7 +60,68 @@ class Leave extends Employee_Controller {
         $sd   = $this->input->post('start_date');
         $ed   = $this->input->post('end_date');
         $unit = $this->input->post('leave_unit') ?: 'day';
-        $days = $unit === 'hour' ? 0 : max(1, round((strtotime($ed)-strtotime($sd))/86400)+1);
+
+        $shift = $this->_get_user_shift($uid); // ดึงค่าจาก DB มาคำนวณ
+
+        $days  = 0;
+        $hours = 0;
+        $sh    = null;
+        $eh    = null;
+
+        if ($unit === 'day') {
+            $days = max(1, round((strtotime($ed)-strtotime($sd))/86400)+1);
+        } else if ($unit === 'hour') {
+            $sh = $this->input->post('leave_start_time');
+            $eh = $this->input->post('leave_end_time');
+            
+            if ($sh && $eh) {
+                $timeToDec = function($timeStr) {
+                    if (empty($timeStr)) return 0;
+                    list($h, $m) = explode(':', $timeStr);
+                    return (int)$h + ((int)$m / 60);
+                };
+
+                $s_start = $timeToDec($shift->start_time);
+                $s_end   = $timeToDec($shift->end_time);
+                $b_start = $timeToDec($shift->break_start_time);
+                $b_end   = $timeToDec($shift->break_end_time);
+                
+                $req_start = $timeToDec($sh);
+                $req_end   = $timeToDec($eh);
+                
+                $days_diff = round((strtotime($ed) - strtotime($sd)) / 86400);
+                
+                $calcHoursForDay = function($reqS, $reqE) use ($s_start, $s_end, $b_start, $b_end) {
+                    $workS = max($reqS, $s_start);
+                    $workE = min($reqE, $s_end);
+                    if ($workS >= $workE) return 0;
+                    
+                    $total = $workE - $workS;
+                    $overlapBStart = max($workS, $b_start);
+                    $overlapBEnd   = min($workE, $b_end);
+                    
+                    if ($overlapBStart < $overlapBEnd) {
+                        $total -= ($overlapBEnd - $overlapBStart);
+                    }
+                    return $total;
+                };
+
+                $full_day_hours = $calcHoursForDay($s_start, $s_end);
+                if ($full_day_hours <= 0) $full_day_hours = 8;
+
+                if ($days_diff == 0) {
+                    $hours = $calcHoursForDay($req_start, $req_end);
+                } else {
+                    $first_day   = $calcHoursForDay($req_start, $s_end);
+                    $last_day    = $calcHoursForDay($s_start, $req_end);
+                    $middle_days = max(0, $days_diff - 1) * $full_day_hours;
+                    $hours       = $first_day + $last_day + $middle_days;
+                }
+
+                $hours = round($hours, 2);
+                $days  = round($hours / $full_day_hours, 2);
+            }
+        }
 
         $data = array(
             'user_id'       => $uid,
@@ -43,21 +132,11 @@ class Leave extends Employee_Controller {
             'leave_unit'    => $unit,
             'reason'        => $this->input->post('reason', TRUE),
             'status'        => 'pending',
-            'total_hours'   => 0,
+            'total_hours'   => $hours,
+            'start_time'    => $sh,
+            'end_time'      => $eh,
         );
 
-        // ลาชั่วโมง
-        if ($unit === 'hour') {
-            $sh = $this->input->post('leave_start_time');
-            $eh = $this->input->post('leave_end_time');
-            if ($sh && $eh) {
-                $data['total_hours'] = round((strtotime($eh)-strtotime($sh))/3600, 2);
-                $data['start_time']  = $sh;
-                $data['end_time']    = $eh;
-            }
-        }
-
-        // อัปโหลดเอกสาร
         if (!empty($_FILES['document']['size'])) {
             $p = FCPATH.'uploads/leave_docs/';
             if (!is_dir($p)) mkdir($p, 0755, true);
@@ -89,11 +168,11 @@ class Leave extends Employee_Controller {
     public function edit($id) {
         $uid = $this->current_user->user_id;
         $req = $this->db->where('id',$id)->where('user_id',$uid)->get('leave_requests')->row();
+        
         if (!$req) {
             $this->session->set_flashdata('error', 'ไม่พบข้อมูล หรือไม่ใช่คำขอของคุณ');
             redirect('employee/leave');
         }
-        // เฉพาะ pending แก้ได้
         if ($req->status !== 'pending') {
             $this->session->set_flashdata('error', 'แก้ไขได้เฉพาะคำขอที่รอการอนุมัติเท่านั้น');
             redirect('employee/leave');
@@ -103,7 +182,68 @@ class Leave extends Employee_Controller {
             $sd   = $this->input->post('start_date');
             $ed   = $this->input->post('end_date');
             $unit = $this->input->post('leave_unit') ?: 'day';
-            $days = $unit === 'hour' ? 0 : max(1, round((strtotime($ed)-strtotime($sd))/86400)+1);
+
+            $shift = $this->_get_user_shift($uid); // ดึงค่าจาก DB
+
+            $days  = 0;
+            $hours = 0;
+            $sh    = null;
+            $eh    = null;
+
+            if ($unit === 'day') {
+                $days = max(1, round((strtotime($ed)-strtotime($sd))/86400)+1);
+            } else if ($unit === 'hour') {
+                $sh = $this->input->post('leave_start_time');
+                $eh = $this->input->post('leave_end_time');
+                
+                if ($sh && $eh) {
+                    $timeToDec = function($timeStr) {
+                        if (empty($timeStr)) return 0;
+                        list($h, $m) = explode(':', $timeStr);
+                        return (int)$h + ((int)$m / 60);
+                    };
+
+                    $s_start = $timeToDec($shift->start_time);
+                    $s_end   = $timeToDec($shift->end_time);
+                    $b_start = $timeToDec($shift->break_start_time);
+                    $b_end   = $timeToDec($shift->break_end_time);
+                    
+                    $req_start = $timeToDec($sh);
+                    $req_end   = $timeToDec($eh);
+                    
+                    $days_diff = round((strtotime($ed) - strtotime($sd)) / 86400);
+                    
+                    $calcHoursForDay = function($reqS, $reqE) use ($s_start, $s_end, $b_start, $b_end) {
+                        $workS = max($reqS, $s_start);
+                        $workE = min($reqE, $s_end);
+                        if ($workS >= $workE) return 0;
+                        
+                        $total = $workE - $workS;
+                        $overlapBStart = max($workS, $b_start);
+                        $overlapBEnd   = min($workE, $b_end);
+                        
+                        if ($overlapBStart < $overlapBEnd) {
+                            $total -= ($overlapBEnd - $overlapBStart);
+                        }
+                        return $total;
+                    };
+
+                    $full_day_hours = $calcHoursForDay($s_start, $s_end);
+                    if ($full_day_hours <= 0) $full_day_hours = 8;
+
+                    if ($days_diff == 0) {
+                        $hours = $calcHoursForDay($req_start, $req_end);
+                    } else {
+                        $first_day   = $calcHoursForDay($req_start, $s_end);
+                        $last_day    = $calcHoursForDay($s_start, $req_end);
+                        $middle_days = max(0, $days_diff - 1) * $full_day_hours;
+                        $hours       = $first_day + $last_day + $middle_days;
+                    }
+
+                    $hours = round($hours, 2);
+                    $days  = round($hours / $full_day_hours, 2);
+                }
+            }
 
             $data = array(
                 'leave_type_id' => $this->input->post('leave_type_id'),
@@ -112,19 +252,11 @@ class Leave extends Employee_Controller {
                 'total_days'    => $days,
                 'leave_unit'    => $unit,
                 'reason'        => $this->input->post('reason', TRUE),
-                'total_hours'   => 0,
+                'total_hours'   => $hours,
+                'start_time'    => $sh,
+                'end_time'      => $eh,
                 'updated_at'    => date('Y-m-d H:i:s'),
             );
-
-            if ($unit === 'hour') {
-                $sh = $this->input->post('leave_start_time');
-                $eh = $this->input->post('leave_end_time');
-                if ($sh && $eh) {
-                    $data['total_hours'] = round((strtotime($eh)-strtotime($sh))/3600, 2);
-                    $data['start_time']  = $sh;
-                    $data['end_time']    = $eh;
-                }
-            }
 
             if (!empty($_FILES['document']['size'])) {
                 $p = FCPATH.'uploads/leave_docs/';

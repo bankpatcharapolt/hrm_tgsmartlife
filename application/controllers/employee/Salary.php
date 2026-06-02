@@ -12,8 +12,8 @@ class Salary extends Employee_Controller {
             'title'     => 'เงินเดือนของฉัน',
             'page_title'=> 'เงินเดือนและเอกสาร',
             'records'   => $this->Salary_model->get_records(array('user_id'=>$uid,'year'=>$y), 12),
-            'slips'     => $this->Salary_model->get_slips($uid),
-            'tax_docs'  => $this->Salary_model->get_tax_docs($uid),
+            'slips'     => $this->Salary_model->get_slips($uid ,$y),
+            'tax_docs'  => $this->Salary_model->get_tax_docs($uid ,$y),
             'bonuses'   => $this->Salary_model->get_bonuses(array('user_id'=>$uid)),
             'year'      => $y
         ));

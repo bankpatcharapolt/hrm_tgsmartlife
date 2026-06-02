@@ -98,7 +98,7 @@ class Salary extends Admin_Controller {
         $y    = (int)($this->input->get('year')  ? $this->input->get('year')  : date('Y'));
         $m    = (int)($this->input->get('month') ? $this->input->get('month') : 0);
         $uid  = (int)$this->input->get('user_id');
-
+        
         $this->db->select('ss.*,u.first_name,u.last_name,u.employee_id,d.name AS dept_name')
             ->from('salary_slips ss')
             ->join('users u','u.id=ss.user_id')
