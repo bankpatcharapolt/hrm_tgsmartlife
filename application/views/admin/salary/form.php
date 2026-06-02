@@ -9,7 +9,19 @@
       <div class="col-md-3"><label class="form-label">ปี</label><input type="number" name="salary_year" class="form-control" value="<?=$r?$r->salary_year:$year?>" required></div>
       <div class="col-md-3"><label class="form-label">เดือน</label><input type="number" name="salary_month" class="form-control" min="1" max="12" value="<?=$r?$r->salary_month:$month?>" required></div>
       <div class="col-12"><hr class="my-1"><div class="fw-semibold small text-muted mb-1">รายได้</div></div>
-      <?php $inc_fields=[['base_salary','เงินเดือนฐาน'],['commission','ค่าคอมมิชชัน'],['ot_pay','ค่าล่วงเวลา (OT)'],['monthly_bonus','โบนัสรายเดือน'],['special_bonus','โบนัสพิเศษ'],['other_income','รายได้อื่นๆ']]; foreach($inc_fields as $f):?>
+      <?php
+      // [แก้ไข ข้อ 2] แยก base_salary ออกมาไม่ใส่ class="income" เพื่อไม่ให้ JS นับซ้ำ
+      // JS จะรวม base_salary + ทุก .income field
+      $inc_fields=[
+        ['commission','ค่าคอมมิชชัน'],
+        ['ot_pay','ค่าล่วงเวลา (OT)'],
+        ['monthly_bonus','โบนัสรายเดือน'],
+        ['special_bonus','โบนัสพิเศษ'],
+        ['other_income','รายได้อื่นๆ']
+      ];
+      ?>
+      <div class="col-md-4"><label class="form-label">เงินเดือนฐาน</label><div class="input-group"><span class="input-group-text">฿</span><input type="number" name="base_salary" id="base_salary" class="form-control" value="<?=$r?(float)$r->base_salary:0?>" min="0" step="0.01"></div></div>
+      <?php foreach($inc_fields as $f):?>
       <div class="col-md-4"><label class="form-label"><?=$f[1]?></label><div class="input-group"><span class="input-group-text">฿</span><input type="number" name="<?=$f[0]?>" class="form-control income" value="<?=$r?(float)$r->{$f[0]}:0?>" min="0" step="0.01"></div></div>
       <?php endforeach;?>
       <div class="col-12"><hr class="my-1"><div class="fw-semibold small text-muted mb-1">รายการหัก</div></div>
@@ -36,15 +48,18 @@
   </div>
 </div>
 <?php $extra_js='<script>
+// [แก้ไข ข้อ 2] calc() แยก base_salary + income fields อย่างถูกต้อง
 function calc(){
-  var b=parseFloat(document.querySelector("[name=base_salary]").value)||0;
-  var inc=b; document.querySelectorAll(".income").forEach(function(i){inc+=parseFloat(i.value)||0;});
-  var ded=0; document.querySelectorAll(".deduct").forEach(function(i){ded+=parseFloat(i.value)||0;});
-  var fmt=function(n){return "฿"+n.toLocaleString("th-TH",{minimumFractionDigits:2});};
-  document.getElementById("showGross").textContent=fmt(inc);
-  document.getElementById("showDed").textContent=fmt(ded);
-  document.getElementById("showNet").textContent=fmt(inc-ded);
+  var base = parseFloat(document.getElementById("base_salary").value) || 0;
+  var inc  = base;
+  document.querySelectorAll(".income").forEach(function(i){ inc += parseFloat(i.value) || 0; });
+  var ded  = 0;
+  document.querySelectorAll(".deduct").forEach(function(i){ ded += parseFloat(i.value) || 0; });
+  var fmt  = function(n){ return "฿" + n.toLocaleString("th-TH", {minimumFractionDigits:2}); };
+  document.getElementById("showGross").textContent = fmt(inc);
+  document.getElementById("showDed").textContent   = fmt(ded);
+  document.getElementById("showNet").textContent   = fmt(inc - ded);
 }
-document.querySelectorAll("input[type=number]").forEach(function(i){i.addEventListener("input",calc);});
-calc();
+document.querySelectorAll("input[type=number]").forEach(function(i){ i.addEventListener("input", calc); });
+calc(); // คำนวณทันทีตอนโหลดหน้า (สำคัญสำหรับ edit mode)
 </script>';?>

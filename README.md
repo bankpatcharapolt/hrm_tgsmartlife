@@ -1,108 +1,128 @@
-# ระบบ HRM (Human Resource Management)
-**PHP CodeIgniter 3 + Bootstrap 5 + MySQL | ภาษาไทย**
+# HRM Fix Patch — สรุปการแก้ไขทั้ง 7 ข้อ
 
-## 🚀 วิธีติดตั้ง
+## วิธีติดตั้ง
 
-### 1. ย้ายโฟลเดอร์
-```
-hrm_tgsmartlife/ → htdocs/hrm_tgsmartlife/  (XAMPP)
-hrm_tgsmartlife/ → www/hrm_tgsmartlife/     (WAMP/Laragon)
+### 1. รัน SQL Migration ก่อน
+```sql
+mysql -u root -p hrm_db < sql/hrm_fix_patch.sql
 ```
 
-### 2. นำเข้า Database
-```bash
-mysql -u root -p < sql/hrm_full.sql
+### 2. Copy ไฟล์ทับของเดิม
 ```
-
-### 3. แก้ไข Base URL
-ไฟล์: `application/config/config.php`
-```php
-$config['base_url'] = 'http://localhost/hrm_tgsmartlife/';
-```
-
-### 4. แก้ไข Database
-ไฟล์: `application/config/database.php`
-```php
-'hostname' => 'localhost',
-'username' => 'root',
-'password' => '',
-'database' => 'hrm_db',
-```
-
-### 5. แก้ไข Encryption Key
-ไฟล์: `application/config/config.php`
-```php
-$config['encryption_key'] = 'YOUR_SECRET_KEY_HERE';
-```
-
-### 6. สิทธิ์โฟลเดอร์
-```bash
-chmod -R 777 uploads/
+application/config/routes.php
+application/controllers/api/Notifications.php
+application/controllers/employee/Attendance.php
+application/controllers/employee/Profile.php
+application/models/Attendance_model.php
+application/models/Salary_model.php
+application/views/admin/salary/form.php
+application/views/employee/attendance/index.php
+application/views/employee/leave/index.php
+application/views/layouts/main.php
 ```
 
 ---
 
-## 👤 บัญชีผู้ใช้เริ่มต้น
-
-| บัญชี | รหัสผ่าน | บทบาท |
-|-------|---------|-------|
-| `owner` | `Admin@1234` | เจ้าของ (Full Access) |
-| `admin1` | `Admin@1234` | แอดมิน |
-| `manager1` | `Admin@1234` | หัวหน้างาน |
-| `emp001` | `Admin@1234` | พนักงาน |
-| `emp002` | `Admin@1234` | พนักงาน |
-| `emp003` | `Admin@1234` | พนักงาน |
+## รายละเอียดการแก้ไขแต่ละข้อ
 
 ---
 
-## 📋 โมดูลหลัก
+### ข้อ 1 — อัปโหลดสลิป/ทวิ50 ซ้ำชื่อ → ทับแทนของเก่า
+**ไฟล์:** `application/models/Salary_model.php`
 
-| โมดูล | คำอธิบาย |
-|-------|---------|
-| **แดชบอร์ด** | ภาพรวมระบบ สถิติ กิจกรรม |
-| **พนักงาน** | เพิ่ม/แก้ไข/ดูข้อมูล |
-| **การเข้างาน** | ลงเวลาเข้า-ออก (AJAX), รายงานรายเดือน |
-| **การลา** | ยื่น/อนุมัติ/ปฏิเสธ, แจ้งเตือนอัตโนมัติ |
-| **เงินเดือน** | บันทึก/คำนวณ, อัปโหลดสลิป |
-| **โบนัสประจำปี** | บันทึก + แจ้งเตือน |
-| **ทวิ 50** | อัปโหลด + ดาวน์โหลด |
-| **ยอดขาย** | รายบุคคล/ทีม, กราฟ, Top 5 |
-| **การแจ้งเตือน** | ส่งถึงทุกคน/บทบาท/รายบุคคล |
-| **บทบาทและสิทธิ์** | กำหนด permission แต่ละบทบาท |
+- `save_slip()`: ก่อน insert ตรวจว่ามี `user_id + slip_year + slip_month + file_name` ซ้ำไหม  
+  ถ้าซ้ำ → ลบไฟล์เก่า → `UPDATE` ทับ  
+- `save_tax_doc()`: ตรวจ `user_id + tax_year` ซ้ำ → ลบไฟล์เก่า → `UPDATE` ทับ
 
 ---
 
-## 🔐 สิทธิ์การเข้าถึง
+### ข้อ 2 — Edit เงินเดือนไม่คำนวณ
+**ไฟล์:** `application/views/admin/salary/form.php`
 
-| สิทธิ์ | พนักงาน | หัวหน้า | แอดมิน | เจ้าของ |
-|--------|:------:|:------:|:------:|:------:|
-| ลงเวลาเข้า-ออก | ✅ | ✅ | ✅ | ✅ |
-| ดูเงินเดือนตัวเอง | ✅ | ✅ | ✅ | ✅ |
-| ยื่นคำขอลา | ✅ | ✅ | ✅ | ✅ |
-| อนุมัติการลา | ❌ | ✅ | ✅ | ✅ |
-| จัดการพนักงาน | ❌ | ❌ | ✅ | ✅ |
-| จัดการเงินเดือน | ❌ | ❌ | ✅ | ✅ |
-| ตั้งค่าบทบาท | ❌ | ❌ | ❌ | ✅ |
+**สาเหตุ bug:** JS `calc()` เดิมนับ `base_salary` 2 ครั้ง
+- ครั้งแรกจาก `b = parseFloat(base_salary.value)` 
+- ครั้งที่สองเพราะ `base_salary` input มี class `income` ด้วย → `forEach(.income)` นับอีกรอบ
+
+**วิธีแก้:** แยก `base_salary` input ออกจาก class `income`  
+ใช้ `id="base_salary"` + `var base = parseFloat(document.getElementById('base_salary').value)`  
+แล้ว `inc = base + sum(.income)`
+
+นอกจากนี้เพิ่ม `calc()` ตอนโหลดหน้า เพื่อให้แสดงยอดทันทีตอน edit
 
 ---
 
-## 📁 โครงสร้างไฟล์
+### ข้อ 3 — แสดงวันขาดงานในหน้าการเข้างาน
+**ไฟล์:** 
+- `application/models/Attendance_model.php` — เพิ่ม `get_absent_days()`
+- `application/controllers/employee/Attendance.php` — ส่ง `$absent_days` ไป view
+- `application/views/employee/attendance/index.php` — แสดง alert + แถวสีแดง
 
+**Logic:**
+- วนวันใน เดือน/ปี ที่เลือก จนถึงวันนี้
+- ข้ามเสาร์-อาทิตย์
+- ข้ามวันหยุดนักขัตฤกษ์ไทย (บริษัทเอกชน) — รายการคงที่ + ปฏิทินจันทรคติ ปี 2024-2027
+- ข้ามวันที่มี attendance record แล้ว
+- ข้ามวันที่มี `leave_requests` ที่ `status = approved`
+- วันที่เหลือ = ขาดงาน
+
+สรุปจำนวนวันขาดในการ์ด + alert บอกวันที่
+
+---
+
+### ข้อ 4 — แสดงวันลาคงเหลือ/ใช้ไปแต่ละประเภท
+**ไฟล์:** `application/views/employee/leave/index.php`
+
+เพิ่มส่วนสรุปเหนือตารางคำขอ:
+- แสดงทุก leave_type → quota_per_year, ใช้ไป (approved ปีนี้), คงเหลือ
+- Progress bar สีเปลี่ยนตาม % ที่ใช้ไป (เขียว/เหลือง/แดง)
+
+---
+
+### ข้อ 5 — อัปโหลดรูปโปรไฟล์ไม่ได้ (PHP Error: Undefined property MY_Upload::$Sales)
+**ไฟล์:** `application/controllers/employee/Profile.php`
+
+**สาเหตุ:** `MY_Upload` library ถูก autoload และมี property conflict กับ `Sales` controller  
+ตอน CI3 inject CI instance เข้า library มีการเรียก `$this->Sales` ที่ undefined
+
+**วิธีแก้:** เลิกใช้ `$this->load->library('upload')` ใน Profile controller  
+เปลี่ยนมาใช้ native PHP upload แทน:
+- `$_FILES['photo']` โดยตรง
+- ตรวจ MIME type ด้วย `mime_content_type()` (ปลอดภัยกว่า `$_FILES['type']`)
+- จำกัด allowed types: jpg/jpeg, png, webp, gif
+- จำกัด max size: 2MB
+
+---
+
+### ข้อ 6 — Real-time notification ด้วย Server-Sent Events (SSE)
+**ไฟล์:**
+- `application/controllers/api/Notifications.php` — เพิ่ม `stream()` method
+- `application/views/layouts/main.php` — เพิ่ม SSE JavaScript
+- `application/config/routes.php` — เพิ่ม route `api/notifications/stream`
+
+**การทำงาน:**
+- Browser เปิด `EventSource('/api/notifications/stream')` ต่อ SSE
+- Server ส่ง `event: notification` ทุก 15 วิ พร้อม `{count, items}`
+- Client อัปเดต bell badge + dropdown notification list
+- ถ้ามี notification ใหม่ (count เพิ่มขึ้น) → แสดง toast popup ล่างขวา 6 วิแล้วหาย
+- Server หยุดส่งหลัง 20 รอบ (~5 นาที) → client reconnect เองอัตโนมัติ
+
+**หมายเหตุ:** SSE ต้องการ PHP process-based server (Apache/Nginx + PHP-FPM)  
+ถ้าใช้ `output_buffering = On` ใน php.ini ให้ปิดหรือเพิ่มใน .htaccess:
 ```
-hrm_tgsmartlife/
-├── application/
-│   ├── config/          (database, routes, config, autoload)
-│   ├── controllers/     (Auth, admin/*, employee/*, manager/*, api/*)
-│   ├── core/            (MY_Controller)
-│   ├── models/          (User, Notification, Attendance, Leave, Salary, Sales)
-│   └── views/           (layouts, auth, admin/*, employee/*, manager/*, errors)
-├── system/              (CodeIgniter 3 framework)
-├── uploads/             (photos, slips, tax_docs, leave_docs)
-├── sql/                 (hrm_full.sql)
-└── index.php
+php_value output_buffering Off
 ```
 
 ---
 
-## 📞 ต้องการความช่วยเหลือ
-ระบบสร้างด้วย CodeIgniter 3.1.13 | PHP 7.4+ | MySQL 5.7+
+### ข้อ 7 — ลงข้อมูลการมาทำงานย้อนหลัง + ปรับ Modal
+**ไฟล์:**
+- `application/controllers/employee/Attendance.php`
+- `application/views/employee/attendance/index.php`
+- `sql/hrm_fix_patch.sql` — เพิ่มคอลัมน์ `work_hours`, `leave_hours`, `leave_type_id`
+
+**การเปลี่ยนแปลง:**
+1. **Shift dropdown** → ดึง shift_id ของ user มา pre-select + `disabled` แก้ไขไม่ได้  
+   (ใช้ hidden input เพราะ disabled field ไม่ส่ง POST)
+2. **สถานะ "ครึ่งวัน"** → เพิ่ม input ชั่วโมงที่มาทำงาน (default 4 ชม.)
+3. **สถานะ "มาทำงานรายชั่วโมง"** → เลือกเวลาเข้า-ออก ระบบคำนวณชั่วโมงให้อัตโนมัติ  
+   บันทึกเป็น `status='present'` + `work_hours` = ชั่วโมงจริง

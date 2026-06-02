@@ -45,41 +45,74 @@ class Salary_model extends CI_Model
     public function get_slips($uid, $year = null)
     {
         $this->db->where('user_id', $uid);
-
-        // ตรวจสอบว่า $year มีค่าและไม่ใช่ค่าว่าง
         if (!empty($year)) {
             $this->db->where('slip_year', $year);
         }
-
         return $this->db->order_by('slip_year DESC, slip_month DESC')
             ->get('salary_slips')
             ->result();
     }
+
+    // ── [แก้ไข ข้อ 1] save_slip: ถ้ามีซ้ำ (user+year+month+filename) ให้ UPDATE ทับ ──
     public function save_slip($data)
     {
+        // ค้นหาว่ามีสลิปของ user นี้ เดือน+ปี+ชื่อไฟล์เดิมซ้ำไหม
+        $existing = $this->db
+            ->where('user_id',    $data['user_id'])
+            ->where('slip_year',  $data['slip_year'])
+            ->where('slip_month', $data['slip_month'])
+            ->where('file_name',  $data['file_name'])
+            ->get('salary_slips')->row();
+
+        if ($existing) {
+            // ลบไฟล์เก่าออกก่อน (ถ้ามี)
+            if (!empty($existing->file_path) && file_exists(FCPATH . $existing->file_path)) {
+                @unlink(FCPATH . $existing->file_path);
+            }
+            // UPDATE ทับ
+            $data['updated_at'] = date('Y-m-d H:i:s');
+            $this->db->where('id', $existing->id)->update('salary_slips', $data);
+            return $existing->id;
+        }
+
         $data['created_at'] = date('Y-m-d H:i:s');
         $this->db->insert('salary_slips', $data);
         return $this->db->insert_id();
     }
+
     public function get_tax_docs($uid, $year = null)
     {
         $this->db->where('user_id', $uid);
-
-        // ตรวจสอบเงื่อนไขว่า year มีค่าหรือไม่
         if (!empty($year)) {
             $this->db->where('tax_year', $year);
         }
-
         return $this->db->order_by('tax_year', 'DESC')
             ->get('tax_documents')
             ->result();
     }
+
+    // ── [แก้ไข ข้อ 1] save_tax_doc: ถ้ามีซ้ำ (user+year) ให้ UPDATE ทับ ──
     public function save_tax_doc($data)
     {
+        $existing = $this->db
+            ->where('user_id',  $data['user_id'])
+            ->where('tax_year', $data['tax_year'])
+            ->get('tax_documents')->row();
+
+        if ($existing) {
+            if (!empty($existing->file_path) && file_exists(FCPATH . $existing->file_path)) {
+                @unlink(FCPATH . $existing->file_path);
+            }
+            $data['updated_at'] = date('Y-m-d H:i:s');
+            $this->db->where('id', $existing->id)->update('tax_documents', $data);
+            return $existing->id;
+        }
+
         $data['created_at'] = date('Y-m-d H:i:s');
         $this->db->insert('tax_documents', $data);
         return $this->db->insert_id();
     }
+
     public function get_bonuses($filters = array())
     {
         $this->db->select('ab.*,u.first_name,u.last_name,u.employee_id,d.name AS dept_name')

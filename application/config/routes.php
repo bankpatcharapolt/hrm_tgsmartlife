@@ -86,3 +86,6 @@ $route['api/notifications/unread'] = 'api/notifications/unread';
 $route['api/notifications/mark_read/(:num)'] = 'api/notifications/mark_read/$1';
 $route['api/attendance/checkin'] = 'api/attendance/checkin';
 $route['api/attendance/checkout'] = 'api/attendance/checkout';
+
+// SSE notification stream
+$route['api/notifications/stream'] = 'api/notifications/stream';
