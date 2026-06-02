@@ -69,7 +69,7 @@
           <label class="form-label">เลือกพนักงาน</label>
           <select name="user_id" class="form-select" required>
             <option value="">-- เลือก --</option>
-            <?php foreach($this->User_model->get_all(['status'=>'active'],200) as $e):?>
+            <?php foreach($this->User_model->get_all(array('status'=>'active'),200) as $e):?>
             <option value="<?=$e->id?>"><?=$e->employee_id?> – <?=$e->first_name.' '.$e->last_name?></option>
             <?php endforeach;?>
           </select>

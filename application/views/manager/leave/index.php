@@ -1,7 +1,7 @@
 <?php defined('BASEPATH') OR exit(); ?>
 <div class="card mb-3">
   <div class="card-body py-2">
-    <?=form_open('manager/leave',['method'=>'GET','class'=>'row g-2 align-items-end'])?>
+    <?=form_open('manager/leave',array('method'=>'GET','class'=>'row g-2 align-items-end'))?>
       <div class="col-md-3"><select name="status" class="form-select form-select-sm"><option value="pending" <?=($filters['status']??'pending')==='pending'?'selected':''?>>รอการอนุมัติ</option><option value="approved" <?=($filters['status']??'')==='approved'?'selected':''?>>อนุมัติแล้ว</option><option value="rejected" <?=($filters['status']??'')==='rejected'?'selected':''?>>ปฏิเสธแล้ว</option><option value="">ทุกสถานะ</option></select></div>
       <div class="col-md-2"><select name="year" class="form-select form-select-sm"><?php for($y=date('Y');$y>=date('Y')-2;$y--):?><option value="<?=$y?>" <?=($filters['year']??date('Y'))==$y?'selected':''?>><?=$y?></option><?php endfor;?></select></div>
       <div class="col-auto"><button type="submit" class="btn btn-primary btn-sm">ค้นหา</button></div>
@@ -22,7 +22,7 @@
             <td style="font-size:.82rem"><?=date('d/m/Y',strtotime($req->start_date))?><?=$req->start_date!=$req->end_date?' – '.date('d/m/Y',strtotime($req->end_date)):''?></td>
             <td><?=$req->total_days?></td>
             <td style="font-size:.8rem;max-width:140px"><?=htmlspecialchars(mb_substr($req->reason,0,40))?><?=mb_strlen($req->reason)>40?'...':''?></td>
-            <td><span class="badge bg-<?=['pending'=>'warning text-dark','approved'=>'success','rejected'=>'danger','cancelled'=>'secondary'][$req->status]??'secondary'?>"><?=['pending'=>'รอการอนุมัติ','approved'=>'อนุมัติ','rejected'=>'ปฏิเสธ','cancelled'=>'ยกเลิก'][$req->status]??$req->status?></span></td>
+            <td><span class="badge bg-<?=array('pending'=>'warning text-dark','approved'=>'success','rejected'=>'danger','cancelled'=>'secondary')[$req->status]??'secondary'?>"><?=array('pending'=>'รอการอนุมัติ','approved'=>'อนุมัติ','rejected'=>'ปฏิเสธ','cancelled'=>'ยกเลิก')[$req->status]??$req->status?></span></td>
             <td>
               <?php if($req->status==='pending'):?>
               <button class="btn btn-success btn-sm px-2 py-0" data-bs-toggle="modal" data-bs-target="#mAp<?=$req->id?>">✓</button>

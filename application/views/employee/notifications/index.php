@@ -3,7 +3,7 @@
   <div class="card-header"><i class="bi bi-bell me-2"></i>การแจ้งเตือนทั้งหมด</div>
   <div class="card-body p-0">
     <?php if(!empty($notifs)):foreach($notifs as $n):
-      $ic=['leave_request'=>'calendar','leave_approved'=>'check-circle text-success','leave_rejected'=>'x-circle text-danger','salary_paid'=>'cash text-success','bonus_paid'=>'gift text-warning','document_uploaded'=>'file-earmark-arrow-down text-primary','late_checkin'=>'clock text-warning','general'=>'info-circle','meeting'=>'people text-primary','holiday'=>'calendar-event','target'=>'graph-up-arrow text-success'];
+      $ic=array('leave_request'=>'calendar','leave_approved'=>'check-circle text-success','leave_rejected'=>'x-circle text-danger','salary_paid'=>'cash text-success','bonus_paid'=>'gift text-warning','document_uploaded'=>'file-earmark-arrow-down text-primary','late_checkin'=>'clock text-warning','general'=>'info-circle','meeting'=>'people text-primary','holiday'=>'calendar-event','target'=>'graph-up-arrow text-success');
       $icon=$ic[$n->type]??'bell';?>
     <div class="d-flex align-items-start gap-3 px-3 py-3 border-bottom <?=!$n->is_read?'bg-light':''?>"><?php if($n->link):?><a href="<?=$n->link?>" style="text-decoration:none;color:inherit;display:contents;"><?php endif;?>
       <div style="width:38px;height:38px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-<?=$icon?> fs-5"></i></div>

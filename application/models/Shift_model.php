@@ -18,7 +18,7 @@ class Shift_model extends CI_Model {
         return $this->db->affected_rows()>0;
     }
     public function delete($id) {
-        $this->db->where('id',$id)->update('shifts',['status'=>'inactive']);
+        $this->db->where('id',$id)->update('shifts',array('status'=>'inactive'));
         return $this->db->affected_rows()>0;
     }
     public function get_for_user($user_id) {
@@ -28,7 +28,7 @@ class Shift_model extends CI_Model {
             ->where('u.id',$user_id)->get()->row();
         // ถ้าไม่มีกะประจำ ใช้กะปกติ (08:30-17:30)
         if (!$u) {
-            return (object)['start_time'=>'08:30:00','end_time'=>'17:30:00','late_threshold_minutes'=>15,'break_minutes'=>60,'is_night_shift'=>0,'name'=>'กะปกติ'];
+            return (object)array('start_time'=>'08:30:00','end_time'=>'17:30:00','late_threshold_minutes'=>15,'break_minutes'=>60,'is_night_shift'=>0,'name'=>'กะปกติ');
         }
         return $u;
     }

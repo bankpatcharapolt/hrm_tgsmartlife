@@ -2,7 +2,7 @@
 <!-- Filter -->
 <div class="card mb-3">
   <div class="card-body py-2">
-    <?=form_open('admin/leave',['method'=>'GET','class'=>'row g-2 align-items-end'])?>
+    <?=form_open('admin/leave',array('method'=>'GET','class'=>'row g-2 align-items-end'))?>
       <div class="col-md-2">
         <select name="status" class="form-select form-select-sm">
           <option value="">ทุกสถานะ</option>
@@ -52,8 +52,8 @@
         </thead>
         <tbody>
           <?php if(!empty($requests)):foreach($requests as $req):
-            $sc=['pending'=>'warning text-dark','approved'=>'success','rejected'=>'danger','cancelled'=>'secondary'];
-            $sl=['pending'=>'รอการอนุมัติ','approved'=>'อนุมัติแล้ว','rejected'=>'ปฏิเสธแล้ว','cancelled'=>'ยกเลิก'];
+            $sc=array('pending'=>'warning text-dark','approved'=>'success','rejected'=>'danger','cancelled'=>'secondary');
+            $sl=array('pending'=>'รอการอนุมัติ','approved'=>'อนุมัติแล้ว','rejected'=>'ปฏิเสธแล้ว','cancelled'=>'ยกเลิก');
           ?>
           <tr>
             <td>

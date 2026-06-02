@@ -9,21 +9,21 @@ class Leave extends Employee_Controller {
     // ── รายการลาของตัวเอง ─────────────────────────────────
     public function index() {
         $uid = $this->current_user->user_id;
-        $this->render('employee/leave/index', [
+        $this->render('employee/leave/index', array(
             'title'       => 'การลาของฉัน',
             'page_title'  => 'การลาของฉัน',
-            'requests'    => $this->Leave_model->get_requests(['user_id'=>$uid], 50),
+            'requests'    => $this->Leave_model->get_requests(array('user_id'=>$uid), 50),
             'leave_types' => $this->Leave_model->get_types(),
-        ]);
+        ));
     }
 
     // ── ยื่นคำขอลา ────────────────────────────────────────
     public function request() {
-        $this->render('employee/leave/request', [
+        $this->render('employee/leave/request', array(
             'title'       => 'ยื่นคำขอลา',
             'page_title'  => 'ยื่นคำขอลา',
             'leave_types' => $this->Leave_model->get_types(),
-        ]);
+        ));
     }
 
     public function store() {
@@ -34,7 +34,7 @@ class Leave extends Employee_Controller {
         $unit = $this->input->post('leave_unit') ?: 'day';
         $days = $unit === 'hour' ? 0 : max(1, round((strtotime($ed)-strtotime($sd))/86400)+1);
 
-        $data = [
+        $data = array(
             'user_id'       => $uid,
             'leave_type_id' => $this->input->post('leave_type_id'),
             'start_date'    => $sd,
@@ -44,7 +44,7 @@ class Leave extends Employee_Controller {
             'reason'        => $this->input->post('reason', TRUE),
             'status'        => 'pending',
             'total_hours'   => 0,
-        ];
+        );
 
         // ลาชั่วโมง
         if ($unit === 'hour') {
@@ -62,7 +62,7 @@ class Leave extends Employee_Controller {
             $p = FCPATH.'uploads/leave_docs/';
             if (!is_dir($p)) mkdir($p, 0755, true);
             $ext = strtolower(pathinfo($_FILES['document']['name'], PATHINFO_EXTENSION));
-            if (in_array($ext, ['pdf','jpg','jpeg','png'])) {
+            if (in_array($ext, array('pdf','jpg','jpeg','png'))) {
                 $fn = uniqid().'.'.$ext;
                 if (move_uploaded_file($_FILES['document']['tmp_name'], $p.$fn)) {
                     $data['document_path'] = 'uploads/leave_docs/'.$fn;
@@ -105,7 +105,7 @@ class Leave extends Employee_Controller {
             $unit = $this->input->post('leave_unit') ?: 'day';
             $days = $unit === 'hour' ? 0 : max(1, round((strtotime($ed)-strtotime($sd))/86400)+1);
 
-            $data = [
+            $data = array(
                 'leave_type_id' => $this->input->post('leave_type_id'),
                 'start_date'    => $sd,
                 'end_date'      => $ed,
@@ -114,7 +114,7 @@ class Leave extends Employee_Controller {
                 'reason'        => $this->input->post('reason', TRUE),
                 'total_hours'   => 0,
                 'updated_at'    => date('Y-m-d H:i:s'),
-            ];
+            );
 
             if ($unit === 'hour') {
                 $sh = $this->input->post('leave_start_time');
@@ -130,7 +130,7 @@ class Leave extends Employee_Controller {
                 $p = FCPATH.'uploads/leave_docs/';
                 if (!is_dir($p)) mkdir($p, 0755, true);
                 $ext = strtolower(pathinfo($_FILES['document']['name'], PATHINFO_EXTENSION));
-                if (in_array($ext, ['pdf','jpg','jpeg','png'])) {
+                if (in_array($ext, array('pdf','jpg','jpeg','png'))) {
                     $fn = uniqid().'.'.$ext;
                     if (move_uploaded_file($_FILES['document']['tmp_name'], $p.$fn)) {
                         $data['document_path'] = 'uploads/leave_docs/'.$fn;
@@ -143,12 +143,12 @@ class Leave extends Employee_Controller {
             redirect('employee/leave');
         }
 
-        $this->render('employee/leave/edit', [
+        $this->render('employee/leave/edit', array(
             'title'       => 'แก้ไขคำขอลา',
             'page_title'  => 'แก้ไขคำขอลา',
             'req'         => $req,
             'leave_types' => $this->Leave_model->get_types(),
-        ]);
+        ));
     }
 
     // ── ลบ (เฉพาะของตัวเอง, เฉพาะ pending) ──────────────
@@ -159,7 +159,7 @@ class Leave extends Employee_Controller {
             $this->session->set_flashdata('error', 'ไม่พบข้อมูล หรือไม่ใช่คำขอของคุณ');
             redirect('employee/leave');
         }
-        if (!in_array($req->status, ['pending','cancelled'])) {
+        if (!in_array($req->status, array('pending','cancelled'))) {
             $this->session->set_flashdata('error', 'ไม่สามารถลบคำขอที่อนุมัติ/ปฏิเสธแล้วได้');
             redirect('employee/leave');
         }

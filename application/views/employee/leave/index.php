@@ -14,8 +14,8 @@
         </thead>
         <tbody>
           <?php if(!empty($requests)):foreach($requests as $r):
-            $sc=['pending'=>'warning text-dark','approved'=>'success','rejected'=>'danger','cancelled'=>'secondary'];
-            $sl=['pending'=>'รอการอนุมัติ','approved'=>'อนุมัติแล้ว','rejected'=>'ปฏิเสธ','cancelled'=>'ยกเลิก'];
+            $sc=array('pending'=>'warning text-dark','approved'=>'success','rejected'=>'danger','cancelled'=>'secondary');
+            $sl=array('pending'=>'รอการอนุมัติ','approved'=>'อนุมัติแล้ว','rejected'=>'ปฏิเสธ','cancelled'=>'ยกเลิก');
           ?>
           <tr>
             <td><span class="badge bg-info text-dark"><?=$r->leave_type_name?></span></td>

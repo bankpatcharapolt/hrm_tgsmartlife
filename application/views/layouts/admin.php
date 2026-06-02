@@ -125,7 +125,7 @@
     </div>
   </div>
   <div class="px-4 pt-3">
-    <?php foreach(['success'=>'check-circle','error'=>'exclamation-circle','warning'=>'exclamation-triangle','info'=>'info-circle'] as $t=>$ic):if(!empty(${'flash_'.$t}??'')):?>
+    <?php foreach(array('success'=>'check-circle','error'=>'exclamation-circle','warning'=>'exclamation-triangle','info'=>'info-circle') as $t=>$ic):if(!empty(${'flash_'.$t}??'')):?>
     <div class="alert alert-<?=$t==='error'?'danger':$t?> alert-dismissible fade show">
       <i class="bi bi-<?=$ic?> me-2"></i><?=${'flash_'.$t}?>
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>

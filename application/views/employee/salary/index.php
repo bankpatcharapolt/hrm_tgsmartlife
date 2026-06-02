@@ -13,7 +13,7 @@
             <tbody>
               <?php if(!empty($records)):foreach($records as $r):$d=$r->social_security_deduct+$r->tax_deduct+$r->other_deduct+$r->absent_deduct+$r->late_deduct;?>
               <tr>
-                <td style="font-size:.875rem"><?php $mn=['1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.','5'=>'พ.ค.','6'=>'มิ.ย.','7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.','10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.']; echo $mn[$r->salary_month].' '.$r->salary_year;?></td>
+                <td style="font-size:.875rem"><?php $mn=array('1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.','5'=>'พ.ค.','6'=>'มิ.ย.','7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.','10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.'); echo $mn[$r->salary_month].' '.$r->salary_year;?></td>
                 <td class="text-success">฿<?=number_format($r->gross_salary,2)?></td>
                 <td class="text-danger">-฿<?=number_format($d,2)?></td>
                 <td class="fw-semibold text-primary">฿<?=number_format($r->net_salary,2)?></td>
@@ -51,7 +51,7 @@
           <?php if(!empty($slips)):foreach($slips as $s):?>
           <a href="<?=base_url($s->file_path)?>" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
             <i class="bi bi-file-earmark-pdf text-danger"></i>
-            <div class="flex-fill"><div style="font-size:.83rem"><?php $mn=['1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.','5'=>'พ.ค.','6'=>'มิ.ย.','7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.','10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.']; echo 'สลิป '.$mn[$s->slip_month].' '.$s->slip_year;?></div><div style="font-size:.72rem;color:#6b7280"><?=htmlspecialchars($s->file_name)?></div></div>
+            <div class="flex-fill"><div style="font-size:.83rem"><?php $mn=array('1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.','5'=>'พ.ค.','6'=>'มิ.ย.','7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.','10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.'); echo 'สลิป '.$mn[$s->slip_month].' '.$s->slip_year;?></div><div style="font-size:.72rem;color:#6b7280"><?=htmlspecialchars($s->file_name)?></div></div>
             <i class="bi bi-download text-muted"></i>
           </a>
           <?php endforeach;else:?><div class="list-group-item text-center text-muted py-3 small">ยังไม่มีสลิปเงินเดือน</div><?php endif;?>

@@ -1,21 +1,21 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 class MY_Controller extends CI_Controller {
     protected $current_user = null;
-    protected $view_data = [];
+    protected $view_data = array();
     protected $layout = 'layouts/main';
     public function __construct() {
         parent::__construct();
-        $this->load->model(['User_model','Notification_model']);
-        $this->load->helper(['url','form']);
+        $this->load->model(array('User_model','Notification_model'));
+        $this->load->helper(array('url','form'));
         if ($this->session->userdata('logged_in')) {
             $this->current_user = (object)$this->session->userdata();
         }
-        $unread = 0; $notifs = [];
+        $unread = 0; $notifs = array();
         if ($this->current_user && !empty($this->current_user->user_id)) {
             $unread = $this->Notification_model->count_unread($this->current_user->user_id);
             $notifs = $this->Notification_model->get_recent($this->current_user->user_id, 5);
         }
-        $this->view_data = [
+        $this->view_data = array(
             'current_user'          => $this->current_user,
             'unread_notifications'  => $unread,
             'recent_notifications'  => $notifs,
@@ -23,7 +23,7 @@ class MY_Controller extends CI_Controller {
             'flash_error'           => $this->session->flashdata('error'),
             'flash_warning'         => $this->session->flashdata('warning'),
             'flash_info'            => $this->session->flashdata('info'),
-        ];
+        );
     }
     protected function require_login() {
         if (!$this->session->userdata('logged_in')) {
@@ -71,23 +71,23 @@ class MY_Controller extends CI_Controller {
     }
     protected function json_ok($data = null, $msg = '') {
         $this->output->set_content_type('application/json', 'utf-8')
-            ->set_output(json_encode(['success'=>true,'message'=>$msg,'data'=>$data], JSON_UNESCAPED_UNICODE));
+            ->set_output(json_encode(array('success'=>true,'message'=>$msg,'data'=>$data), JSON_UNESCAPED_UNICODE));
     }
     protected function json_err($msg, $code = 400) {
         $this->output->set_status_header($code)->set_content_type('application/json', 'utf-8')
-            ->set_output(json_encode(['success'=>false,'message'=>$msg], JSON_UNESCAPED_UNICODE));
+            ->set_output(json_encode(array('success'=>false,'message'=>$msg), JSON_UNESCAPED_UNICODE));
     }
     protected function show_403() {
         $this->output->set_status_header(403);
-        $this->load->view('errors/403', array_merge($this->view_data, ['title'=>'ไม่มีสิทธิ์เข้าถึง']));
+        $this->load->view('errors/403', array_merge($this->view_data, array('title'=>'ไม่มีสิทธิ์เข้าถึง')));
         exit;
     }
 }
 class Admin_Controller extends MY_Controller {
-    public function __construct() { parent::__construct(); $this->require_role(['admin','owner']); $this->layout = 'layouts/admin'; }
+    public function __construct() { parent::__construct(); $this->require_role(array('admin','owner')); $this->layout = 'layouts/admin'; }
 }
 class Manager_Controller extends MY_Controller {
-    public function __construct() { parent::__construct(); $this->require_role(['manager','admin','owner']); $this->layout = 'layouts/main'; }
+    public function __construct() { parent::__construct(); $this->require_role(array('manager','admin','owner')); $this->layout = 'layouts/main'; }
 }
 class Employee_Controller extends MY_Controller {
     public function __construct() { parent::__construct(); $this->require_login(); $this->layout = 'layouts/main'; }

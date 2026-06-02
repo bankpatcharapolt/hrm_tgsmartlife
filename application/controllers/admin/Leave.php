@@ -9,30 +9,30 @@ class Leave extends Admin_Controller {
 
     // ── รายการคำขอลา ──────────────────────────────────────
     public function index() {
-        $f = [
+        $f = array(
             'status'  => $this->input->get('status'),
             'dept_id' => $this->input->get('dept'),
             'year'    => $this->input->get('year') ?: date('Y'),
-        ];
-        $this->render('admin/leave/index', [
+        );
+        $this->render('admin/leave/index', array(
             'title'       => 'จัดการการลา',
             'page_title'  => 'จัดการการลา',
             'requests'    => $this->Leave_model->get_requests($f, 100),
             'departments' => $this->User_model->get_all_departments(),
             'leave_types' => $this->Leave_model->get_types(),
             'filters'     => $f,
-        ]);
+        ));
     }
 
     // ── สร้างคำขอลาแทนพนักงาน (Admin only) ──────────────
     public function create() {
-        $this->render('admin/leave/form', [
+        $this->render('admin/leave/form', array(
             'title'       => 'สร้างคำขอลา',
             'page_title'  => 'สร้างคำขอลาให้พนักงาน',
             'leave_types' => $this->Leave_model->get_types(),
-            'employees'   => $this->User_model->get_all(['status'=>'active'], 300),
+            'employees'   => $this->User_model->get_all(array('status'=>'active'), 300),
             'req'         => null,
-        ]);
+        ));
     }
 
     public function store() {
@@ -43,7 +43,7 @@ class Leave extends Admin_Controller {
         $unit = $this->input->post('leave_unit') ?: 'day';
         $days = max(1, round((strtotime($ed) - strtotime($sd)) / 86400) + 1);
 
-        $data = [
+        $data = array(
             'user_id'       => $this->input->post('user_id'),
             'leave_type_id' => $this->input->post('leave_type_id'),
             'start_date'    => $sd,
@@ -52,7 +52,7 @@ class Leave extends Admin_Controller {
             'leave_unit'    => $unit,
             'reason'        => $this->input->post('reason', TRUE),
             'status'        => $this->input->post('status') ?: 'pending',
-        ];
+        );
 
         // ลาชั่วโมง
         if ($unit === 'hour') {
@@ -70,7 +70,7 @@ class Leave extends Admin_Controller {
             $p = FCPATH.'uploads/leave_docs/';
             if (!is_dir($p)) mkdir($p, 0755, true);
             $ext = strtolower(pathinfo($_FILES['document']['name'], PATHINFO_EXTENSION));
-            if (in_array($ext, ['pdf','jpg','jpeg','png'])) {
+            if (in_array($ext, array('pdf','jpg','jpeg','png'))) {
                 $fn = uniqid().'.'.$ext;
                 if (move_uploaded_file($_FILES['document']['tmp_name'], $p.$fn)) {
                     $data['document_path'] = 'uploads/leave_docs/'.$fn;
@@ -87,15 +87,15 @@ class Leave extends Admin_Controller {
         $id = $this->Leave_model->create($data);
         if ($id) {
             // แจ้งเตือนพนักงาน
-            $status_th = ['pending'=>'รอการอนุมัติ','approved'=>'อนุมัติแล้ว','rejected'=>'ปฏิเสธ'];
-            $this->Notification_model->create([
+            $status_th = array('pending'=>'รอการอนุมัติ','approved'=>'อนุมัติแล้ว','rejected'=>'ปฏิเสธ');
+            $this->Notification_model->create(array(
                 'user_id'   => $data['user_id'],
                 'sender_id' => $this->current_user->user_id,
                 'type'      => $data['status'] === 'approved' ? 'leave_approved' : 'leave_request',
                 'title'     => 'มีการบันทึกการลาให้คุณ',
                 'message'   => 'Admin บันทึกการลา '.$sd.' ถึง '.$ed.' สถานะ: '.($status_th[$data['status']]??$data['status']),
                 'link'      => base_url('employee/leave'),
-            ]);
+            ));
             $this->User_model->log($this->current_user->user_id, 'create_leave', 'leave', 'สร้างการลา user_id:'.$data['user_id']);
             $this->session->set_flashdata('success', 'สร้างคำขอลาสำเร็จ');
         } else {
@@ -115,7 +115,7 @@ class Leave extends Admin_Controller {
             $unit = $this->input->post('leave_unit') ?: 'day';
             $days = max(1, round((strtotime($ed) - strtotime($sd)) / 86400) + 1);
 
-            $data = [
+            $data = array(
                 'user_id'       => $this->input->post('user_id'),
                 'leave_type_id' => $this->input->post('leave_type_id'),
                 'start_date'    => $sd,
@@ -126,7 +126,7 @@ class Leave extends Admin_Controller {
                 'status'        => $this->input->post('status') ?: $req->status,
                 'approver_note' => $this->input->post('approver_note', TRUE),
                 'updated_at'    => date('Y-m-d H:i:s'),
-            ];
+            );
 
             // ลาชั่วโมง
             if ($unit === 'hour') {
@@ -140,7 +140,7 @@ class Leave extends Admin_Controller {
             }
 
             // update approved_by ถ้าเปลี่ยนสถานะ
-            if (in_array($data['status'], ['approved','rejected']) && $data['status'] !== $req->status) {
+            if (in_array($data['status'], array('approved','rejected')) && $data['status'] !== $req->status) {
                 $data['approved_by'] = $this->current_user->user_id;
                 $data['approved_at'] = date('Y-m-d H:i:s');
             }
@@ -150,7 +150,7 @@ class Leave extends Admin_Controller {
                 $p = FCPATH.'uploads/leave_docs/';
                 if (!is_dir($p)) mkdir($p, 0755, true);
                 $ext = strtolower(pathinfo($_FILES['document']['name'], PATHINFO_EXTENSION));
-                if (in_array($ext, ['pdf','jpg','jpeg','png'])) {
+                if (in_array($ext, array('pdf','jpg','jpeg','png'))) {
                     $fn = uniqid().'.'.$ext;
                     if (move_uploaded_file($_FILES['document']['tmp_name'], $p.$fn)) {
                         $data['document_path'] = 'uploads/leave_docs/'.$fn;
@@ -163,32 +163,32 @@ class Leave extends Admin_Controller {
 
             // แจ้งเตือนพนักงานถ้าเปลี่ยนสถานะ
             if ($data['status'] !== $req->status) {
-                $type_map = ['approved'=>'leave_approved','rejected'=>'leave_rejected'];
-                $title_map = ['approved'=>'คำขอลาได้รับการอนุมัติ','rejected'=>'คำขอลาถูกปฏิเสธ'];
+                $type_map = array('approved'=>'leave_approved','rejected'=>'leave_rejected');
+                $title_map = array('approved'=>'คำขอลาได้รับการอนุมัติ','rejected'=>'คำขอลาถูกปฏิเสธ');
                 $ntype = $type_map[$data['status']] ?? 'general';
                 $ntitle = $title_map[$data['status']] ?? 'สถานะการลาเปลี่ยนแปลง';
                 $note = !empty($data['approver_note']) ? ' เหตุผล: '.$data['approver_note'] : '';
-                $this->Notification_model->create([
+                $this->Notification_model->create(array(
                     'user_id'   => $req->user_id,
                     'sender_id' => $this->current_user->user_id,
                     'type'      => $ntype,
                     'title'     => $ntitle,
                     'message'   => 'การลาวันที่ '.$sd.' ถึง '.$ed.$note,
                     'link'      => base_url('employee/leave'),
-                ]);
+                ));
             }
 
             $this->session->set_flashdata('success', 'แก้ไขสำเร็จ');
             redirect('admin/leave');
         }
 
-        $this->render('admin/leave/form', [
+        $this->render('admin/leave/form', array(
             'title'       => 'แก้ไขคำขอลา',
             'page_title'  => 'แก้ไขคำขอลา',
             'leave_types' => $this->Leave_model->get_types(),
-            'employees'   => $this->User_model->get_all(['status'=>'active'], 300),
+            'employees'   => $this->User_model->get_all(array('status'=>'active'), 300),
             'req'         => $req,
-        ]);
+        ));
     }
 
     // ── ลบคำขอลา ──────────────────────────────────────────
@@ -211,14 +211,14 @@ class Leave extends Admin_Controller {
         $note = $this->input->post('note', TRUE);
         $req  = $this->Leave_model->get_by_id($id);
         if ($this->Leave_model->approve($id, $this->current_user->user_id, $note) && $req) {
-            $this->Notification_model->create([
+            $this->Notification_model->create(array(
                 'user_id'   => $req->user_id,
                 'sender_id' => $this->current_user->user_id,
                 'type'      => 'leave_approved',
                 'title'     => 'คำขอลาได้รับการอนุมัติ',
                 'message'   => 'การลาวันที่ '.$req->start_date.' ถึง '.$req->end_date.' อนุมัติแล้ว',
                 'link'      => base_url('employee/leave'),
-            ]);
+            ));
         }
         $this->session->set_flashdata('success', 'อนุมัติสำเร็จ');
         redirect('admin/leave');
@@ -228,14 +228,14 @@ class Leave extends Admin_Controller {
         $note = $this->input->post('note', TRUE);
         $req  = $this->Leave_model->get_by_id($id);
         if ($this->Leave_model->reject($id, $this->current_user->user_id, $note) && $req) {
-            $this->Notification_model->create([
+            $this->Notification_model->create(array(
                 'user_id'   => $req->user_id,
                 'sender_id' => $this->current_user->user_id,
                 'type'      => 'leave_rejected',
                 'title'     => 'คำขอลาถูกปฏิเสธ',
                 'message'   => 'การลาวันที่ '.$req->start_date.' ถูกปฏิเสธ'.($note ? ': '.$note : ''),
                 'link'      => base_url('employee/leave'),
-            ]);
+            ));
         }
         $this->session->set_flashdata('warning', 'ปฏิเสธสำเร็จ');
         redirect('admin/leave');

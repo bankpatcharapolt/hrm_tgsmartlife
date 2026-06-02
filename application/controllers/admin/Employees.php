@@ -2,13 +2,13 @@
 class Employees extends Admin_Controller {
     public function __construct() { parent::__construct(); $this->require_permission('can_manage_employees'); $this->load->library('upload'); }
     public function index() {
-        $f=['search'=>$this->input->get('search',TRUE),'department_id'=>$this->input->get('dept'),'role_id'=>$this->input->get('role'),'status'=>$this->input->get('status')?:'active'];
+        $f=array('search'=>$this->input->get('search',TRUE),'department_id'=>$this->input->get('dept'),'role_id'=>$this->input->get('role'),'status'=>$this->input->get('status')?:'active');
         $pp=20; $pg=max(1,(int)($this->input->get('page')?:1)); $off=($pg-1)*$pp; $total=$this->User_model->count_all($f);
-        $this->render('admin/employees/index',['title'=>'จัดการพนักงาน','page_title'=>'จัดการพนักงาน',
+        $this->render('admin/employees/index',array('title'=>'จัดการพนักงาน','page_title'=>'จัดการพนักงาน',
             'employees'=>$this->User_model->get_all($f,$pp,$off),'departments'=>$this->User_model->get_all_departments(),
-            'roles'=>$this->User_model->get_all_roles(),'filters'=>$f,'total'=>$total,'pp'=>$pp,'page'=>$pg,'total_pages'=>ceil($total/$pp)]);
+            'roles'=>$this->User_model->get_all_roles(),'filters'=>$f,'total'=>$total,'pp'=>$pp,'page'=>$pg,'total_pages'=>ceil($total/$pp)));
     }
-    public function create() { $this->render('admin/employees/form',['title'=>'เพิ่มพนักงาน','page_title'=>'เพิ่มพนักงานใหม่','departments'=>$this->User_model->get_all_departments(),'roles'=>$this->User_model->get_all_roles(),'teams'=>$this->db->where('is_active',1)->get('teams')->result(),'emp'=>null]); }
+    public function create() { $this->render('admin/employees/form',array('title'=>'เพิ่มพนักงาน','page_title'=>'เพิ่มพนักงานใหม่','departments'=>$this->User_model->get_all_departments(),'roles'=>$this->User_model->get_all_roles(),'teams'=>$this->db->where('is_active',1)->get('teams')->result(),'emp'=>null)); }
     public function store() {
         if ($this->input->method()!=='post') redirect('admin/employees');
         $d=$this->_fd(); if(!$d) redirect('admin/employees/create');
@@ -17,7 +17,7 @@ class Employees extends Admin_Controller {
         if ($id) { $this->User_model->log($this->current_user->user_id,'create_employee','employees',$d['employee_id']); $this->session->set_flashdata('success','เพิ่มพนักงานสำเร็จ'); redirect('admin/employees'); }
         $this->session->set_flashdata('error','เกิดข้อผิดพลาด'); redirect('admin/employees/create');
     }
-    public function edit($id) { $e=$this->User_model->get_by_id($id); if(!$e){$this->session->set_flashdata('error','ไม่พบข้อมูล');redirect('admin/employees');} $this->render('admin/employees/form',['title'=>'แก้ไขพนักงาน','page_title'=>'แก้ไขพนักงาน','departments'=>$this->User_model->get_all_departments(),'roles'=>$this->User_model->get_all_roles(),'teams'=>$this->db->where('is_active',1)->get('teams')->result(),'emp'=>$e]); }
+    public function edit($id) { $e=$this->User_model->get_by_id($id); if(!$e){$this->session->set_flashdata('error','ไม่พบข้อมูล');redirect('admin/employees');} $this->render('admin/employees/form',array('title'=>'แก้ไขพนักงาน','page_title'=>'แก้ไขพนักงาน','departments'=>$this->User_model->get_all_departments(),'roles'=>$this->User_model->get_all_roles(),'teams'=>$this->db->where('is_active',1)->get('teams')->result(),'emp'=>$e)); }
     public function update($id) {
         if ($this->input->method()!=='post') redirect('admin/employees');
         $d=$this->_fd($id); if(!$d) redirect('admin/employees/edit/'.$id);
@@ -25,13 +25,13 @@ class Employees extends Admin_Controller {
         $this->User_model->update($id,$d); $this->User_model->log($this->current_user->user_id,'update_employee','employees','ID:'.$id);
         $this->session->set_flashdata('success','แก้ไขสำเร็จ'); redirect('admin/employees');
     }
-    public function view($id) { $this->load->model('Attendance_model'); $e=$this->User_model->get_by_id($id); if(!$e){redirect('admin/employees');} $this->render('admin/employees/view',['title'=>'ข้อมูลพนักงาน','page_title'=>'ข้อมูลพนักงาน','emp'=>$e,'att_sum'=>$this->Attendance_model->get_summary($id,date('Y'),date('n'))]); }
-    public function deactivate($id) { $this->User_model->update($id,['status'=>'inactive','end_date'=>date('Y-m-d')]); $this->session->set_flashdata('success','ปิดการใช้งานสำเร็จ'); redirect('admin/employees'); }
+    public function view($id) { $this->load->model('Attendance_model'); $e=$this->User_model->get_by_id($id); if(!$e){redirect('admin/employees');} $this->render('admin/employees/view',array('title'=>'ข้อมูลพนักงาน','page_title'=>'ข้อมูลพนักงาน','emp'=>$e,'att_sum'=>$this->Attendance_model->get_summary($id,date('Y'),date('n')))); }
+    public function deactivate($id) { $this->User_model->update($id,array('status'=>'inactive','end_date'=>date('Y-m-d'))); $this->session->set_flashdata('success','ปิดการใช้งานสำเร็จ'); redirect('admin/employees'); }
     private function _fd($ex=0) {
         $eid=trim($this->input->post('employee_id',TRUE)); $un=trim($this->input->post('username',TRUE));
         if ($this->User_model->employee_id_exists($eid,$ex)) { $this->session->set_flashdata('error','รหัสพนักงานซ้ำ'); return false; }
         if ($this->User_model->username_exists($un,$ex)) { $this->session->set_flashdata('error','ชื่อผู้ใช้ซ้ำ'); return false; }
-        $d=['employee_id'=>$eid,'username'=>$un,'role_id'=>$this->input->post('role_id'),
+        $d=array('employee_id'=>$eid,'username'=>$un,'role_id'=>$this->input->post('role_id'),
             'department_id'=>$this->input->post('department_id')?:null,
             'team_id'=>$this->input->post('team_id')?:null,
             'title'=>$this->input->post('title',TRUE),
@@ -59,13 +59,13 @@ class Employees extends Admin_Controller {
             'tax_id'=>$this->input->post('tax_id',TRUE),
             'payment_channel'=>$this->input->post('payment_channel',TRUE),
             'bank_account'=>$this->input->post('bank_account',TRUE),
-            'status'=>$this->input->post('status')?:'active'];
+            'status'=>$this->input->post('status')?:'active');
         $pw=$this->input->post('password'); if($pw) $d['password']=$pw;
         return $d;
     }
     private function _upload($field,$subdir) {
         $p=FCPATH.$subdir.'/'; if(!is_dir($p)) mkdir($p,0755,true);
-        $this->upload->initialize(['upload_path'=>$p,'allowed_types'=>'jpg|jpeg|png|webp','max_size'=>2048,'encrypt_name'=>TRUE]);
+        $this->upload->initialize(array('upload_path'=>$p,'allowed_types'=>'jpg|jpeg|png|webp','max_size'=>2048,'encrypt_name'=>TRUE));
         if ($this->upload->do_upload($field)) return $subdir.'/'.$this->upload->data('file_name');
         return false;
     }

@@ -5,7 +5,7 @@
 </div>
 <div class="card mb-3">
   <div class="card-body py-2">
-    <?=form_open('admin/employees',['method'=>'GET','class'=>'row g-2 align-items-end'])?>
+    <?=form_open('admin/employees',array('method'=>'GET','class'=>'row g-2 align-items-end'))?>
       <div class="col-md-3"><input type="text" name="search" class="form-control form-control-sm" placeholder="ชื่อ / รหัส / เบอร์โทร" value="<?=htmlspecialchars($filters['search']??'')?>"></div>
       <div class="col-md-2"><select name="dept" class="form-select form-select-sm"><option value="">-- ทุกแผนก --</option><?php foreach($departments as $d):?><option value="<?=$d->id?>" <?=($filters['department_id']??'')==$d->id?'selected':''?>><?=$d->name?></option><?php endforeach;?></select></div>
       <div class="col-md-2"><select name="role" class="form-select form-select-sm"><option value="">-- ทุกบทบาท --</option><?php foreach($roles as $r):?><option value="<?=$r->id?>" <?=($filters['role_id']??'')==$r->id?'selected':''?>><?=$r->name?></option><?php endforeach;?></select></div>
@@ -46,4 +46,4 @@
     </div>
   </div>
 </div>
-<?php if($total_pages>1):?><nav class="mt-3"><ul class="pagination pagination-sm justify-content-center mb-0"><?php for($p=1;$p<=$total_pages;$p++):?><li class="page-item <?=$p==$page?'active':''?>"><a class="page-link" href="?<?=http_build_query(array_merge($filters,['page'=>$p]))?>"><?=$p?></a></li><?php endfor;?></ul></nav><?php endif;?>
+<?php if($total_pages>1):?><nav class="mt-3"><ul class="pagination pagination-sm justify-content-center mb-0"><?php for($p=1;$p<=$total_pages;$p++):?><li class="page-item <?=$p==$page?'active':''?>"><a class="page-link" href="?<?=http_build_query(array_merge($filters,array('page'=>$p)))?>"><?=$p?></a></li><?php endfor;?></ul></nav><?php endif;?>

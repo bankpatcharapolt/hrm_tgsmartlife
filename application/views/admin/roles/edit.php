@@ -13,7 +13,7 @@
       <div class="col-md-4"><label class="form-label">โควต้าลาพักร้อน (วัน)</label><input type="number" name="leave_quota_vacation" class="form-control" value="<?=$r->leave_quota_vacation?>" min="0"></div>
       <div class="col-12"><div class="fw-semibold small text-muted mb-2">สิทธิ์การเข้าถึง</div>
         <div class="row g-2">
-          <?php $pc=['can_checkin'=>'ลงเวลาเข้า-ออกงาน','can_view_own_salary'=>'ดูเงินเดือนตัวเอง','can_approve_leave'=>'อนุมัติการลา','can_manage_employees'=>'จัดการข้อมูลพนักงาน','can_view_sales'=>'ดูรายงานยอดขาย','can_send_notifications'=>'ส่งการแจ้งเตือน','can_manage_salary'=>'จัดการเงินเดือน','can_upload_documents'=>'อัปโหลดเอกสาร','can_view_reports'=>'ดูรายงานทั้งหมด','can_monitor_attendance'=>'ตรวจสอบการเข้างาน']; foreach($pc as $key=>$label):?>
+          <?php $pc=array('can_checkin'=>'ลงเวลาเข้า-ออกงาน','can_view_own_salary'=>'ดูเงินเดือนตัวเอง','can_approve_leave'=>'อนุมัติการลา','can_manage_employees'=>'จัดการข้อมูลพนักงาน','can_view_sales'=>'ดูรายงานยอดขาย','can_send_notifications'=>'ส่งการแจ้งเตือน','can_manage_salary'=>'จัดการเงินเดือน','can_upload_documents'=>'อัปโหลดเอกสาร','can_view_reports'=>'ดูรายงานทั้งหมด','can_monitor_attendance'=>'ตรวจสอบการเข้างาน'); foreach($pc as $key=>$label):?>
           <div class="col-md-6"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="<?=$key?>" id="<?=$key?>" value="1" <?=$r->{$key}?'checked':''?>><label class="form-check-label small" for="<?=$key?>"><?=$label?></label></div></div>
           <?php endforeach;?>
         </div>

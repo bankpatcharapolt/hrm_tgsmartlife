@@ -5,8 +5,8 @@ class Auth extends CI_Controller
     {
         parent::__construct();
         $this->load->model('User_model');
-        $this->load->library(['session', 'form_validation']);
-        $this->load->helper(['url', 'form']);
+        $this->load->library(array('session', 'form_validation'));
+        $this->load->helper(array('url', 'form'));
     }
     public function index()
     {
@@ -18,7 +18,7 @@ class Auth extends CI_Controller
         if ($this->session->userdata('logged_in'))
         
             redirect($this->_dash());
-        $this->load->view('auth/login', ['title' => 'เข้าสู่ระบบ | ระบบ HRM', 'error' => $this->session->flashdata('error'), 'success' => $this->session->flashdata('success')]);
+        $this->load->view('auth/login', array('title' => 'เข้าสู่ระบบ | ระบบ HRM', 'error' => $this->session->flashdata('error'), 'success' => $this->session->flashdata('success')));
     }
     public function process_login()
     {     
@@ -36,7 +36,7 @@ class Auth extends CI_Controller
             redirect('auth/login');
         }
 
-        $this->session->set_userdata([
+        $this->session->set_userdata(array(
             'user_id' => $user->id,
             'employee_id' => $user->employee_id,
             'username' => $user->username,
@@ -61,7 +61,7 @@ class Auth extends CI_Controller
             'is_full_access' => (bool) $user->is_full_access,
             'logged_in' => TRUE,
             'login_time' => time()
-        ]);
+        ));
         $this->User_model->log($user->id, 'login', 'auth', 'เข้าสู่ระบบ: ' . $u);
         redirect($this->_dash($user->role_slug));
     }
@@ -77,6 +77,6 @@ class Auth extends CI_Controller
     {
         if (!$slug)
             $slug = $this->session->userdata('role_slug');
-        return in_array($slug, ['owner', 'admin']) ? site_url('admin/dashboard') : (($slug === 'manager') ? site_url('manager/leave') : site_url('employee/dashboard'));
+        return in_array($slug, array('owner', 'admin')) ? site_url('admin/dashboard') : (($slug === 'manager') ? site_url('manager/leave') : site_url('employee/dashboard'));
     }
 }

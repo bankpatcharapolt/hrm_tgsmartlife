@@ -3,7 +3,7 @@ class Attendance extends Admin_Controller {
     public function __construct() {
         parent::__construct();
         $this->require_permission('can_monitor_attendance');
-        $this->load->model(['Attendance_model','Shift_model','Leave_model']);
+        $this->load->model(array('Attendance_model','Shift_model','Leave_model'));
     }
     public function index() {
         $y    = $this->input->get('year')  ?: date('Y');
@@ -11,7 +11,7 @@ class Attendance extends Admin_Controller {
         $dept = $this->input->get('dept');
         $sid  = $this->input->get('shift_id');
         $records = $this->Attendance_model->get_all_monthly($y,$m,$dept,$sid);
-        $this->render('admin/attendance/index',[
+        $this->render('admin/attendance/index',array(
             'title'       => 'รายงานการเข้างาน',
             'page_title'  => 'รายงานการเข้างาน',
             'records'     => $records,
@@ -19,13 +19,13 @@ class Attendance extends Admin_Controller {
             'shifts'      => $this->Shift_model->get_all(),
             'leave_types' => $this->Leave_model->get_types(),
             'year'=>$y, 'month'=>$m, 'dept'=>$dept, 'shift_id'=>$sid,
-        ]);
+        ));
     }
     // บันทึกด้วยตนเอง (รองรับลาชั่วโมง)
     public function manual() {
         if ($this->input->method()==='post') {
             $status = $this->input->post('status') ?: 'present';
-            $data = [
+            $data = array(
                 'user_id'        => $this->input->post('user_id'),
                 'shift_id'       => $this->input->post('shift_id') ?: null,
                 'date'           => $this->input->post('date'),
@@ -36,7 +36,7 @@ class Attendance extends Admin_Controller {
                 'is_late'        => 0,
                 'late_minutes'   => 0,
                 'ot_hours'       => (float)$this->input->post('ot_hours'),
-            ];
+            );
             // ลาชั่วโมง
             if ($status === 'leave') {
                 $leave_unit = $this->input->post('leave_unit') ?: 'day';
@@ -60,13 +60,13 @@ class Attendance extends Admin_Controller {
             }
             redirect('admin/attendance');
         }
-        $this->render('admin/attendance/manual',[
+        $this->render('admin/attendance/manual',array(
             'title'       => 'บันทึกการเข้างาน',
             'page_title'  => 'บันทึกการเข้างานด้วยตนเอง',
-            'employees'   => $this->User_model->get_all(['status'=>'active'],300),
+            'employees'   => $this->User_model->get_all(array('status'=>'active'),300),
             'shifts'      => $this->Shift_model->get_all(),
             'leave_types' => $this->Leave_model->get_types(),
-        ]);
+        ));
     }
     // แก้ไขรายการ
     public function edit($id) {
@@ -74,14 +74,14 @@ class Attendance extends Admin_Controller {
         if (!$rec) { $this->session->set_flashdata('error','ไม่พบข้อมูล'); redirect('admin/attendance'); }
         if ($this->input->method()==='post') {
             $status = $this->input->post('status') ?: 'present';
-            $data = [
+            $data = array(
                 'shift_id'       => $this->input->post('shift_id') ?: null,
                 'check_in_time'  => $this->input->post('check_in')  ?: null,
                 'check_out_time' => $this->input->post('check_out') ?: null,
                 'status'         => $status,
                 'note'           => $this->input->post('note',TRUE),
                 'ot_hours'       => (float)$this->input->post('ot_hours'),
-            ];
+            );
             if ($status === 'leave') {
                 $leave_unit = $this->input->post('leave_unit') ?: 'day';
                 $data['leave_type_id'] = $this->input->post('leave_type_id') ?: null;
@@ -102,13 +102,13 @@ class Attendance extends Admin_Controller {
             }
             $this->session->set_flashdata('error','เกิดข้อผิดพลาด');
         }
-        $this->render('admin/attendance/edit',[
+        $this->render('admin/attendance/edit',array(
             'title'       => 'แก้ไขการเข้างาน',
             'page_title'  => 'แก้ไขการเข้างาน',
             'rec'         => $rec,
             'shifts'      => $this->Shift_model->get_all(),
             'leave_types' => $this->Leave_model->get_types(),
-        ]);
+        ));
     }
     // ลบรายการ
     public function delete($id) {
@@ -122,15 +122,15 @@ class Attendance extends Admin_Controller {
     }
     // ตั้งค่ากะ
     public function shifts() {
-        $this->render('admin/attendance/shifts',[
+        $this->render('admin/attendance/shifts',array(
             'title'      => 'ตั้งค่ากะการทำงาน',
             'page_title' => 'จัดการกะการทำงาน',
             'shifts'     => $this->Shift_model->get_all(false),
-        ]);
+        ));
     }
     public function store_shift() {
         if ($this->input->method()!=='post') redirect('admin/attendance/shifts');
-        $data = [
+        $data = array(
             'name'                    => $this->input->post('name',TRUE),
             'start_time'              => $this->input->post('start_time'),
             'end_time'                => $this->input->post('end_time'),
@@ -140,7 +140,7 @@ class Attendance extends Admin_Controller {
             'is_night_shift'          => $this->input->post('is_night_shift') ? 1 : 0,
             'color'                   => $this->input->post('color') ?: '#1a56db',
             'status'                  => 'active',
-        ];
+        );
         $id = $this->input->post('shift_id');
         if ($id) {
             $this->Shift_model->update($id,$data);
@@ -161,7 +161,7 @@ class Attendance extends Admin_Controller {
         if ($this->input->method()==='post') {
             $uid = $this->input->post('user_id');
             $sid = $this->input->post('shift_id') ?: null;
-            $this->User_model->update($uid, ['shift_id'=>$sid]);
+            $this->User_model->update($uid, array('shift_id'=>$sid));
             $this->session->set_flashdata('success','กำหนดกะสำเร็จ');
             redirect('admin/attendance/shifts');
         }

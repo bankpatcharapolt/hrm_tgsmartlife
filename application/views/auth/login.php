@@ -37,7 +37,7 @@ body{font-family:Sarabun,sans-serif;background:#0f172a;min-height:100vh;display:
     <h2 style="font-size:.95rem;font-weight:600;text-align:center;color:#111827;margin-bottom:1.25rem">กรุณาเข้าสู่ระบบ</h2>
     <?php if(!empty($error)):?><div class="alert alert-danger"><i class="bi bi-exclamation-circle-fill mt-1"></i><span><?=htmlspecialchars($error)?></span></div><?php endif;?>
     <?php if(!empty($success)):?><div class="alert alert-success"><i class="bi bi-check-circle-fill mt-1"></i><span><?=htmlspecialchars($success)?></span></div><?php endif;?>
-    <?=form_open('auth/process_login',['id'=>'lf','novalidate'=>''])?>
+    <?=form_open('auth/process_login',array('id'=>'lf','novalidate'=>''))?>
     <input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
     <div class="mb-3">
       <label class="form-label">ชื่อผู้ใช้</label>

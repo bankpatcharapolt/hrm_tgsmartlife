@@ -6,7 +6,7 @@
     <?php endfor;?>
   </select>
   <select class="form-select form-select-sm" style="width:auto" onchange="goF(this,'month')">
-    <?php $mn=['1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.','5'=>'พ.ค.','6'=>'มิ.ย.','7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.','10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.'];
+    <?php $mn=array('1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.','5'=>'พ.ค.','6'=>'มิ.ย.','7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.','10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.');
     foreach($mn as $k=>$v):?>
     <option value="<?=$k?>" <?=$month==$k?'selected':''?>><?=$v?></option>
     <?php endforeach;?>
@@ -50,8 +50,8 @@
             </td>
             <td>
               <?php
-              $sc=['present'=>'success','absent'=>'danger','leave'=>'info text-dark','holiday'=>'warning text-dark','half_day'=>'secondary'];
-              $sl=['present'=>'มา','absent'=>'ขาด','leave'=>'ลา','holiday'=>'วันหยุด','half_day'=>'ครึ่งวัน'];
+              $sc=array('present'=>'success','absent'=>'danger','leave'=>'info text-dark','holiday'=>'warning text-dark','half_day'=>'secondary');
+              $sl=array('present'=>'มา','absent'=>'ขาด','leave'=>'ลา','holiday'=>'วันหยุด','half_day'=>'ครึ่งวัน');
               ?>
               <span class="badge bg-<?=$sc[$r->status]??'secondary'?>"><?=$sl[$r->status]??$r->status?></span>
               <?php if($r->is_late):?><br><small class="text-danger">สาย <?=$r->late_minutes?> น.</small><?php endif;?>

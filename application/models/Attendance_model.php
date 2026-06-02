@@ -21,12 +21,12 @@ class Attendance_model extends CI_Model {
             $threshold = $shift->late_threshold_minutes ?? 15;
             if ($diff > $threshold) { $is_late=1; $lm=round($diff); }
         }
-        $this->db->insert('attendance',[
+        $this->db->insert('attendance',array(
             'user_id'=>$uid, 'shift_id'=>$shift_id??($shift?$shift->id??null:null),
             'date'=>date('Y-m-d'), 'check_in_time'=>date('Y-m-d H:i:s'),
             'is_late'=>$is_late, 'late_minutes'=>$lm, 'status'=>'present',
             'created_at'=>date('Y-m-d H:i:s'), 'updated_at'=>date('Y-m-d H:i:s')
-        ]);
+        ));
         return $this->db->insert_id();
     }
     public function checkout($att_id, $uid) {
@@ -37,10 +37,10 @@ class Attendance_model extends CI_Model {
             ? $this->Shift_model->get_by_id($att->shift_id)
             : $this->Shift_model->get_for_user($uid);
         $ot = $shift ? $this->Shift_model->calc_ot($shift, date('Y-m-d H:i:s')) : 0;
-        $this->db->where('id',$att_id)->update('attendance',[
+        $this->db->where('id',$att_id)->update('attendance',array(
             'check_out_time'=>date('Y-m-d H:i:s'), 'ot_hours'=>$ot,
             'updated_at'=>date('Y-m-d H:i:s')
-        ]);
+        ));
         return true;
     }
     public function get_monthly($uid,$y,$m) {
@@ -63,7 +63,7 @@ class Attendance_model extends CI_Model {
     }
     public function get_summary($uid,$y,$m) {
         $rows=$this->get_monthly($uid,$y,$m);
-        $s=['present'=>0,'absent'=>0,'late'=>0,'leave'=>0,'leave_hours'=>0,'total_late_min'=>0,'total_ot'=>0,'total_work_hrs'=>0];
+        $s=array('present'=>0,'absent'=>0,'late'=>0,'leave'=>0,'leave_hours'=>0,'total_late_min'=>0,'total_ot'=>0,'total_work_hrs'=>0);
         foreach($rows as $r) {
             if ($r->status==='present') $s['present']++;
             if ($r->status==='absent')  $s['absent']++;

@@ -4,7 +4,7 @@ class Attendance extends Employee_Controller {
     public function __construct() {
         parent::__construct();
         $this->require_permission('can_checkin');
-        $this->load->model(['Attendance_model','Shift_model','Leave_model']);
+        $this->load->model(array('Attendance_model','Shift_model','Leave_model'));
     }
 
     // ── รายการการเข้างานของตัวเอง ──────────────────────────
@@ -13,7 +13,7 @@ class Attendance extends Employee_Controller {
         $y   = $this->input->get('year')  ?: date('Y');
         $m   = $this->input->get('month') ?: date('n');
 
-        $this->render('employee/attendance/index', [
+        $this->render('employee/attendance/index', array(
             'title'      => 'การเข้างานของฉัน',
             'page_title' => 'ตารางการเข้างานของฉัน',
             'records'    => $this->Attendance_model->get_monthly($uid, $y, $m),
@@ -23,7 +23,7 @@ class Attendance extends Employee_Controller {
             'leave_types'=> $this->Leave_model->get_types(),
             'year'       => $y,
             'month'      => $m,
-        ]);
+        ));
     }
 
     // ── เพิ่มรายการด้วยตนเอง (เฉพาะของตัวเอง) ────────────
@@ -41,7 +41,7 @@ class Attendance extends Employee_Controller {
             redirect('employee/attendance');
         }
 
-        $data = [
+        $data = array(
             'user_id'        => $uid,
             'shift_id'       => $this->input->post('shift_id') ?: null,
             'date'           => $date,
@@ -52,7 +52,7 @@ class Attendance extends Employee_Controller {
             'is_late'        => 0,
             'late_minutes'   => 0,
             'ot_hours'       => 0,
-        ];
+        );
 
         // ลาชั่วโมง
         if ($status === 'leave') {
@@ -83,13 +83,13 @@ class Attendance extends Employee_Controller {
 
         if ($this->input->method() === 'post') {
             $status = $this->input->post('status') ?: $rec->status;
-            $data = [
+            $data = array(
                 'check_in_time'  => $this->input->post('check_in')  ?: null,
                 'check_out_time' => $this->input->post('check_out') ?: null,
                 'status'         => $status,
                 'note'           => $this->input->post('note', TRUE),
                 'updated_at'     => date('Y-m-d H:i:s'),
-            ];
+            );
             if ($status === 'leave') {
                 $unit = $this->input->post('leave_unit') ?: 'day';
                 $data['leave_type_id'] = $this->input->post('leave_type_id') ?: null;
@@ -108,13 +108,13 @@ class Attendance extends Employee_Controller {
             redirect('employee/attendance');
         }
 
-        $this->render('employee/attendance/edit', [
+        $this->render('employee/attendance/edit', array(
             'title'       => 'แก้ไขการเข้างาน',
             'page_title'  => 'แก้ไขการเข้างาน',
             'rec'         => $rec,
             'shifts'      => $this->Shift_model->get_all(),
             'leave_types' => $this->Leave_model->get_types(),
-        ]);
+        ));
     }
 
     // ── ลบ (เฉพาะของตัวเอง) ──────────────────────────────

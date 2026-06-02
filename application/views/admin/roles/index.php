@@ -5,7 +5,7 @@
   </a>
 </div>
 <div class="row g-3">
-  <?php foreach($roles as $r): $pc=['can_checkin'=>'ลงเวลา','can_view_own_salary'=>'ดูเงินเดือนตัวเอง','can_approve_leave'=>'อนุมัติการลา','can_manage_employees'=>'จัดการพนักงาน','can_view_sales'=>'ดูยอดขาย','can_send_notifications'=>'ส่งแจ้งเตือน','can_manage_salary'=>'จัดการเงินเดือน','can_upload_documents'=>'อัปโหลดเอกสาร','can_view_reports'=>'ดูรายงาน','can_monitor_attendance'=>'ดูการเข้างาน']; ?>
+  <?php foreach($roles as $r): $pc=array('can_checkin'=>'ลงเวลา','can_view_own_salary'=>'ดูเงินเดือนตัวเอง','can_approve_leave'=>'อนุมัติการลา','can_manage_employees'=>'จัดการพนักงาน','can_view_sales'=>'ดูยอดขาย','can_send_notifications'=>'ส่งแจ้งเตือน','can_manage_salary'=>'จัดการเงินเดือน','can_upload_documents'=>'อัปโหลดเอกสาร','can_view_reports'=>'ดูรายงาน','can_monitor_attendance'=>'ดูการเข้างาน'); ?>
   <div class="col-md-6">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">

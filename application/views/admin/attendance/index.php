@@ -2,9 +2,9 @@
 <!-- Filter Bar -->
 <div class="card mb-3">
   <div class="card-body py-2">
-    <?=form_open('admin/attendance',['method'=>'GET','class'=>'row g-2 align-items-end'])?>
+    <?=form_open('admin/attendance',array('method'=>'GET','class'=>'row g-2 align-items-end'))?>
       <div class="col-md-2"><select name="year" class="form-select form-select-sm"><?php for($y=date('Y');$y>=date('Y')-2;$y--):?><option value="<?=$y?>" <?=$year==$y?'selected':''?>><?=$y?></option><?php endfor;?></select></div>
-      <div class="col-md-2"><select name="month" class="form-select form-select-sm"><?php $mn=['1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.','5'=>'พ.ค.','6'=>'มิ.ย.','7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.','10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.']; foreach($mn as $k=>$v):?><option value="<?=$k?>" <?=$month==$k?'selected':''?>><?=$v?></option><?php endforeach;?></select></div>
+      <div class="col-md-2"><select name="month" class="form-select form-select-sm"><?php $mn=array('1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.','5'=>'พ.ค.','6'=>'มิ.ย.','7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.','10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.'); foreach($mn as $k=>$v):?><option value="<?=$k?>" <?=$month==$k?'selected':''?>><?=$v?></option><?php endforeach;?></select></div>
       <div class="col-md-2"><select name="dept" class="form-select form-select-sm"><option value="">-- ทุกแผนก --</option><?php foreach($departments as $d):?><option value="<?=$d->id?>" <?=$dept==$d->id?'selected':''?>><?=$d->name?></option><?php endforeach;?></select></div>
       <div class="col-md-2"><select name="shift_id" class="form-select form-select-sm"><option value="">-- ทุกกะ --</option><?php foreach($shifts as $s):?><option value="<?=$s->id?>" <?=$shift_id==$s->id?'selected':''?>><?=$s->name?></option><?php endforeach;?></select></div>
       <div class="col-auto"><button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button></div>
@@ -44,8 +44,8 @@
             <td style="font-size:.83rem"><?=$r->check_out_time ? date('H:i',strtotime($r->check_out_time)) : '–'?></td>
             <td>
               <?php
-              $sc=['present'=>'success','absent'=>'danger','leave'=>'info text-dark','holiday'=>'warning text-dark','half_day'=>'secondary'];
-              $sl=['present'=>'มา','absent'=>'ขาด','leave'=>'ลา','holiday'=>'วันหยุด','half_day'=>'ครึ่งวัน'];
+              $sc=array('present'=>'success','absent'=>'danger','leave'=>'info text-dark','holiday'=>'warning text-dark','half_day'=>'secondary');
+              $sl=array('present'=>'มา','absent'=>'ขาด','leave'=>'ลา','holiday'=>'วันหยุด','half_day'=>'ครึ่งวัน');
               ?>
               <span class="badge bg-<?=$sc[$r->status]??'secondary'?>"><?=$sl[$r->status]??$r->status?></span>
               <?php if($r->is_late):?><br><small class="text-danger">สาย <?=$r->late_minutes?> นาที</small><?php endif;?>

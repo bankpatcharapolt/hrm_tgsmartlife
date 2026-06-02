@@ -7,7 +7,7 @@ class Leave_model extends CI_Model {
             ->join('users u','u.id=lr.user_id')->join('users ap','ap.id=lr.approved_by','left')
             ->where('lr.id',$id)->get()->row();
     }
-    public function get_requests($filters=[],$limit=30,$offset=0) {
+    public function get_requests($filters=array(),$limit=30,$offset=0) {
         $this->db->select('lr.*,lt.name AS leave_type_name,u.first_name,u.last_name,u.employee_id,ap.first_name AS ap_fn,ap.last_name AS ap_ln')
             ->from('leave_requests lr')->join('leave_types lt','lt.id=lr.leave_type_id')
             ->join('users u','u.id=lr.user_id')->join('users ap','ap.id=lr.approved_by','left');
@@ -29,8 +29,8 @@ class Leave_model extends CI_Model {
         $this->db->insert('leave_requests',$data);
         return $this->db->insert_id();
     }
-    public function approve($id,$uid,$note='') { $this->db->where('id',$id)->update('leave_requests',['status'=>'approved','approved_by'=>$uid,'approved_at'=>date('Y-m-d H:i:s'),'approver_note'=>$note,'updated_at'=>date('Y-m-d H:i:s')]); return $this->db->affected_rows()>0; }
-    public function reject($id,$uid,$note='') { $this->db->where('id',$id)->update('leave_requests',['status'=>'rejected','approved_by'=>$uid,'approved_at'=>date('Y-m-d H:i:s'),'approver_note'=>$note,'updated_at'=>date('Y-m-d H:i:s')]); return $this->db->affected_rows()>0; }
-    public function cancel($id,$uid) { $this->db->where('id',$id)->where('user_id',$uid)->where('status','pending')->update('leave_requests',['status'=>'cancelled','updated_at'=>date('Y-m-d H:i:s')]); return $this->db->affected_rows()>0; }
+    public function approve($id,$uid,$note='') { $this->db->where('id',$id)->update('leave_requests',array('status'=>'approved','approved_by'=>$uid,'approved_at'=>date('Y-m-d H:i:s'),'approver_note'=>$note,'updated_at'=>date('Y-m-d H:i:s'))); return $this->db->affected_rows()>0; }
+    public function reject($id,$uid,$note='') { $this->db->where('id',$id)->update('leave_requests',array('status'=>'rejected','approved_by'=>$uid,'approved_at'=>date('Y-m-d H:i:s'),'approver_note'=>$note,'updated_at'=>date('Y-m-d H:i:s'))); return $this->db->affected_rows()>0; }
+    public function cancel($id,$uid) { $this->db->where('id',$id)->where('user_id',$uid)->where('status','pending')->update('leave_requests',array('status'=>'cancelled','updated_at'=>date('Y-m-d H:i:s'))); return $this->db->affected_rows()>0; }
     public function count_pending() { return $this->db->where('status','pending')->count_all_results('leave_requests'); }
 }

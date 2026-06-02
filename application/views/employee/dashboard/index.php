@@ -84,10 +84,44 @@
     </div>
   </div>
 </div>
-<?php $extra_js='<script>
-var CSRF_NAME="<?=$this->security->get_csrf_token_name()?>",CSRF_HASH="<?=$this->security->get_csrf_hash()?>";
-function updClock(){var n=new Date();document.getElementById("liveClock").textContent=n.toLocaleTimeString("th-TH");var days=["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัส","ศุกร์","เสาร์"];document.getElementById("liveDate").textContent="วัน"+days[n.getDay()]+" "+n.toLocaleDateString("th-TH");}
-updClock();setInterval(updClock,1000);
-function doCheckIn(){fetch("<?=base_url('api/attendance/checkin')?>",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:CSRF_NAME+"="+CSRF_HASH}).then(r=>r.json()).then(d=>{if(d.success){alert(d.message+(d.data.is_late?" (สาย "+d.data.late_minutes+" นาที)":""));location.reload();}else alert(d.message);});}
-function doCheckOut(){fetch("<?=base_url('api/attendance/checkout')?>",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:CSRF_NAME+"="+CSRF_HASH}).then(r=>r.json()).then(d=>{if(d.success){alert(d.message);location.reload();}else alert(d.message);});}
-</script>';?>
+<?php ob_start(); ?>
+<script>
+var CSRF_NAME = "<?=$this->security->get_csrf_token_name()?>", 
+    CSRF_HASH = "<?=$this->security->get_csrf_hash()?>";
+
+function updClock() {
+    var n = new Date();
+    document.getElementById("liveClock").textContent = n.toLocaleTimeString("th-TH");
+    var days = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัส", "ศุกร์", "เสาร์"];
+    document.getElementById("liveDate").textContent = "วัน" + days[n.getDay()] + " " + n.toLocaleDateString("th-TH");
+}
+updClock();
+setInterval(updClock, 1000);
+
+function doCheckIn() {
+    fetch("<?=base_url('api/attendance/checkin')?>", {
+        method: "POST",
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: CSRF_NAME + "=" + CSRF_HASH
+    }).then(r => r.json()).then(d => {
+        if(d.success){
+            alert(d.message + (d.data.is_late ? " (สาย " + d.data.late_minutes + " นาที)" : ""));
+            location.reload();
+        } else alert(d.message);
+    });
+}
+
+function doCheckOut() {
+    fetch("<?=base_url('api/attendance/checkout')?>", {
+        method: "POST",
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: CSRF_NAME + "=" + CSRF_HASH
+    }).then(r => r.json()).then(d => {
+        if(d.success){
+            alert(d.message);
+            location.reload();
+        } else alert(d.message);
+    });
+}
+</script>
+<?php $extra_js = ob_get_clean(); ?>

@@ -1,6 +1,6 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 class Sales_model extends CI_Model {
-    public function get_records($filters=[],$limit=30,$offset=0) {
+    public function get_records($filters=array(),$limit=30,$offset=0) {
         $this->db->select('sr.*,u.first_name,u.last_name,u.employee_id,d.name AS dept_name,t.team_name')
             ->from('sales_records sr')->join('users u','u.id=sr.user_id','left')->join('departments d','d.id=sr.department_id','left')->join('teams t','t.id=sr.team_id','left');
         if (!empty($filters['year'])) $this->db->where('sr.record_year',$filters['year']);

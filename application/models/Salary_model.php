@@ -25,12 +25,12 @@ class Salary_model extends CI_Model {
         $data['net_salary']   = $data['gross_salary']-$data['social_security_deduct']-$data['tax_deduct']-$data['other_deduct']-$data['absent_deduct']-$data['late_deduct'];
         $data['updated_at']=date('Y-m-d H:i:s'); $this->db->where('id',$id)->update('salary_records',$data); return $this->db->affected_rows()>0;
     }
-    public function mark_paid($id) { $this->db->where('id',$id)->update('salary_records',['payment_status'=>'paid','payment_date'=>date('Y-m-d'),'updated_at'=>date('Y-m-d H:i:s')]); return $this->db->affected_rows()>0; }
+    public function mark_paid($id) { $this->db->where('id',$id)->update('salary_records',array('payment_status'=>'paid','payment_date'=>date('Y-m-d'),'updated_at'=>date('Y-m-d H:i:s'))); return $this->db->affected_rows()>0; }
     public function get_slips($uid) { return $this->db->where('user_id',$uid)->order_by('slip_year DESC,slip_month DESC')->get('salary_slips')->result(); }
     public function save_slip($data) { $data['created_at']=date('Y-m-d H:i:s'); $this->db->insert('salary_slips',$data); return $this->db->insert_id(); }
     public function get_tax_docs($uid) { return $this->db->where('user_id',$uid)->order_by('tax_year','DESC')->get('tax_documents')->result(); }
     public function save_tax_doc($data) { $data['created_at']=date('Y-m-d H:i:s'); $this->db->insert('tax_documents',$data); return $this->db->insert_id(); }
-    public function get_bonuses($filters=[]) {
+    public function get_bonuses($filters=array()) {
         $this->db->select('ab.*,u.first_name,u.last_name,u.employee_id,d.name AS dept_name')
             ->from('annual_bonuses ab')->join('users u','u.id=ab.user_id')->join('departments d','d.id=u.department_id','left');
         if (!empty($filters['year'])) $this->db->where('ab.bonus_year',$filters['year']);
