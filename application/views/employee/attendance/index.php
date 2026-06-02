@@ -145,7 +145,8 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>บันทึกการเข้างาน</h5><button class="btn-close"
+        <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>บันทึกการเข้างาน</h5>
+        <button class="btn-close"
           data-bs-dismiss="modal"></button>
       </div>
       <?= form_open('employee/attendance/add') ?>
@@ -225,7 +226,7 @@
       </div>
       <div class="modal-footer py-2">
         <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-save me-1"></i>บันทึก</button>
-        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+        <span class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</span>
       </div>
       <?= form_close() ?>
     </div>
