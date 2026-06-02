@@ -1,0 +1,14 @@
+Options -Indexes
+RewriteEngine On
+RewriteBase /hrm_tgsmartlife/
+
+# ห้าม access ตรงๆ
+RewriteRule ^application/ - [F,L]
+RewriteRule ^system/ - [F,L]
+
+# ถ้าเป็นไฟล์หรือโฟลเดอร์จริง ให้ผ่าน
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Route ทุกอย่างผ่าน index.php
+RewriteRule ^(.*)$ index.php/$1 [L]
