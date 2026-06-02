@@ -29,13 +29,13 @@
     <div class="card">
       <div class="card-header"><i class="bi bi-gift me-2 text-warning"></i>โบนัสของฉัน</div>
       <?php
-      $type_label = array('monthly'=>'โบนัสรายเดือน','special'=>'โบนัสพิเศษ','sales'=>'โบนัสตามยอดขาย');
-      $type_color = array('monthly'=>'primary','special'=>'warning','sales'=>'success');
-      $type_icon  = array('monthly'=>'calendar-check','special'=>'gift','sales'=>'graph-up-arrow');
+      $type_label = array('monthly'=>'โบนัสรายเดือน','special'=>'โบนัสพิเศษ','sales'=>'โบนัสตามยอดขาย','annual'=>'โบนัสประจำปี');
+      $type_color = array('monthly'=>'primary','special'=>'warning','sales'=>'success','annual'=>'danger');
+      $type_icon  = array('monthly'=>'calendar-check','special'=>'gift','sales'=>'graph-up-arrow','annual'=>'trophy');
       $mn_th = array('1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.','5'=>'พ.ค.','6'=>'มิ.ย.',
                      '7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.','10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.');
       // สรุปยอดแต่ละ type
-      $totals = array('monthly'=>0,'special'=>0,'sales'=>0);
+      $totals = array('monthly'=>0,'special'=>0,'sales'=>0,'annual'=>0);
       if(!empty($bonuses)) foreach($bonuses as $b){ $totals[$b->bonus_type??'special'] += $b->amount; }
       ?>
       <?php if(!empty($bonuses)):?>

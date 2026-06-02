@@ -1,24 +1,24 @@
 <?php defined('BASEPATH') OR exit();
-$type_label = array('monthly'=>'รายเดือน','special'=>'พิเศษ','sales'=>'ตามยอดขาย');
-$type_color = array('monthly'=>'primary','special'=>'warning','sales'=>'success');
-$type_icon  = array('monthly'=>'calendar-check','special'=>'gift','sales'=>'graph-up-arrow');
+$type_label = array('monthly'=>'รายเดือน','special'=>'พิเศษ','sales'=>'ตามยอดขาย','annual'=>'ประจำปี');
+$type_color = array('monthly'=>'primary','special'=>'warning','sales'=>'success','annual'=>'danger');
+$type_icon  = array('monthly'=>'calendar-check','special'=>'gift','sales'=>'graph-up-arrow','annual'=>'trophy');
 $mn_th = array('1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.','5'=>'พ.ค.','6'=>'มิ.ย.',
                '7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.','10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.');
 ?>
 
 <!-- สรุปยอดตาม type -->
 <?php
-$totals = array('monthly'=>0,'special'=>0,'sales'=>0,'all'=>0);
+$totals = array('monthly'=>0,'special'=>0,'sales'=>0,'annual'=>0,'all'=>0);
 foreach($bonuses as $b){
     $totals[$b->bonus_type] = ($totals[$b->bonus_type]??0) + $b->amount;
     $totals['all'] += $b->amount;
 }
 ?>
 <div class="row g-2 mb-3">
-  <?php foreach(array('monthly','special','sales') as $t):?>
+  <?php foreach(array('monthly','special','sales','annual') as $t):?>
   <div class="col-md-4">
     <div class="stat-card">
-      <div class="s-ico" style="background:<?=$t==='monthly'?'#eff6ff':($t==='special'?'#fffbeb':'#f0fdf4')?>;color:var(--<?=$type_color[$t]?>)">
+      <div class="s-ico" style="background:<?=$t==='monthly'?'#eff6ff':($t==='special'?'#fffbeb':($t==='sales'?'#f0fdf4':'#fef2f2'))?>;color:var(--<?=$type_color[$t]?>)">
         <i class="bi bi-<?=$type_icon[$t]?>"></i>
       </div>
       <div>
@@ -157,7 +157,7 @@ foreach($bonuses as $b){
               <?php if(!empty($bonuses)):foreach($bonuses as $b):?>
               <tr>
                 <td>
-                  <span class="badge bg-<?=$type_color[$b->bonus_type]?? 'secondary'?> text-<?=$b->bonus_type==='special'?'dark':''?>">
+                  <span class="badge bg-<?=$type_color[$b->bonus_type]?? 'secondary'?> text-<?=in_array($b->bonus_type??'',['special','annual'])?'dark':''?>">
                     <i class="bi bi-<?=$type_icon[$b->bonus_type]??'gift'?> me-1"></i>
                     <?=$type_label[$b->bonus_type]??$b->bonus_type?>
                   </span>

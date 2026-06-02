@@ -218,7 +218,7 @@ class Salary extends Admin_Controller {
             'payment_date' => $this->input->post('payment_date') ?: null,
             'created_by'   => $this->current_user->user_id,
         );
-        $type_th = array('monthly'=>'รายเดือน','special'=>'พิเศษ','sales'=>'ตามยอดขาย');
+        $type_th = array('monthly'=>'รายเดือน','special'=>'พิเศษ','sales'=>'ตามยอดขาย','annual'=>'ประจำปี');
         $id = $this->Salary_model->save_bonus($d);
         if ($id) {
             $this->Notification_model->create(array(
