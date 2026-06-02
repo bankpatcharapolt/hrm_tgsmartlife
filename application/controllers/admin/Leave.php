@@ -78,6 +78,19 @@ class Leave extends Admin_Controller {
             }
         }
 
+        // [ข้อ 2] อัปโหลดใบรับรองแพทย์ (เฉพาะลาป่วย)
+        if (!empty($_FILES['medical_cert']['size'])) {
+            $p = FCPATH.'uploads/leave_docs/medical/';
+            if (!is_dir($p)) mkdir($p, 0755, true);
+            $ext = strtolower(pathinfo($_FILES['medical_cert']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, array('pdf','jpg','jpeg','png'))) {
+                $fn = 'mc_'.uniqid().'.'.$ext;
+                if (move_uploaded_file($_FILES['medical_cert']['tmp_name'], $p.$fn)) {
+                    $data['medical_cert_path'] = 'uploads/leave_docs/medical/'.$fn;
+                }
+            }
+        }
+
         // ถ้า admin สร้างและ status=approved → set approved_by
         if ($data['status'] === 'approved') {
             $data['approved_by'] = $this->current_user->user_id;
@@ -154,6 +167,21 @@ class Leave extends Admin_Controller {
                     $fn = uniqid().'.'.$ext;
                     if (move_uploaded_file($_FILES['document']['tmp_name'], $p.$fn)) {
                         $data['document_path'] = 'uploads/leave_docs/'.$fn;
+                    }
+                }
+            }
+
+            // [ข้อ 2] อัปโหลดใบรับรองแพทย์ใหม่
+            if (!empty($_FILES['medical_cert']['size'])) {
+                $p = FCPATH.'uploads/leave_docs/medical/';
+                if (!is_dir($p)) mkdir($p, 0755, true);
+                $ext = strtolower(pathinfo($_FILES['medical_cert']['name'], PATHINFO_EXTENSION));
+                if (in_array($ext, array('pdf','jpg','jpeg','png'))) {
+                    $fn = 'mc_'.uniqid().'.'.$ext;
+                    if (move_uploaded_file($_FILES['medical_cert']['tmp_name'], $p.$fn)) {
+                        if (!empty($req->medical_cert_path) && file_exists(FCPATH.$req->medical_cert_path))
+                            @unlink(FCPATH.$req->medical_cert_path);
+                        $data['medical_cert_path'] = 'uploads/leave_docs/medical/'.$fn;
                     }
                 }
             }

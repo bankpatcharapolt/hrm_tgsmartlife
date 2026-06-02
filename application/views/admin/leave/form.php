@@ -17,7 +17,7 @@
       <!-- พนักงาน -->
       <div class="col-md-6">
         <label class="form-label">พนักงาน <span class="text-danger">*</span></label>
-        <select name="user_id" class="form-select ts-select" required>
+        <select name="user_id" class="form-select" required>
           <option value="">-- เลือกพนักงาน --</option>
           <?php foreach($employees as $e):?>
           <option value="<?=$e->id?>" <?=($r && $r->user_id==$e->id)?'selected':''?>>
@@ -30,7 +30,7 @@
       <!-- ประเภทการลา -->
       <div class="col-md-6">
         <label class="form-label">ประเภทการลา <span class="text-danger">*</span></label>
-        <select name="leave_type_id" class="form-select ts-select" required>
+        <select name="leave_type_id" class="form-select" required>
           <option value="">-- เลือกประเภทการลา --</option>
           <?php foreach($leave_types as $lt):?>
           <option value="<?=$lt->id?>" <?=($r && $r->leave_type_id==$lt->id)?'selected':''?>>
@@ -136,6 +136,30 @@
         <?php endif;?>
         <div class="form-text text-muted">รองรับ PDF, JPG, PNG ขนาดไม่เกิน 5MB</div>
       </div>
+
+      <!-- [ข้อ 2] ใบรับรองแพทย์ (แสดงเฉพาะเมื่อเลือก leave_type ที่มีชื่อ "ลาป่วย") -->
+      <div class="col-12" id="medCertWrap" style="display:none">
+        <div class="p-3 rounded" style="background:#fff7ed;border:1px solid #fed7aa">
+          <label class="form-label fw-semibold" style="color:#c2410c">
+            <i class="bi bi-file-medical me-1"></i>ใบรับรองแพทย์
+            <span class="text-danger">*</span>
+            <span class="badge bg-warning text-dark ms-1" style="font-size:.68rem">ลาป่วย</span>
+          </label>
+          <input type="file" name="medical_cert" id="medCertInput"
+                 class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+          <?php if($r && !empty($r->medical_cert_path)):?>
+          <div class="mt-2">
+            <a href="<?=base_url($r->medical_cert_path)?>" target="_blank"
+               class="btn btn-outline-warning btn-sm">
+              <i class="bi bi-file-medical me-1"></i>ดูใบรับรองแพทย์ปัจจุบัน
+            </a>
+            <small class="text-muted ms-2">(อัปโหลดใหม่เพื่อแทนที่)</small>
+          </div>
+          <?php elseif($r && !empty($r->medical_cert_path) === false && $r->leave_type_id):?>
+          <?php endif;?>
+          <div class="form-text">รองรับ PDF, JPG, PNG ขนาดไม่เกิน 5MB</div>
+        </div>
+      </div>
     </div>
 
     <div class="mt-4 d-flex gap-2 flex-wrap">
@@ -199,5 +223,24 @@ function calcHours() {
 document.addEventListener('DOMContentLoaded', function() {
     calcDays();
     calcHours();
+    checkMedCert();
 });
+
+// [ข้อ 2] ตรวจว่าเลือกลาป่วยไหม → แสดง/ซ่อนใบรับรองแพทย์
+var sickNames = ['ลาป่วย','sick','ป่วย'];
+function checkMedCert() {
+    var sel  = document.querySelector('[name=leave_type_id]');
+    var wrap = document.getElementById('medCertWrap');
+    var inp  = document.getElementById('medCertInput');
+    if (!sel || !wrap) return;
+    var txt = (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '').toLowerCase();
+    var isSick = sickNames.some(function(k){ return txt.indexOf(k) !== -1; });
+    wrap.style.display = isSick ? '' : 'none';
+    if (inp) inp.required = isSick;
+}
+document.querySelector('[name=leave_type_id]') &&
+  document.querySelector('[name=leave_type_id]').addEventListener('change', checkMedCert);
+// TomSelect fires custom event
+document.querySelector('[name=leave_type_id]') &&
+  document.querySelector('[name=leave_type_id]').addEventListener('change', checkMedCert);
 </script>

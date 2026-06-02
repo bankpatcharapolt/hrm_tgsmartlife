@@ -25,22 +25,69 @@
         </div>
       </div>
     </div>
-    <!-- Bonuses -->
-    <?php if(!empty($bonuses)): ?>
+    <!-- Bonuses 3 ประเภท -->
     <div class="card">
-      <div class="card-header"><i class="bi bi-gift me-2 text-warning"></i>โบนัสประจำปี</div>
+      <div class="card-header"><i class="bi bi-gift me-2 text-warning"></i>โบนัสของฉัน</div>
+      <?php
+      $type_label = array('monthly'=>'โบนัสรายเดือน','special'=>'โบนัสพิเศษ','sales'=>'โบนัสตามยอดขาย');
+      $type_color = array('monthly'=>'primary','special'=>'warning','sales'=>'success');
+      $type_icon  = array('monthly'=>'calendar-check','special'=>'gift','sales'=>'graph-up-arrow');
+      $mn_th = array('1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.','5'=>'พ.ค.','6'=>'มิ.ย.',
+                     '7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.','10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.');
+      // สรุปยอดแต่ละ type
+      $totals = array('monthly'=>0,'special'=>0,'sales'=>0);
+      if(!empty($bonuses)) foreach($bonuses as $b){ $totals[$b->bonus_type??'special'] += $b->amount; }
+      ?>
+      <?php if(!empty($bonuses)):?>
+      <!-- สรุปการ์ด 3 ประเภท -->
+      <div class="card-body border-bottom pb-2">
+        <div class="row g-2">
+          <?php foreach($type_label as $t=>$lbl):?>
+          <div class="col-4 text-center">
+            <div class="small text-muted mb-1"><i class="bi bi-<?=$type_icon[$t]?> me-1"></i><?=$lbl?></div>
+            <div class="fw-bold text-<?=$type_color[$t]?>" style="font-size:1rem">
+              ฿<?=number_format($totals[$t],0)?>
+            </div>
+          </div>
+          <?php endforeach;?>
+        </div>
+      </div>
+      <!-- รายละเอียด -->
       <div class="card-body p-0">
         <table class="table table-sm mb-0">
-          <thead><tr><th>ปี</th><th>จำนวน</th><th>วันที่จ่าย</th><th>หมายเหตุ</th></tr></thead>
+          <thead>
+            <tr><th>ประเภท</th><th>ปี/เดือน</th><th>จำนวน</th><th>วันที่จ่าย</th><th>หมายเหตุ</th></tr>
+          </thead>
           <tbody>
-            <?php foreach($bonuses as $b): ?>
-            <tr><td><?=$b->bonus_year?></td><td class="text-success fw-semibold">฿<?=number_format($b->amount,2)?></td><td style="font-size:.83rem"><?=$b->payment_date?date('d/m/Y',strtotime($b->payment_date)):'-'?></td><td style="font-size:.82rem"><?=htmlspecialchars($b->remarks??'')?></td></tr>
+            <?php foreach($bonuses as $b):
+              $btype = $b->bonus_type ?? 'special';
+            ?>
+            <tr>
+              <td>
+                <span class="badge bg-<?=$type_color[$btype]?> text-<?=$btype==='special'?'dark':''?>">
+                  <i class="bi bi-<?=$type_icon[$btype]?> me-1"></i><?=$type_label[$btype]??$btype?>
+                </span>
+              </td>
+              <td style="font-size:.83rem">
+                <?=$b->bonus_year?>
+                <?php if($btype==='monthly' && !empty($b->bonus_month)):?>
+                <span class="badge bg-light text-dark border ms-1"><?=$mn_th[$b->bonus_month]??$b->bonus_month?></span>
+                <?php endif;?>
+              </td>
+              <td class="fw-semibold text-success">฿<?=number_format($b->amount,2)?></td>
+              <td style="font-size:.83rem"><?=$b->payment_date?date('d/m/Y',strtotime($b->payment_date)):'-'?></td>
+              <td style="font-size:.8rem"><?=htmlspecialchars($b->remarks??'')?></td>
+            </tr>
             <?php endforeach;?>
           </tbody>
         </table>
       </div>
+      <?php else:?>
+      <div class="card-body text-center text-muted py-4 small">
+        <i class="bi bi-gift fs-2 d-block mb-2 text-warning opacity-50"></i>ยังไม่มีข้อมูลโบนัส
+      </div>
+      <?php endif;?>
     </div>
-    <?php endif;?>
   </div>
   <div class="col-lg-4">
     <!-- Salary Slips -->

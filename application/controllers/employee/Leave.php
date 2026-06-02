@@ -149,6 +149,19 @@ class Leave extends Employee_Controller {
             }
         }
 
+        // [ข้อ 2] ใบรับรองแพทย์ (เฉพาะลาป่วย)
+        if (!empty($_FILES['medical_cert']['size'])) {
+            $p = FCPATH.'uploads/leave_docs/medical/';
+            if (!is_dir($p)) mkdir($p, 0755, true);
+            $ext = strtolower(pathinfo($_FILES['medical_cert']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, array('pdf','jpg','jpeg','png'))) {
+                $fn = 'mc_'.uniqid().'.'.$ext;
+                if (move_uploaded_file($_FILES['medical_cert']['tmp_name'], $p.$fn)) {
+                    $data['medical_cert_path'] = 'uploads/leave_docs/medical/'.$fn;
+                }
+            }
+        }
+
         $id = $this->Leave_model->create($data);
         if ($id) {
             $this->Notification_model->send_to_role($uid, 'admin', 'leave_request', 'มีคำขอลาใหม่',
@@ -266,6 +279,19 @@ class Leave extends Employee_Controller {
                     $fn = uniqid().'.'.$ext;
                     if (move_uploaded_file($_FILES['document']['tmp_name'], $p.$fn)) {
                         $data['document_path'] = 'uploads/leave_docs/'.$fn;
+                    }
+                }
+            }
+
+            // [ข้อ 2] ใบรับรองแพทย์
+            if (!empty($_FILES['medical_cert']['size'])) {
+                $p = FCPATH.'uploads/leave_docs/medical/';
+                if (!is_dir($p)) mkdir($p, 0755, true);
+                $ext = strtolower(pathinfo($_FILES['medical_cert']['name'], PATHINFO_EXTENSION));
+                if (in_array($ext, array('pdf','jpg','jpeg','png'))) {
+                    $fn = 'mc_'.uniqid().'.'.$ext;
+                    if (move_uploaded_file($_FILES['medical_cert']['tmp_name'], $p.$fn)) {
+                        $data['medical_cert_path'] = 'uploads/leave_docs/medical/'.$fn;
                     }
                 }
             }

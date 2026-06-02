@@ -117,17 +117,28 @@ class Salary_model extends CI_Model
     {
         $this->db->select('ab.*,u.first_name,u.last_name,u.employee_id,d.name AS dept_name')
             ->from('annual_bonuses ab')->join('users u', 'u.id=ab.user_id')->join('departments d', 'd.id=u.department_id', 'left');
-        if (!empty($filters['year']))
-            $this->db->where('ab.bonus_year', $filters['year']);
-        if (!empty($filters['user_id']))
-            $this->db->where('ab.user_id', $filters['user_id']);
-        return $this->db->order_by('u.employee_id', 'ASC')->get()->result();
+        if (!empty($filters['year']))    $this->db->where('ab.bonus_year', $filters['year']);
+        if (!empty($filters['user_id'])) $this->db->where('ab.user_id',   $filters['user_id']);
+        if (!empty($filters['type']))    $this->db->where('ab.bonus_type', $filters['type']);
+        return $this->db->order_by('ab.bonus_year DESC, ab.bonus_month DESC, u.employee_id ASC')->get()->result();
     }
     public function save_bonus($data)
     {
         $data['created_at'] = date('Y-m-d H:i:s');
         $this->db->insert('annual_bonuses', $data);
         return $this->db->insert_id();
+    }
+    public function get_bonus_summary($uid, $year = null)
+    {
+        $this->db->select('bonus_type, SUM(amount) AS total, COUNT(*) AS cnt')
+            ->from('annual_bonuses')
+            ->where('user_id', $uid)
+            ->group_by('bonus_type');
+        if ($year) $this->db->where('bonus_year', $year);
+        $rows = $this->db->get()->result();
+        $out = array('monthly'=>0,'special'=>0,'sales'=>0);
+        foreach ($rows as $r) { $out[$r->bonus_type] = (float)$r->total; }
+        return $out;
     }
     public function get_monthly_summary($y, $m)
     {

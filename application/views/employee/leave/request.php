@@ -7,7 +7,7 @@
     <div class="row g-3">
       <div class="col-12">
         <label class="form-label">ประเภทการลา *</label>
-        <select name="leave_type_id" class="form-select ts-select" required>
+        <select name="leave_type_id" class="form-select" required>
           <option value="">-- เลือกประเภทการลา --</option>
           <?php foreach ($leave_types as $t): ?>
             <option value="<?= $t->id ?>">
@@ -66,6 +66,19 @@
         <label class="form-label">เอกสารประกอบ (PDF/รูปภาพ)</label>
         <input type="file" name="document" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
         <div class="form-text text-muted">ขนาดไม่เกิน 5MB</div>
+      </div>
+
+      <!-- [ข้อ 2] ใบรับรองแพทย์ — แสดงอัตโนมัติเมื่อเลือกลาป่วย -->
+      <div class="col-12" id="medCertWrap" style="display:none">
+        <div class="p-3 rounded" style="background:#fff7ed;border:1px solid #fed7aa">
+          <label class="form-label fw-semibold" style="color:#c2410c">
+            <i class="bi bi-file-medical me-1"></i>ใบรับรองแพทย์
+            <span class="text-danger">*</span>
+          </label>
+          <input type="file" name="medical_cert" id="medCertInput"
+                 class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+          <div class="form-text">แนบใบรับรองแพทย์ (PDF, JPG, PNG ขนาดไม่เกิน 5MB)</div>
+        </div>
       </div>
     </div>
 
@@ -200,4 +213,21 @@ function calcDays() {
         }
     }
 }
+
+// [ข้อ 2] แสดง/ซ่อนใบรับรองแพทย์ตาม leave_type ที่เลือก
+var sickNames = ['ลาป่วย','sick','ป่วย'];
+function checkMedCert() {
+    var sel  = document.querySelector('[name=leave_type_id]');
+    var wrap = document.getElementById('medCertWrap');
+    var inp  = document.getElementById('medCertInput');
+    if (!sel || !wrap) return;
+    var txt = (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '').toLowerCase();
+    var isSick = sickNames.some(function(k){ return txt.indexOf(k) !== -1; });
+    wrap.style.display = isSick ? '' : 'none';
+    if (inp) inp.required = isSick;
+}
+document.addEventListener('DOMContentLoaded', function(){
+    var sel = document.querySelector('[name=leave_type_id]');
+    if (sel) sel.addEventListener('change', checkMedCert);
+});
 </script>

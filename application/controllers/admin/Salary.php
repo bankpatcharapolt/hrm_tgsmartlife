@@ -188,39 +188,58 @@ class Salary extends Admin_Controller {
     }
 
     // ── โบนัสประจำปี ─────────────────────────────────────────
+    // ── โบนัส 3 ประเภท ────────────────────────────────────────────
     public function bonus() {
-        $y = (int)($this->input->get('year') ? $this->input->get('year') : date('Y'));
+        $y    = (int)($this->input->get('year') ? $this->input->get('year') : date('Y'));
+        $type = $this->input->get('type') ?: '';
+        $uid  = (int)$this->input->get('user_id');
+
         $this->render('admin/salary/bonus', array(
-            'title'      => 'โบนัสประจำปี',
-            'page_title' => 'โบนัสประจำปี',
-            'bonuses'    => $this->Salary_model->get_bonuses(array('year'=>$y)),
+            'title'      => 'โบนัส',
+            'page_title' => 'จัดการโบนัส',
+            'bonuses'    => $this->Salary_model->get_bonuses(array('year'=>$y,'type'=>$type,'user_id'=>$uid)),
             'employees'  => $this->User_model->get_all(array('status'=>'active'), 300),
             'year'       => $y,
+            'sel_type'   => $type,
+            'sel_uid'    => $uid,
         ));
     }
 
     public function store_bonus() {
         if ($this->input->method() !== 'post') redirect('admin/salary/bonus');
+        $type = $this->input->post('bonus_type') ?: 'special';
         $d = array(
             'user_id'      => $this->input->post('user_id'),
+            'bonus_type'   => $type,
             'bonus_year'   => $this->input->post('bonus_year'),
+            'bonus_month'  => ($type === 'monthly') ? (int)$this->input->post('bonus_month') : null,
             'amount'       => (float)$this->input->post('amount'),
             'remarks'      => $this->input->post('remarks', TRUE),
-            'payment_date' => $this->input->post('payment_date') ? $this->input->post('payment_date') : null,
+            'payment_date' => $this->input->post('payment_date') ?: null,
             'created_by'   => $this->current_user->user_id,
         );
+        $type_th = array('monthly'=>'รายเดือน','special'=>'พิเศษ','sales'=>'ตามยอดขาย');
         $id = $this->Salary_model->save_bonus($d);
         if ($id) {
             $this->Notification_model->create(array(
                 'user_id'   => $d['user_id'],
                 'sender_id' => $this->current_user->user_id,
                 'type'      => 'bonus_paid',
-                'title'     => 'ได้รับโบนัสประจำปี',
-                'message'   => 'โบนัสปี '.$d['bonus_year'].' จำนวน '.number_format($d['amount'],0).' บาท',
+                'title'     => 'ได้รับโบนัส'.($type_th[$type]??''),
+                'message'   => 'โบนัส'.($type_th[$type]??'').' ปี '.$d['bonus_year'].' จำนวน '.number_format($d['amount'],0).' บาท',
                 'link'      => base_url('employee/salary'),
             ));
         }
         $this->session->set_flashdata('success', 'บันทึกโบนัสสำเร็จ');
+        redirect('admin/salary/bonus');
+    }
+
+    public function delete_bonus($id) {
+        $b = $this->db->where('id',$id)->get('annual_bonuses')->row();
+        if ($b) {
+            $this->db->where('id',$id)->delete('annual_bonuses');
+            $this->session->set_flashdata('success','ลบโบนัสสำเร็จ');
+        }
         redirect('admin/salary/bonus');
     }
 
@@ -247,47 +266,72 @@ class Salary extends Admin_Controller {
         ));
     }
 
+    // ── อัปโหลดทวิ 50 หลายไฟล์พร้อมกัน ─────────────────────────────
     public function upload_tax() {
         if ($this->input->method() !== 'post') redirect('admin/salary/tax_docs');
-        $uid = $this->input->post('user_id');
-        $y   = $this->input->post('tax_year');
-        $p   = FCPATH.'uploads/tax_docs/';
+
+        $y = (int)$this->input->post('tax_year');
+        $p = FCPATH.'uploads/tax_docs/';
         if (!is_dir($p)) mkdir($p, 0755, true);
-        if (empty($_FILES['tax_file']['tmp_name']) || $_FILES['tax_file']['error'] !== UPLOAD_ERR_OK) {
-            $this->session->set_flashdata('error','กรุณาเลือกไฟล์');
+
+        // รับไฟล์หลายตัว: tax_files[] และ tax_user_ids[]
+        $files    = isset($_FILES['tax_files']) ? $_FILES['tax_files'] : array();
+        $user_ids = $this->input->post('tax_user_ids') ?: array();
+
+        if (empty($files['name']) || empty($files['name'][0])) {
+            $this->session->set_flashdata('error', 'กรุณาเลือกไฟล์');
             redirect('admin/salary/tax_docs');
         }
-        $orig = $_FILES['tax_file']['name'];
-        $ext  = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
-        if ($ext !== 'pdf') {
-            $this->session->set_flashdata('error','รองรับเฉพาะ PDF');
-            redirect('admin/salary/tax_docs');
+
+        $success = 0;
+        $errors  = array();
+
+        foreach ($files['name'] as $i => $orig) {
+            if (empty($orig)) continue;
+
+            $uid = isset($user_ids[$i]) ? (int)$user_ids[$i] : 0;
+            if (!$uid) { $errors[] = $orig.': ยังไม่ได้เลือกพนักงาน'; continue; }
+
+            if ($files['error'][$i] !== UPLOAD_ERR_OK) { $errors[] = $orig.': upload error'; continue; }
+
+            $ext = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
+            if ($ext !== 'pdf') { $errors[] = $orig.': รองรับเฉพาะ PDF'; continue; }
+
+            if ($files['size'][$i] > 10485760) { $errors[] = $orig.': ไฟล์ใหญ่เกิน 10MB'; continue; }
+
+            $fn = uniqid().'_'.$orig;
+            if (move_uploaded_file($files['tmp_name'][$i], $p.$fn)) {
+                $this->Salary_model->save_tax_doc(array(
+                    'user_id'     => $uid,
+                    'tax_year'    => $y,
+                    'file_name'   => $orig,
+                    'file_path'   => 'uploads/tax_docs/'.$fn,
+                    'file_size'   => $files['size'][$i],
+                    'uploaded_by' => $this->current_user->user_id,
+                ));
+                $this->Notification_model->create(array(
+                    'user_id'   => $uid,
+                    'sender_id' => $this->current_user->user_id,
+                    'type'      => 'document_uploaded',
+                    'title'     => 'ทวิ 50 พร้อมแล้ว',
+                    'message'   => 'เอกสารทวิ 50 ปี '.$y.' พร้อมดาวน์โหลด',
+                    'link'      => base_url('employee/salary'),
+                ));
+                $success++;
+            } else {
+                $errors[] = $orig.': อัปโหลดล้มเหลว';
+            }
         }
-        if ($_FILES['tax_file']['size'] > 10485760) {
-            $this->session->set_flashdata('error','ไฟล์ใหญ่เกิน 10MB');
-            redirect('admin/salary/tax_docs');
+
+        if ($success > 0) {
+            $msg = 'อัปโหลดสำเร็จ '.$success.' ไฟล์';
+            if (!empty($errors)) $msg .= ' · มีข้อผิดพลาด '.count($errors).' ไฟล์';
+            $this->session->set_flashdata('success', $msg);
         }
-        $fn = uniqid().'_'.$orig;
-        if (move_uploaded_file($_FILES['tax_file']['tmp_name'], $p.$fn)) {
-            $this->Salary_model->save_tax_doc(array(
-                'user_id'     => $uid,
-                'tax_year'    => $y,
-                'file_name'   => $orig,
-                'file_path'   => 'uploads/tax_docs/'.$fn,
-                'file_size'   => $_FILES['tax_file']['size'],
-                'uploaded_by' => $this->current_user->user_id,
-            ));
-            $this->Notification_model->create(array(
-                'user_id'   => $uid,
-                'sender_id' => $this->current_user->user_id,
-                'type'      => 'document_uploaded',
-                'title'     => 'ทวิ 50 พร้อมแล้ว',
-                'message'   => 'เอกสารทวิ 50 ปี '.$y.' พร้อมดาวน์โหลด',
-                'link'      => base_url('employee/salary'),
-            ));
-            $this->session->set_flashdata('success','อัปโหลดสำเร็จ');
-        } else {
-            $this->session->set_flashdata('error','อัปโหลดล้มเหลว');
+        if (!empty($errors) && $success === 0) {
+            $this->session->set_flashdata('error', implode('<br>', $errors));
+        } elseif (!empty($errors)) {
+            $this->session->set_flashdata('warning', implode('<br>', $errors));
         }
         redirect('admin/salary/tax_docs');
     }

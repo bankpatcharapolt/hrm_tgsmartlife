@@ -118,7 +118,7 @@
             <label class="form-label">ประเภท</label>
             <select name="sales_type" id="salesTypeSelect" class="form-select">
               <option value="individual">รายบุคคล</option>
-              <option value="team">ทีม/แผนก</option>
+              <option value="team">ทีม/สาขา</option>
             </select>
           </div>
 
