@@ -5,7 +5,7 @@
     <?=form_open('admin/attendance',array('method'=>'GET','class'=>'row g-2 align-items-end'))?>
       <div class="col-md-2"><select name="year" class="form-select form-select-sm"><?php for($y=date('Y');$y>=date('Y')-2;$y--):?><option value="<?=$y?>" <?=$year==$y?'selected':''?>><?=$y?></option><?php endfor;?></select></div>
       <div class="col-md-2"><select name="month" class="form-select form-select-sm"><?php $mn=array('1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.','5'=>'พ.ค.','6'=>'มิ.ย.','7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.','10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.'); foreach($mn as $k=>$v):?><option value="<?=$k?>" <?=$month==$k?'selected':''?>><?=$v?></option><?php endforeach;?></select></div>
-      <div class="col-md-2"><select name="dept" class="form-select form-select-sm"><option value="">-- ทุกแผนก --</option><?php foreach($departments as $d):?><option value="<?=$d->id?>" <?=$dept==$d->id?'selected':''?>><?=$d->name?></option><?php endforeach;?></select></div>
+      <div class="col-md-2"><select name="dept" class="form-select form-select-sm ts-select"><option value="">-- ทุกแผนก --</option><?php foreach($departments as $d):?><option value="<?=$d->id?>" <?=$dept==$d->id?'selected':''?>><?=$d->name?></option><?php endforeach;?></select></div>
       <div class="col-md-2"><select name="shift_id" class="form-select form-select-sm"><option value="">-- ทุกกะ --</option><?php foreach($shifts as $s):?><option value="<?=$s->id?>" <?=$shift_id==$s->id?'selected':''?>><?=$s->name?></option><?php endforeach;?></select></div>
       <div class="col-auto"><button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button></div>
     <?=form_close()?>

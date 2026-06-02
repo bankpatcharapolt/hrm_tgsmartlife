@@ -13,7 +13,7 @@
         </select>
       </div>
       <div class="col-md-2">
-        <select name="dept" class="form-select form-select-sm">
+        <select name="dept" class="form-select form-select-sm ts-select">
           <option value="">-- ทุกแผนก --</option>
           <?php foreach($departments as $d):?>
           <option value="<?=$d->id?>" <?=($filters['dept_id']??'')==$d->id?'selected':''?>><?=$d->name?></option>

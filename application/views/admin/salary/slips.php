@@ -4,7 +4,7 @@
     <?=form_open('admin/salary/slips',array('method'=>'GET','class'=>'row g-2 align-items-end'))?>
       <div class="col-md-2"><select name="year" class="form-select form-select-sm"><?php for($y=date('Y');$y>=date('Y')-5;$y--):?><option value="<?=$y?>" <?=$year==$y?'selected':''?>><?=$y?></option><?php endfor;?></select></div>
       <div class="col-md-2"><select name="month" class="form-select form-select-sm"><?php $mn=array('0'=>'ทุกเดือน','1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.','5'=>'พ.ค.','6'=>'มิ.ย.','7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.','10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.'); foreach($mn as $k=>$v):?><option value="<?=$k?>" <?=$month==$k?'selected':''?>><?=$v?></option><?php endforeach;?></select></div>
-      <div class="col-md-3"><select name="user_id" class="form-select form-select-sm"><option value="">-- ทุกคน --</option><?php foreach($employees as $e):?><option value="<?=$e->id?>" <?=$sel_uid==$e->id?'selected':''?>><?=$e->employee_id?> – <?=$e->first_name.' '.$e->last_name?></option><?php endforeach;?></select></div>
+      <div class="col-md-3"><select name="user_id" class="form-select form-select-sm ts-select"><option value="">-- ทุกคน --</option><?php foreach($employees as $e):?><option value="<?=$e->id?>" <?=$sel_uid==$e->id?'selected':''?>><?=$e->employee_id?> – <?=$e->first_name.' '.$e->last_name?></option><?php endforeach;?></select></div>
       <div class="col-auto"><button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button></div>
       <div class="col-auto ms-auto"><a href="<?=base_url('admin/salary')?>" class="btn btn-outline-secondary btn-sm">← กลับ</a></div>
     <?=form_close()?>

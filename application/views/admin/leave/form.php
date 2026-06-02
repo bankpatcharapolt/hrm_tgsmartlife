@@ -17,7 +17,7 @@
       <!-- พนักงาน -->
       <div class="col-md-6">
         <label class="form-label">พนักงาน <span class="text-danger">*</span></label>
-        <select name="user_id" class="form-select" required>
+        <select name="user_id" class="form-select ts-select" required>
           <option value="">-- เลือกพนักงาน --</option>
           <?php foreach($employees as $e):?>
           <option value="<?=$e->id?>" <?=($r && $r->user_id==$e->id)?'selected':''?>>
@@ -30,7 +30,7 @@
       <!-- ประเภทการลา -->
       <div class="col-md-6">
         <label class="form-label">ประเภทการลา <span class="text-danger">*</span></label>
-        <select name="leave_type_id" class="form-select" required>
+        <select name="leave_type_id" class="form-select ts-select" required>
           <option value="">-- เลือกประเภทการลา --</option>
           <?php foreach($leave_types as $lt):?>
           <option value="<?=$lt->id?>" <?=($r && $r->leave_type_id==$lt->id)?'selected':''?>>

@@ -5,7 +5,7 @@
     <?=form_open($r?'admin/salary/update/'.$r->id:'admin/salary/store')?>
     <input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
     <div class="row g-3">
-      <div class="col-md-6"><label class="form-label">พนักงาน *</label><select name="user_id" class="form-select" required><?php foreach($employees as $e):?><option value="<?=$e->id?>" <?=($r&&$r->user_id==$e->id)?'selected':''?>><?=$e->employee_id?> – <?=$e->first_name.' '.$e->last_name?></option><?php endforeach;?></select></div>
+      <div class="col-md-6"><label class="form-label">พนักงาน *</label><select name="user_id" class="form-select ts-select" required><?php foreach($employees as $e):?><option value="<?=$e->id?>" <?=($r&&$r->user_id==$e->id)?'selected':''?>><?=$e->employee_id?> – <?=$e->first_name.' '.$e->last_name?></option><?php endforeach;?></select></div>
       <div class="col-md-3"><label class="form-label">ปี</label><input type="number" name="salary_year" class="form-control" value="<?=$r?$r->salary_year:$year?>" required></div>
       <div class="col-md-3"><label class="form-label">เดือน</label><input type="number" name="salary_month" class="form-control" min="1" max="12" value="<?=$r?$r->salary_month:$month?>" required></div>
       <div class="col-12"><hr class="my-1"><div class="fw-semibold small text-muted mb-1">รายได้</div></div>

@@ -10,7 +10,7 @@
     <div class="row g-3">
       <div class="col-12">
         <label class="form-label">ประเภทการลา *</label>
-        <select name="leave_type_id" class="form-select" required>
+        <select name="leave_type_id" class="form-select ts-select" required>
           <option value="">-- เลือก --</option>
           <?php foreach($leave_types as $lt):?>
           <option value="<?=$lt->id?>" <?=$r->leave_type_id==$lt->id?'selected':''?>>

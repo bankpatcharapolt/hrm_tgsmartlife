@@ -125,7 +125,7 @@
           <!-- Section พนักงาน (แสดงเมื่อ individual) -->
           <div id="secEmployee" class="mb-3">
             <label class="form-label">พนักงาน</label>
-            <select name="user_id" class="form-select">
+            <select name="user_id" class="form-select ts-select">
               <option value="">-- เลือกพนักงาน --</option>
               <?php foreach($employees as $e):?>
               <option value="<?=$e->id?>"><?=$e->employee_id?> – <?=$e->first_name.' '.$e->last_name?></option>

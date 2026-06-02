@@ -9,7 +9,7 @@
         <input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
         <div class="mb-3">
           <label class="form-label">พนักงาน <span class="text-danger">*</span></label>
-          <select name="user_id" class="form-select" required>
+          <select name="user_id" class="form-select ts-select" required>
             <option value="">-- เลือก --</option>
             <?php foreach($employees as $e):?><option value="<?=$e->id?>"><?=$e->employee_id?> – <?=$e->first_name.' '.$e->last_name?></option><?php endforeach;?>
           </select>
@@ -34,7 +34,7 @@
       <div class="card-body py-2">
         <?=form_open('admin/salary/tax_docs',array('method'=>'GET','class'=>'row g-2 align-items-end'))?>
           <div class="col-md-3"><select name="year" class="form-select form-select-sm"><?php for($y=date('Y');$y>=date('Y')-5;$y--):?><option value="<?=$y?>" <?=$year==$y?'selected':''?>><?=$y?></option><?php endfor;?></select></div>
-          <div class="col-md-4"><select name="user_id" class="form-select form-select-sm"><option value="">-- ทุกคน --</option><?php foreach($employees as $e):?><option value="<?=$e->id?>" <?=$sel_uid==$e->id?'selected':''?>><?=$e->employee_id?> – <?=$e->first_name.' '.$e->last_name?></option><?php endforeach;?></select></div>
+          <div class="col-md-4"><select name="user_id" class="form-select form-select-sm ts-select"><option value="">-- ทุกคน --</option><?php foreach($employees as $e):?><option value="<?=$e->id?>" <?=$sel_uid==$e->id?'selected':''?>><?=$e->employee_id?> – <?=$e->first_name.' '.$e->last_name?></option><?php endforeach;?></select></div>
           <div class="col-auto"><button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button></div>
         <?=form_close()?>
       </div>

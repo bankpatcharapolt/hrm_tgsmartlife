@@ -39,6 +39,17 @@
 @keyframes tIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes tOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(8px)}}
 </style>
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<style>
+/* Tom Select override */
+.ts-control{font-family:Sarabun,sans-serif;font-size:.875rem;border:1px solid var(--bd);border-radius:8px;padding:.375rem .75rem;min-height:38px;background:#fff;display:flex;align-items:center;flex-wrap:wrap;gap:3px;}
+.ts-wrapper.is-focused .ts-control,.ts-wrapper.focus .ts-control{border-color:var(--pri);box-shadow:0 0 0 3px rgba(26,86,219,.1);}
+.ts-dropdown{font-family:Sarabun,sans-serif;font-size:.875rem;border:1px solid var(--bd);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);margin-top:2px;}
+.ts-dropdown .option{padding:.45rem .85rem;}
+.ts-dropdown .option.selected,.ts-dropdown .option:hover{background:rgba(26,86,219,.08);color:var(--pri);}
+.ts-dropdown .option.active{background:var(--pri);color:#fff;}
+.ts-dropdown-content{max-height:220px;}
+</style>
 </head><body>
 <nav class="navbar navbar-expand-lg">
   <div class="container-fluid">
@@ -246,5 +257,30 @@ setTimeout(function(){
 })();
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  initTomSelects(document);
+});
+document.addEventListener('shown.bs.modal', function (e) {
+  initTomSelects(e.target);
+});
+function initTomSelects(root) {
+  root.querySelectorAll('select.ts-select:not(.tomselected)').forEach(function (el) {
+    var placeholder = el.getAttribute('data-placeholder') || '-- เลือก / พิมพ์ค้นหา --';
+    new TomSelect(el, {
+      placeholder      : placeholder,
+      allowEmptyOption : true,
+      maxOptions       : 300,
+      highlight        : true,
+      render: {
+        no_results: function () {
+          return '<div class="no-results" style="padding:.5rem .85rem;color:#6b7280;font-size:.83rem">ไม่พบรายการที่ค้นหา</div>';
+        }
+      }
+    });
+  });
+}
+</script>
 <?php if (!empty($extra_js)) echo $extra_js; ?>
 </body></html>

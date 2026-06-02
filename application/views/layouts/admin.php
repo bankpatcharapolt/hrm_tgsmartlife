@@ -50,7 +50,18 @@
 @media(max-width:768px){#sb{transform:translateX(-100%);} #main{margin-left:0;} #sb.open{transform:translateX(0);}}
 .sb-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;}
 @media(max-width:768px){.sb-ov.show{display:block;}}
+/* Tom Select override — ให้ดูเข้ากับ Bootstrap ของโปรเจค */
+.ts-wrapper.form-select{padding:0;border:none;}
+.ts-wrapper.form-control{padding:0;border:none;}
+.ts-control{font-family:Sarabun,sans-serif;font-size:.875rem;border:1px solid var(--bd);border-radius:8px;padding:.375rem .75rem;min-height:38px;background:#fff;display:flex;align-items:center;flex-wrap:wrap;gap:3px;cursor:text;}
+.ts-wrapper.is-focused .ts-control,.ts-wrapper.focus .ts-control{border-color:var(--pri);box-shadow:0 0 0 3px rgba(26,86,219,.1);outline:none;}
+.ts-dropdown{font-family:Sarabun,sans-serif;font-size:.875rem;border:1px solid var(--bd);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);margin-top:2px;}
+.ts-dropdown .option{padding:.45rem .85rem;}
+.ts-dropdown .option.selected,.ts-dropdown .option:hover{background:rgba(26,86,219,.08);color:var(--pri);}
+.ts-dropdown .option.active{background:var(--pri);color:#fff;}
+.ts-dropdown-content{max-height:220px;}
 </style></head><body>
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 <div class="sb-ov" id="ov" onclick="toggleSB()"></div>
 <nav id="sb">
   <div class="sb-brand">
@@ -140,6 +151,35 @@
 function toggleSB(){document.getElementById('sb').classList.toggle('open');document.getElementById('ov').classList.toggle('show');}
 function markRead(id,link){fetch('<?=base_url('api/notifications/mark_read/')?>'+id,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest'}});if(link)window.location.href=link;}
 setTimeout(()=>{document.querySelectorAll('.alert').forEach(a=>bootstrap.Alert.getOrCreateInstance(a).close());},4000);
+</script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+// ── Tom Select: เริ่มต้นอัตโนมัติทุก select ที่มี class "ts-select" ──
+// ใน view แต่ละหน้าแค่เพิ่ม class="form-select ts-select" ก็พอ
+// หรือจะใช้ data attribute: data-ts="true"
+document.addEventListener('DOMContentLoaded', function () {
+  initTomSelects(document);
+});
+// รองรับ Modal (Bootstrap modal โหลด DOM ใหม่หลัง show)
+document.addEventListener('shown.bs.modal', function (e) {
+  initTomSelects(e.target);
+});
+function initTomSelects(root) {
+  root.querySelectorAll('select.ts-select:not(.tomselected)').forEach(function (el) {
+    var placeholder = el.getAttribute('data-placeholder') || '-- เลือก / พิมพ์ค้นหา --';
+    new TomSelect(el, {
+      placeholder      : placeholder,
+      allowEmptyOption : true,
+      maxOptions       : 300,
+      highlight        : true,
+      render: {
+        no_results: function () {
+          return '<div class="no-results" style="padding:.5rem .85rem;color:#6b7280;font-size:.83rem">ไม่พบรายการที่ค้นหา</div>';
+        }
+      }
+    });
+  });
+}
 </script>
 <?php if(!empty($extra_js))echo $extra_js;?>
 </body></html>

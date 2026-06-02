@@ -6,7 +6,7 @@
       <div class="card-body">
         <?=form_open('admin/salary/store_bonus')?>
         <input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
-        <div class="mb-3"><label class="form-label">พนักงาน</label><select name="user_id" class="form-select" required><option value="">-- เลือก --</option><?php foreach($employees as $e):?><option value="<?=$e->id?>"><?=$e->employee_id?> – <?=$e->first_name.' '.$e->last_name?></option><?php endforeach;?></select></div>
+        <div class="mb-3"><label class="form-label">พนักงาน</label><select name="user_id" class="form-select ts-select" required><option value="">-- เลือก --</option><?php foreach($employees as $e):?><option value="<?=$e->id?>"><?=$e->employee_id?> – <?=$e->first_name.' '.$e->last_name?></option><?php endforeach;?></select></div>
         <div class="mb-3"><label class="form-label">ปี</label><input type="number" name="bonus_year" class="form-control" value="<?=$year?>" required></div>
         <div class="mb-3"><label class="form-label">จำนวนเงิน (บาท)</label><div class="input-group"><span class="input-group-text">฿</span><input type="number" name="amount" class="form-control" min="0" step="0.01" required></div></div>
         <div class="mb-3"><label class="form-label">วันที่จ่าย</label><input type="date" name="payment_date" class="form-control"></div>

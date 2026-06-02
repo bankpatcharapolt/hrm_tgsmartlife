@@ -17,7 +17,7 @@
     </div>
     <div id="t_ind" class="mb-3" style="display:none">
       <label class="form-label">พนักงาน</label>
-      <select name="user_id" class="form-select"><option value="">-- เลือก --</option><?php foreach($employees as $e):?><option value="<?=$e->id?>"><?=$e->employee_id?> – <?=$e->first_name.' '.$e->last_name?></option><?php endforeach;?></select>
+      <select name="user_id" class="form-select ts-select"><option value="">-- เลือก --</option><?php foreach($employees as $e):?><option value="<?=$e->id?>"><?=$e->employee_id?> – <?=$e->first_name.' '.$e->last_name?></option><?php endforeach;?></select>
     </div>
     <div class="mb-3"><label class="form-label">ประเภทการแจ้งเตือน</label>
       <select name="notif_type" class="form-select">

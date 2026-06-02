@@ -7,7 +7,7 @@
     <div class="row g-3">
       <div class="col-md-6">
         <label class="form-label">พนักงาน *</label>
-        <select name="user_id" class="form-select" required>
+        <select name="user_id" class="form-select ts-select" required>
           <option value="">-- เลือกพนักงาน --</option>
           <?php foreach($employees as $e):?>
           <option value="<?=$e->id?>"><?=$e->employee_id?> – <?=$e->first_name.' '.$e->last_name?></option>
@@ -61,7 +61,7 @@
           <div class="row g-2">
             <div class="col-md-4">
               <label class="form-label small">ประเภทการลา</label>
-              <select name="leave_type_id" class="form-select form-select-sm">
+              <select name="leave_type_id" class="form-select form-select-sm ts-select">
                 <option value="">– เลือก –</option>
                 <?php foreach($leave_types as $lt):?>
                 <option value="<?=$lt->id?>"><?=$lt->name?></option>
