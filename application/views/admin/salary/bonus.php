@@ -1,7 +1,7 @@
 <?php defined('BASEPATH') OR exit();
 $type_label = array('monthly'=>'รายเดือน','special'=>'พิเศษ','sales'=>'ตามยอดขาย','annual'=>'ประจำปี');
 $type_color = array('monthly'=>'primary','special'=>'warning','sales'=>'success','annual'=>'danger');
-$type_icon  = array('monthly'=>'calendar-check','special'=>'gift','sales'=>'graph-up-arrow','annual'=>'trophy');
+$type_icon  = array('monthly'=>'','special'=>'','sales'=>'','annual'=>'');
 $mn_th = array('1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.','5'=>'พ.ค.','6'=>'มิ.ย.',
                '7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.','10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.');
 ?>

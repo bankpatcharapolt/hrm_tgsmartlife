@@ -98,7 +98,7 @@ foreach ($records as $r) {
   <!-- Top 5 พนักงาน -->
   <div class="col-lg-4">
     <div class="card">
-      <div class="card-header"><i class="bi bi-trophy me-2 text-warning"></i>Top 5 พนักงาน <?=$mn_arr[$month]?></div>
+      <div class="card-header">Top 5 พนักงาน <?=$mn_arr[$month]?></div>
       <div class="card-body p-0">
         <div class="list-group list-group-flush">
           <?php if(!empty($top)):foreach($top as $i=>$t):?>

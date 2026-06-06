@@ -95,3 +95,6 @@ $route['admin/salary/delete_bonus/(:num)'] = 'admin/salary/delete_bonus/$1';
 
 // Employee Sales Dashboard
 $route['employee/sales'] = 'employee/sales/index';
+
+// Employee Team Sales
+$route['employee/sales/team'] = 'employee/sales/team';

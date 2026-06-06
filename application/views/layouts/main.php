@@ -62,7 +62,15 @@
         <?php if(!empty($current_user->can_checkin)):?><li class="nav-item"><a class="nav-link <?=$c==='attendance'?'on':''?>" href="<?=base_url('employee/attendance')?>"><i class="bi bi-clock me-1"></i>การเข้างาน</a></li><?php endif;?>
         <li class="nav-item"><a class="nav-link <?=$c==='leave'?'on':''?>" href="<?=base_url('employee/leave')?>"><i class="bi bi-calendar-check me-1"></i>การลา</a></li>
         <?php if(!empty($current_user->can_view_own_salary)):?><li class="nav-item"><a class="nav-link <?=$c==='salary'?'on':''?>" href="<?=base_url('employee/salary')?>"><i class="bi bi-cash me-1"></i>ข้อมูลการจ่ายเงิน</a></li><?php endif;?>
-        <?php if(!empty($current_user->can_view_sales)):?><li class="nav-item"><a class="nav-link <?=$c==='sales'?'on':''?>" href="<?=base_url('employee/sales')?>"><i class="bi bi-graph-up-arrow me-1"></i>ยอดขายของฉัน</a></li><?php endif;?>
+        <?php
+        // แสดงเมนูยอดขายเฉพาะแผนกที่เกี่ยวกับการขาย
+        $dept_nm = strtolower($current_user->department_name ?? '');
+        $is_sales_dept = (strpos($dept_nm,'ขาย') !== false || strpos($dept_nm,'sale') !== false);
+        if(!empty($current_user->can_view_sales) && $is_sales_dept):
+        ?>
+        <li class="nav-item"><a class="nav-link <?=$c==='sales'&&$this->router->fetch_method()!=='team'?'on':''?>" href="<?=base_url('employee/sales')?>"><i class="bi bi-graph-up-arrow me-1"></i>ยอดขายของฉัน</a></li>
+        <li class="nav-item"><a class="nav-link <?=$c==='sales'&&$this->router->fetch_method()==='team'?'on':''?>" href="<?=base_url('employee/sales/team')?>"><i class="bi bi-people-fill me-1"></i>ยอดขายของทีม</a></li>
+        <?php endif;?>
         <?php if(!empty($current_user->can_approve_leave)):?><li class="nav-item"><a class="nav-link" href="<?=base_url('manager/leave')?>"><i class="bi bi-check2-circle me-1"></i>อนุมัติการลา</a></li><?php endif;?>
         <?php if(!empty($current_user->can_manage_employees)):?><li class="nav-item"><a class="nav-link" href="<?=base_url('admin/dashboard')?>"><i class="bi bi-gear me-1"></i>จัดการระบบ</a></li><?php endif;?>
       </ul>

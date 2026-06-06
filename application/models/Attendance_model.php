@@ -77,7 +77,7 @@ class Attendance_model extends CI_Model {
             ->order_by('a.date','ASC')->get()->result();
     }
 
-    public function get_all_monthly($y,$m,$dept=null,$shift_id=null) {
+    public function get_all_monthly($y,$m,$dept=null,$shift_id=null,$status=null,$limit=50,$offset=0) {
         $this->db->select('a.*,u.first_name,u.last_name,u.employee_id,d.name AS dept_name,s.name AS shift_name,s.color AS shift_color,lt.name AS leave_type_name')
             ->from('attendance a')
             ->join('users u','u.id=a.user_id')
@@ -87,7 +87,31 @@ class Attendance_model extends CI_Model {
             ->where('YEAR(a.date)',$y)->where('MONTH(a.date)',$m);
         if ($dept)     $this->db->where('u.department_id',$dept);
         if ($shift_id) $this->db->where('a.shift_id',$shift_id);
+        if (!empty($status)) {
+            if ($status === 'late') {
+                $this->db->where('a.is_late', 1);
+            } else {
+                $this->db->where('a.status', $status);
+            }
+        }
+        if ($limit > 0) $this->db->limit($limit, $offset);
         return $this->db->order_by('a.date DESC,u.employee_id ASC')->get()->result();
+    }
+
+    public function count_all_monthly_filtered($y,$m,$dept=null,$shift_id=null,$status=null) {
+        $this->db->from('attendance a')
+            ->join('users u','u.id=a.user_id')
+            ->where('YEAR(a.date)',$y)->where('MONTH(a.date)',$m);
+        if ($dept)     $this->db->where('u.department_id',$dept);
+        if ($shift_id) $this->db->where('a.shift_id',$shift_id);
+        if (!empty($status)) {
+            if ($status === 'late') {
+                $this->db->where('a.is_late', 1);
+            } else {
+                $this->db->where('a.status', $status);
+            }
+        }
+        return $this->db->count_all_results();
     }
 
     public function get_summary($uid,$y,$m) {

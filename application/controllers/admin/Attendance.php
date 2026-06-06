@@ -6,19 +6,73 @@ class Attendance extends Admin_Controller {
         $this->load->model(array('Attendance_model','Shift_model','Leave_model'));
     }
     public function index() {
-        $y    = $this->input->get('year')  ?: date('Y');
-        $m    = $this->input->get('month') ?: date('n');
-        $dept = $this->input->get('dept');
-        $sid  = $this->input->get('shift_id');
-        $records = $this->Attendance_model->get_all_monthly($y,$m,$dept,$sid);
-        $this->render('admin/attendance/index',array(
+        $y          = (int)($this->input->get('year')  ?: date('Y'));
+        $m          = (int)($this->input->get('month') ?: date('n'));
+        $dept       = $this->input->get('dept');
+        $sid        = $this->input->get('shift_id');
+        $sel_status = $this->input->get('status') ?: '';
+        $per_page   = 50;
+        $page       = max(1, (int)($this->input->get('page') ?: 1));
+        $offset     = ($page - 1) * $per_page;
+
+        // ── กรณีพิเศษ: ขาดงาน ──────────────────────────────────────
+        if ($sel_status === 'absent') {
+            $user_filters = array('status' => 'active');
+            if ($dept) $user_filters['department_id'] = $dept;
+            $all_users = $this->User_model->get_all($user_filters, 500);
+
+            $all_absent = array();
+            foreach ($all_users as $u) {
+                $absent_days = $this->Attendance_model->get_absent_days($u->id, $y, $m);
+                foreach ($absent_days as $date) {
+                    $row = new stdClass();
+                    $row->date            = $date;
+                    $row->user_id         = $u->id;
+                    $row->first_name      = $u->first_name;
+                    $row->last_name       = $u->last_name;
+                    $row->employee_id     = $u->employee_id;
+                    $row->dept_name       = isset($u->dept_name) ? $u->dept_name : '–';
+                    $row->shift_name      = null;
+                    $row->shift_color     = null;
+                    $row->check_in_time   = null;
+                    $row->check_out_time  = null;
+                    $row->status          = 'absent';
+                    $row->is_late         = 0;
+                    $row->late_minutes    = 0;
+                    $row->leave_hours     = 0;
+                    $row->ot_hours        = 0;
+                    $row->leave_type_name = null;
+                    $row->note            = '';
+                    $row->id              = null;
+                    $all_absent[] = $row;
+                }
+            }
+            usort($all_absent, function($a, $b){ return strcmp($b->date, $a->date); });
+            $total   = count($all_absent);
+            $records = array_slice($all_absent, $offset, $per_page);
+        } else {
+            $total   = $this->Attendance_model->count_all_monthly_filtered($y,$m,$dept,$sid,$sel_status);
+            $records = $this->Attendance_model->get_all_monthly($y,$m,$dept,$sid,$sel_status,$per_page,$offset);
+        }
+
+        $total_pages = $per_page > 0 ? (int)ceil($total / $per_page) : 1;
+
+        $this->render('admin/attendance/index', array(
             'title'       => 'รายงานการเข้างาน',
             'page_title'  => 'รายงานการเข้างาน',
             'records'     => $records,
             'departments' => $this->User_model->get_all_departments(),
             'shifts'      => $this->Shift_model->get_all(),
             'leave_types' => $this->Leave_model->get_types(),
-            'year'=>$y, 'month'=>$m, 'dept'=>$dept, 'shift_id'=>$sid,
+            'year'        => $y,
+            'month'       => $m,
+            'dept'        => $dept,
+            'shift_id'    => $sid,
+            'sel_status'  => $sel_status,
+            'total'       => $total,
+            'page'        => $page,
+            'per_page'    => $per_page,
+            'total_pages' => $total_pages,
         ));
     }
     // บันทึกด้วยตนเอง (รองรับลาชั่วโมง)
