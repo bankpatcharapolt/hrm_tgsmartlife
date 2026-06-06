@@ -408,6 +408,7 @@ for($cm=1;$cm<=12;$cm++){
     $chart_target[] = isset($tData[$cm]) ? (float)$tData[$cm] : 0;
 }
 ?>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 function switchSalesType(val) {
   document.getElementById('secEmployee').style.display  = val==='team'?'none':'';

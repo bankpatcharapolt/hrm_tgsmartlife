@@ -297,11 +297,61 @@ function _doGPS() {
       _gpsData = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       if (sp) sp.style.display = 'none';
       if (re) re.style.display = '';
-      _setText('gpsResultIcon','✅');
-      _setText('gpsResultCoords', _gpsData.lat.toFixed(5)+', '+_gpsData.lng.toFixed(5));
-      _setText('gpsTitleTxt','ระบุตำแหน่งสำเร็จ');
-      _setText('gpsDescTxt','');
+      _setText('gpsResultIcon', '');
+      // แสดง lat,lng ก่อนระหว่างรอชื่อสถานที่
+      _setText('gpsResultCoords', _gpsData.lat.toFixed(5) + ', ' + _gpsData.lng.toFixed(5));
+      _setText('gpsTitleTxt', 'ระบุตำแหน่งสำเร็จ');
+      _setText('gpsDescTxt', 'กำลังค้นหาชื่อสถานที่...');
       _footer([{ t:'ถัดไป → ถ่ายรูป', c:'btn-primary', f:'_toCamera()' }]);
+
+      // ── Reverse geocode ด้วย Nominatim (OpenStreetMap) ────────────
+      // ฟรี ไม่ต้อง API key — ขอแค่ส่ง User-Agent ที่บ่งบอกตัวตน
+      fetch(
+        'https://nominatim.openstreetmap.org/reverse'
+        + '?format=json'
+        + '&lat=' + _gpsData.lat
+        + '&lon=' + _gpsData.lng
+        + '&zoom=16'
+        + '&addressdetails=1'
+        + '&accept-language=th',
+        {
+          headers: {
+            'User-Agent': 'HRM-TGSmartLife/1.0 (internal)'
+          }
+        }
+      )
+      .then(function(r){ return r.json(); })
+      .then(function(d) {
+        if (!d || !d.address) { _setText('gpsDescTxt',''); return; }
+        var a    = d.address;
+        var parts = [];
+
+        // ลำดับ: อาคาร/สถานที่ → ถนน/ซอย → แขวง/ตำบล → เขต/อำเภอ → จังหวัด
+        if (a.amenity || a.building || a.shop || a.office)
+          parts.push(a.amenity || a.building || a.shop || a.office);
+        if (a.road || a.pedestrian)
+          parts.push(a.road || a.pedestrian);
+        if (a.suburb || a.subdistrict || a.quarter)
+          parts.push(a.suburb || a.subdistrict || a.quarter);
+        if (a.city_district || a.district)
+          parts.push(a.city_district || a.district);
+        if (a.city || a.town || a.village || a.county)
+          parts.push(a.city || a.town || a.village || a.county);
+        if (a.state || a.province)
+          parts.push(a.state || a.province);
+
+        var placeName = parts.length > 0 ? parts.join(', ') : (d.display_name || '');
+        // ตัดให้ไม่ยาวเกิน 60 ตัวอักษร
+        if (placeName.length > 120) placeName = placeName.substring(0, 120) + '…';
+
+        _setText('gpsDescTxt', placeName);
+        // เก็บชื่อสถานที่ไว้ใน _gpsData เพื่อส่งไปพร้อม check-in/out
+        _gpsData.place_name = placeName;
+      })
+      .catch(function() {
+        // geocode ล้มเหลว — ไม่ error แค่ไม่แสดงชื่อ
+        _setText('gpsDescTxt', '');
+      });
     },
     function(err) {
       var msg = err.code===1 ? 'ไม่ได้รับอนุญาต GPS'
@@ -396,7 +446,10 @@ function _toConfirm() {
 
   var gr = document.getElementById('confirmGPSRow');
   if (_gpsData) {
-    _setText('confirmGPSTxt', _gpsData.lat.toFixed(5)+', '+_gpsData.lng.toFixed(5));
+    var gpsDisplay = _gpsData.place_name
+      ? _gpsData.place_name
+      : _gpsData.lat.toFixed(5) + ', ' + _gpsData.lng.toFixed(5);
+    _setText('confirmGPSTxt', gpsDisplay);
     gr.style.display = '';
   } else { gr.style.display = 'none'; }
 
@@ -420,7 +473,11 @@ function _submit() {
   _footer([]);
   document.getElementById('confirmSpinner').style.display = '';
   var payload = {}; payload[CSRF_NAME] = CSRF_HASH;
-  if (_gpsData)  { payload.lat = _gpsData.lat; payload.lng = _gpsData.lng; }
+  if (_gpsData)  {
+    payload.lat = _gpsData.lat;
+    payload.lng = _gpsData.lng;
+    if (_gpsData.place_name) payload.place_name = _gpsData.place_name;
+  }
   if (_photoB64) { payload.photo = _photoB64; }
   fetch(_mode==='in' ? API_CI : API_CO, {
     method:'POST', headers:{'Content-Type':'application/json'},
