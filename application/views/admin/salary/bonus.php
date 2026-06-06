@@ -52,12 +52,28 @@ foreach($bonuses as $b){
 
         <div class="mb-3">
           <label class="form-label">ประเภทโบนัส <span class="text-danger">*</span></label>
+          <?php
+          $colorMap = array(
+            'monthly' => array('bg'=>'#eff6ff','bd'=>'#1a56db','tx'=>'#1a56db'),
+            'special' => array('bg'=>'#fffbeb','bd'=>'#d97706','tx'=>'#d97706'),
+            'sales'   => array('bg'=>'#f0fdf4','bd'=>'#16a34a','tx'=>'#16a34a'),
+            'annual'  => array('bg'=>'#fef2f2','bd'=>'#dc2626','tx'=>'#dc2626'),
+          );
+          ?>
           <div class="d-flex gap-2 flex-wrap" id="typeButtons">
-            <?php foreach($type_label as $val=>$lbl):?>
+            <?php foreach($type_label as $val=>$lbl):
+              $c = isset($colorMap[$val]) ? $colorMap[$val] : $colorMap['special'];
+              $isChecked = ($val === 'special');
+              $activeStyle = $isChecked
+                ? "background:{$c['bg']};border-color:{$c['bd']}!important;color:{$c['tx']};font-weight:700"
+                : '';
+            ?>
             <span class="d-flex align-items-center gap-1 px-3 py-2 rounded-3 border type-btn"
-                  style="cursor:pointer;font-size:.84rem;font-weight:500;user-select:none"
-                  data-type="<?=$val?>">
-              <input type="radio" name="bonus_type" value="<?=$val?>" class="d-none" <?=$val==='special'?'checked':''?>>
+                  id="btn_<?=$val?>"
+                  style="cursor:pointer;font-size:.84rem;font-weight:500;user-select:none;transition:.15s;<?=$activeStyle?>"
+                  data-bg="<?=$c['bg']?>" data-bd="<?=$c['bd']?>" data-tx="<?=$c['tx']?>"
+                  onclick="selectBonusType('<?=$val?>')">
+              <input type="radio" name="bonus_type" value="<?=$val?>" class="d-none" <?=$isChecked?'checked':''?>>
               <i class="bi bi-<?=$type_icon[$val]?>"></i><?=$lbl?>
             </span>
             <?php endforeach;?>
@@ -196,132 +212,44 @@ foreach($bonuses as $b){
   </div>
 </div>
 
-<?php
-// inject JS โดยตรง — หลีกเลี่ยงปัญหา escape ใน $extra_js string
-$extra_js = <<<'JSEOF'
 <script>
-(function(){
-  var colorMap = {
-    monthly : { bg:'#eff6ff', bd:'#1a56db', tx:'#1a56db' },
-    special : { bg:'#fffbeb', bd:'#d97706', tx:'#d97706' },
-    sales   : { bg:'#f0fdf4', bd:'#16a34a', tx:'#16a34a' },
-    annual  : { bg:'#fef2f2', bd:'#dc2626', tx:'#dc2626' }
-  };
+// ── Bonus type selector — inline script ไม่พึ่ง extra_js ────────────
+var _bonusColors = {
+  monthly : { bg:'#eff6ff', bd:'#1a56db', tx:'#1a56db' },
+  special : { bg:'#fffbeb', bd:'#d97706', tx:'#d97706' },
+  sales   : { bg:'#f0fdf4', bd:'#16a34a', tx:'#16a34a' },
+  annual  : { bg:'#fef2f2', bd:'#dc2626', tx:'#dc2626' }
+};
+var _bonusTypes = ['monthly','special','sales','annual'];
 
-  function setActive(btn, type) {
-    var c = colorMap[type] || colorMap.special;
-    btn.style.background  = c.bg;
-    btn.style.borderColor = c.bd;
-    btn.style.color       = c.tx;
-    btn.style.fontWeight  = '600';
-  }
-  function clearActive(btn) {
-    btn.style.background  = '';
-    btn.style.borderColor = '';
-    btn.style.color       = '';
-    btn.style.fontWeight  = '';
-  }
-
-  function initBtns() {
-    var btns = document.querySelectorAll('.type-btn');
-    if (!btns.length) return;
-
-    btns.forEach(function(btn) {
-      var radio = btn.querySelector('input[type=radio]');
-      if (!radio) return;
-
-      // active style ปุ่มที่ checked ตั้งแต่แรก
-      if (radio.checked) setActive(btn, radio.value);
-
-      btn.addEventListener('click', function() {
-        // clear ทุกปุ่ม
-        btns.forEach(function(b) { clearActive(b); });
-        // active ปุ่มที่กด
-        setActive(btn, radio.value);
-        radio.checked = true;
-        // toggle ช่องเดือน
-        var mw = document.getElementById('monthWrap');
-        if (mw) mw.style.display = (radio.value === 'monthly') ? '' : 'none';
-      });
-    });
-
-    // init monthWrap
-    var checked = document.querySelector('[name=bonus_type]:checked');
-    var mw = document.getElementById('monthWrap');
-    if (checked && mw) {
-      mw.style.display = (checked.value === 'monthly') ? '' : 'none';
+function selectBonusType(type) {
+  _bonusTypes.forEach(function(t) {
+    var el    = document.getElementById('btn_' + t);
+    var radio = el ? el.querySelector('input[type=radio]') : null;
+    if (!el) return;
+    if (t === type) {
+      var c = _bonusColors[t] || _bonusColors.special;
+      el.style.background  = c.bg;
+      el.style.borderColor = c.bd;
+      el.style.color       = c.tx;
+      el.style.fontWeight  = '700';
+      if (radio) radio.checked = true;
+    } else {
+      el.style.background  = '';
+      el.style.borderColor = '';
+      el.style.color       = '';
+      el.style.fontWeight  = '500';
+      if (radio) radio.checked = false;
     }
-  }
+  });
+  // toggle ช่องเดือน
+  var mw = document.getElementById('monthWrap');
+  if (mw) mw.style.display = (type === 'monthly') ? '' : 'none';
+}
 
-  // DOM พร้อมเสมอ (script อยู่ท้าย body แล้ว)
-  // ใช้ setTimeout 0 เพื่อให้ TomSelect init ก่อน
-  setTimeout(initBtns, 0);
-})();
+// init เมื่อโหลดหน้า
+window.addEventListener('load', function(){
+  var checked = document.querySelector('[name=bonus_type]:checked');
+  if (checked) selectBonusType(checked.value);
+});
 </script>
-JSEOF;
-?><?php
-$extra_js = <<<'JSEOF'
-<script>
-(function(){
-  var colorMap = {
-    monthly : { bg:'#eff6ff', bd:'#1a56db', tx:'#1a56db' },
-    special : { bg:'#fffbeb', bd:'#d97706', tx:'#d97706' },
-    sales   : { bg:'#f0fdf4', bd:'#16a34a', tx:'#16a34a' },
-    annual  : { bg:'#fef2f2', bd:'#dc2626', tx:'#dc2626' }
-  };
-
-  function setActive(el, type) {
-    var c = colorMap[type] || colorMap.special;
-    el.style.background  = c.bg;
-    el.style.borderColor = c.bd;
-    el.style.color       = c.tx;
-    el.style.fontWeight  = '700';
-  }
-  function clearActive(el) {
-    el.style.background  = '';
-    el.style.borderColor = '';
-    el.style.color       = '';
-    el.style.fontWeight  = '500';
-  }
-
-  function initBtns() {
-    var btns = document.querySelectorAll('.type-btn');
-    if (!btns.length) { setTimeout(initBtns, 50); return; }
-
-    btns.forEach(function(btn) {
-      var radio = btn.querySelector('input[type=radio]');
-      if (!radio) return;
-
-      // set active ปุ่มที่ checked
-      if (radio.checked) setActive(btn, radio.value);
-
-      btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        // clear ทุกปุ่ม
-        btns.forEach(function(b) { clearActive(b); });
-        // active ปุ่มที่กด
-        setActive(btn, radio.value);
-        radio.checked = true;
-        // toggle ช่องเดือน
-        var mw = document.getElementById('monthWrap');
-        if (mw) mw.style.display = (radio.value === 'monthly') ? '' : 'none';
-      });
-    });
-
-    // init monthWrap
-    var checked = document.querySelector('[name=bonus_type]:checked');
-    var mw = document.getElementById('monthWrap');
-    if (checked && mw) {
-      mw.style.display = (checked.value === 'monthly') ? '' : 'none';
-      // set active ปุ่มเริ่มต้น
-      var initBtn = document.querySelector('.type-btn[data-type="' + checked.value + '"]');
-      if (initBtn) setActive(initBtn, checked.value);
-    }
-  }
-
-  // setTimeout 0 — รอ TomSelect และ DOM พร้อม
-  setTimeout(initBtns, 0);
-})();
-</script>
-JSEOF;
-?>

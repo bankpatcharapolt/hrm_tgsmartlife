@@ -3,7 +3,7 @@ $mn_arr = array('1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.
                 '6'=>'มิ.ย.','7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.','10'=>'ต.ค.',
                 '11'=>'พ.ย.','12'=>'ธ.ค.');
 
-// ── สรุปยอดรวมปีนี้ ─────────────────────────────────────────────
+// ── สรุปยอดรวมปีนี้ (individual เท่านั้น) ──────────────────────
 $total_actual_year  = 0; $total_target_year  = 0; $total_customers = 0;
 foreach ($yearly as $r) {
     $total_actual_year  += (float)$r->actual;
@@ -13,12 +13,19 @@ foreach ($yearly as $r) {
 $total_achieve_year = $total_target_year > 0
     ? round($total_actual_year / $total_target_year * 100, 1) : 0;
 
-// ── สรุปเดือนนี้ ──────────────────────────────────────────────────
+// ── สรุปเดือนนี้ (individual เท่านั้น — controller ส่ง records_individual มาให้แล้ว)
 $month_actual = 0; $month_target = 0; $month_customers = 0;
-foreach ($records as $r) {
+foreach ($records_individual as $r) {
     $month_actual    += (float)$r->actual_amount;
     $month_target    += (float)$r->target_amount;
     $month_customers += (int)($r->customer_count ?? 0);
+}
+
+// ── สรุปยอดทีมเดือนนี้ ───────────────────────────────────────────
+$month_team_actual = 0; $month_team_target = 0;
+foreach ($records_team as $r) {
+    $month_team_actual += (float)$r->actual_amount;
+    $month_team_target += (float)$r->target_amount;
 }
 ?>
 
@@ -48,7 +55,7 @@ foreach ($records as $r) {
     <div class="stat-card">
       <div class="s-ico" style="background:#eff6ff;color:#1a56db"><i class="bi bi-graph-up-arrow"></i></div>
       <div>
-        <div class="s-lbl">ยอดขาย <?=$mn_arr[$month]?></div>
+        <div class="s-lbl">ยอดขาย<br>(คำนวณจากยอดขายรายบุคคล)<br> <?=$mn_arr[$month]?></div>
         <div class="s-val text-primary">฿<?=number_format($month_actual,0)?></div>
         <div class="s-sub">เป้า ฿<?=number_format($month_target,0)?></div>
       </div>
@@ -56,9 +63,9 @@ foreach ($records as $r) {
   </div>
   <div class="col-6 col-md-3">
     <div class="stat-card">
-      <div class="s-ico" style="background:#f0fdf4;color:#16a34a"><i class="bi bi-calendar-year"></i></div>
+      <div class="s-ico" style="background:#f0fdf4;color:#16a34a"><i class="bi bi-graph-up-arrow"></i></div>
       <div>
-        <div class="s-lbl">ยอดรวมปี <?=$year?></div>
+        <div class="s-lbl">ยอดรวมปี<br>(คำนวณจากยอดขายรายบุคคล)<br>  <?=$year?></div>
         <div class="s-val text-success">฿<?=number_format($total_actual_year,0)?></div>
         <div class="s-sub"><?=$total_achieve_year?>% ของเป้า</div>
       </div>
@@ -181,8 +188,7 @@ foreach ($records as $r) {
             <?php
             // group by user จาก $records_year (ส่งมาจาก controller)
             $emp_sum = array();
-            foreach ($records_year as $r) {
-                if (empty($r->user_id)) continue;
+            foreach ($records_year_individual as $r) {
                 $uid = $r->user_id;
                 if (!isset($emp_sum[$uid])) {
                     $emp_sum[$uid] = array(
@@ -235,8 +241,7 @@ foreach ($records as $r) {
             <tbody>
             <?php
             $team_sum = array();
-            foreach ($records_year as $r) {
-                if (empty($r->team_id)) continue;
+            foreach ($records_year_team as $r) {
                 $tid = $r->team_id;
                 if (!isset($team_sum[$tid])) {
                     $team_sum[$tid] = array('name'=>$r->team_name??'ทีม '.$tid,'act'=>0,'tgt'=>0);
@@ -352,10 +357,13 @@ foreach ($records as $r) {
           </div>
           <div id="secTeamSelect" class="mb-3" style="display:none">
             <label class="form-label">ทีม/สาขา <span class="text-danger">*</span></label>
-            <select name="team_id" class="form-select">
-              <option value="">-- เลือกทีม --</option>
+            <select name="team_id" id="teamIdSelect" class="form-select" onchange="fillTeamTarget(this)">
+              <option value="" data-target="">-- เลือกทีม --</option>
               <?php foreach($teams as $t):?>
-              <option value="<?=$t->id?>"><?=$t->team_name?><?php if(!empty($t->location)):?> (<?=$t->location?>)<?php endif;?></option>
+              <option value="<?=$t->id?>"
+                      data-target="<?=(float)($t->monthly_target??0)?>">
+                <?=$t->team_name?><?php if(!empty($t->location)):?> (<?=$t->location?>)<?php endif;?>
+              </option>
               <?php endforeach;?>
             </select>
           </div>
@@ -408,7 +416,28 @@ function switchSalesType(val) {
 document.getElementById('salesTypeSelect').addEventListener('change',function(){ switchSalesType(this.value); });
 document.getElementById('addSalesMod').addEventListener('show.bs.modal',function(){
   document.getElementById('salesTypeSelect').value='individual'; switchSalesType('individual');
+  // reset team select และ target เมื่อเปิด modal ใหม่
+  var ts = document.getElementById('teamIdSelect');
+  if (ts) { ts.value = ''; }
+  var ta = document.querySelector('[name=target_amount]');
+  if (ta) { ta.value = ''; ta.removeAttribute('placeholder'); }
 });
+
+function fillTeamTarget(sel) {
+  var opt    = sel.options[sel.selectedIndex];
+  var target = opt ? parseFloat(opt.getAttribute('data-target')) : 0;
+  var ta     = document.querySelector('[name=target_amount]');
+  if (!ta) return;
+  if (target > 0) {
+    ta.value       = target;
+    ta.placeholder = 'เป้าทีม: ฿' + Number(target).toLocaleString('th-TH');
+    ta.style.borderColor = '#1a56db';
+  } else {
+    ta.value       = '';
+    ta.placeholder = '';
+    ta.style.borderColor = '';
+  }
+}
 function goFilter(){
   window.location='<?=base_url('admin/sales')?>?year='+document.getElementById('selYear').value+'&month='+document.getElementById('selMonth').value;
 }
