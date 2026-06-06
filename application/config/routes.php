@@ -98,3 +98,10 @@ $route['employee/sales'] = 'employee/sales/index';
 
 // Employee Team Sales
 $route['employee/sales/team'] = 'employee/sales/team';
+
+// จัดการประเภทการลา (admin + owner only)
+$route['admin/leave_types']              = 'admin/leave_types/index';
+$route['admin/leave_types/store']        = 'admin/leave_types/store';
+$route['admin/leave_types/edit/(:num)']  = 'admin/leave_types/edit/$1';
+$route['admin/leave_types/update/(:num)']= 'admin/leave_types/update/$1';
+$route['admin/leave_types/delete/(:num)']= 'admin/leave_types/delete/$1';

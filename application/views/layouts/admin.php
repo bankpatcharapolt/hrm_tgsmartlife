@@ -78,6 +78,9 @@
     <a href="<?=base_url('admin/attendance')?>" class="<?=($ctrl==='attendance'&&$seg3!=='shifts')?'on':''?>"><i class="bi bi-clock-fill"></i>การเข้างาน</a>
     <a href="<?=base_url('admin/attendance/shifts')?>" class="<?=($ctrl==='attendance'&&$seg3==='shifts')?'on':''?>" style="padding-left:2.5rem;font-size:.82rem"><i class="bi bi-diagram-3"></i>จัดการกะ</a>
     <a href="<?=base_url('admin/leave')?>" class="<?=$ctrl==='leave'?'on':''?>"><i class="bi bi-calendar-check-fill"></i>การลา</a>
+    <?php if(!empty($current_user->is_full_access) || in_array($current_user->role_name??'',['admin','owner','เจ้าของ','ผู้ดูแลระบบ'])):?>
+    <a href="<?=base_url('admin/leave_types')?>" class="<?=$ctrl==='leave_types'?'on':'' ?>" style="padding-left:2.5rem;font-size:.82rem"><i class="bi bi-sliders"></i>จัดการวันลา</a>
+    <?php endif;?>
     <div class="sb-sec">การเงิน</div>
     <a href="<?=base_url('admin/salary')?>" class="<?=($ctrl==='salary'&&$seg3!=='bonus'&&$seg3!=='tax_docs'&&$seg3!=='slips')?'on':''?>"><i class="bi bi-currency-dollar"></i>เงินเดือน</a>
     <a href="<?=base_url('admin/salary/slips')?>" class="<?=($ctrl==='salary'&&$seg3==='slips')?'on':''?>" style="padding-left:2rem;font-size:.8rem"><i class="bi bi-file-earmark-pdf text-danger"></i>รายการสลิป</a>
