@@ -7,8 +7,10 @@ class Salary_model extends CI_Model
             ->from('salary_records sr')->join('users u', 'u.id=sr.user_id')->join('departments d', 'd.id=u.department_id', 'left');
         if (!empty($filters['year']))
             $this->db->where('sr.salary_year', $filters['year']);
-        if (!empty($filters['month']))
-            $this->db->where('sr.salary_month', $filters['month']);
+        // [แก้] ใช้ isset + > 0 แทน !empty() เพราะ !empty(0)=false ทำให้เดือน 0=ทุกเดือน
+        // แต่เดือน 5,6,... ต้องกรองด้วย — isset($x) && (int)$x > 0 ถูกต้องกว่า
+        if (isset($filters['month']) && (int)$filters['month'] > 0)
+            $this->db->where('sr.salary_month', (int)$filters['month']);
         if (!empty($filters['user_id']))
             $this->db->where('sr.user_id', $filters['user_id']);
         $this->db->order_by('u.employee_id', 'ASC');

@@ -73,17 +73,31 @@ class Sales extends Employee_Controller {
             $history[$hy] = $row ? (float)$row->total : 0;
         }
 
+        // ── [แก้ ข้อ 2] โบนัส sales แยกตามเดือน — ย้ายมาจาก view ────────
+        $sales_bonus_monthly = array();
+        $bonus_rows = $this->db
+            ->select('bonus_month, amount')
+            ->where('user_id', $uid)
+            ->where('bonus_type', 'sales')
+            ->where('bonus_year', $y)
+            ->where('bonus_month IS NOT NULL')
+            ->get('annual_bonuses')->result();
+        foreach ($bonus_rows as $br) {
+            $sales_bonus_monthly[(int)$br->bonus_month] = (float)$br->amount;
+        }
+
         $this->render('employee/sales/index', array(
-            'title'        => 'ยอดขายของฉัน',
-            'page_title'   => 'ยอดขายของฉัน',
-            'year'         => $y,
-            'month'        => $m,
-            'monthly'      => $monthly,
-            'current_month'=> $current_month,
-            'yearly_total' => $yearly_total,
-            'salary_map'   => $salary_map,
-            'sales_bonus'  => $sales_bonus,
-            'history'      => $history,
+            'title'               => 'ยอดขายของฉัน',
+            'page_title'          => 'ยอดขายของฉัน',
+            'year'                => $y,
+            'month'               => $m,
+            'monthly'             => $monthly,
+            'current_month'       => $current_month,
+            'yearly_total'        => $yearly_total,
+            'salary_map'          => $salary_map,
+            'sales_bonus'         => $sales_bonus,
+            'sales_bonus_monthly' => $sales_bonus_monthly,
+            'history'             => $history,
         ));
     }
 }

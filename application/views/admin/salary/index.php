@@ -1,20 +1,32 @@
 <?php defined('BASEPATH') OR exit(); ?>
+<?php
+$mn_list = array('0'=>'ทุกเดือน','1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.',
+                 '5'=>'พ.ค.','6'=>'มิ.ย.','7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.',
+                 '10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.');
+?>
 <div class="d-flex gap-2 mb-3 flex-wrap align-items-center justify-content-between">
-  <div class="d-flex gap-2 flex-wrap">
-    <select id="selY" class="form-select form-select-sm" style="width:auto" onchange="goFilter()">
+  <div class="d-flex gap-2 flex-wrap align-items-center">
+    <select id="selY" class="form-select form-select-sm" style="width:auto">
       <?php for($y=date('Y');$y>=date('Y')-5;$y--):?>
-      <option value="<?=$y?>" <?=$year==$y?'selected':''?>><?=$y?></option>
+      <option value="<?=$y?>" <?=(int)$year===$y?'selected':''?>><?=$y?></option>
       <?php endfor;?>
     </select>
-    <select id="selM" class="form-select form-select-sm" style="width:auto" onchange="goFilter()">
-      <?php
-      $mn_list = array('0'=>'ทุกเดือน','1'=>'ม.ค.','2'=>'ก.พ.','3'=>'มี.ค.','4'=>'เม.ย.',
-                       '5'=>'พ.ค.','6'=>'มิ.ย.','7'=>'ก.ค.','8'=>'ส.ค.','9'=>'ก.ย.',
-                       '10'=>'ต.ค.','11'=>'พ.ย.','12'=>'ธ.ค.');
-      foreach($mn_list as $k=>$v):?>
-      <option value="<?=$k?>" <?=$month==$k?'selected':''?>><?=$v?></option>
+    <select id="selM" class="form-select form-select-sm" style="width:auto">
+      <?php foreach($mn_list as $k=>$v):?>
+      <option value="<?=$k?>" <?=(string)$month===(string)$k?'selected':''?>><?=$v?></option>
       <?php endforeach;?>
     </select>
+    <!-- data-base ใส่ URL จริงจาก PHP ตรงนี้เลย JS อ่านจาก attribute -->
+    <button id="btnSearch"
+            data-base="<?=base_url('admin/salary')?>"
+            class="btn btn-primary btn-sm px-3">
+      <i class="bi bi-search me-1"></i>ค้นหา
+    </button>
+    <?php if((int)$month > 0 || (int)$year != (int)date('Y')): ?>
+    <a href="<?=base_url('admin/salary')?>" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-x me-1"></i>ล้าง
+    </a>
+    <?php endif; ?>
   </div>
   <div class="d-flex gap-2 flex-wrap">
     <a href="<?=base_url('admin/salary/slips')?>" class="btn btn-outline-secondary btn-sm">
@@ -41,7 +53,13 @@
 <div class="card">
   <div class="card-header">
     <i class="bi bi-cash-stack me-2"></i>รายการเงินเดือน
-    <?php if($month > 0): echo $month.'/'; endif; echo $year; ?>
+    <?php
+    $mn_hdr = array(1=>'ม.ค.',2=>'ก.พ.',3=>'มี.ค.',4=>'เม.ย.',5=>'พ.ค.',6=>'มิ.ย.',
+                    7=>'ก.ค.',8=>'ส.ค.',9=>'ก.ย.',10=>'ต.ค.',11=>'พ.ย.',12=>'ธ.ค.');
+    echo ((int)$month > 0 && isset($mn_hdr[(int)$month]))
+        ? $mn_hdr[(int)$month].' '.$year
+        : 'ทุกเดือน '.$year;
+    ?>
   </div>
   <div class="card-body p-0">
     <div class="table-responsive">
@@ -133,36 +151,48 @@
   </div>
 </div>
 
-<?php
-$base_salary_url = base_url('admin/salary');
-$extra_js = '<script>
-function goFilter(){
-  var y = document.getElementById("selY").value;
-  var m = document.getElementById("selM").value;
-  window.location = "' . $base_salary_url . '?year=" + y + "&month=" + m;
-}
-document.getElementById("slipFiles").addEventListener("change", function(){
-  var files = this.files;
-  var list  = document.getElementById("slipList");
-  var prev  = document.getElementById("slipPreview");
-  if (!files.length) { prev.style.display = "none"; return; }
-  prev.style.display = "";
-  var html = "";
-  var pat  = /^\d{13}_[A-Z]{3}\d{4}\.pdf$/i;
-  for (var i = 0; i < files.length; i++) {
-    var f  = files[i];
-    var ok = pat.test(f.name);
-    var sz = (f.size / 1024 / 1024).toFixed(2);
-    var icon = ok ? "file-earmark-pdf text-danger" : "exclamation-triangle text-warning";
-    var name_html = ok ? f.name : "<span style=\"color:#d97706;font-weight:600\">" + f.name + "</span>";
-    var status = ok ? "<small style=\"color:green\">✓ format ถูกต้อง</small>" : "<small style=\"color:#d97706\">⚠ format ไม่ถูกต้อง</small>";
-    html += "<div style=\"display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f3f4f6\">";
-    html += "<i class=\"bi bi-" + icon + "\"></i>";
-    html += "<div style=\"flex:1\">" + name_html + "<br>" + status + "</div>";
-    html += "<small style=\"color:#6b7280\">" + sz + " MB</small>";
-    html += "</div>";
+<script>
+(function(){
+  var btn  = document.getElementById('btnSearch');
+  var selY = document.getElementById('selY');
+  var selM = document.getElementById('selM');
+
+  if(btn){
+    btn.addEventListener('click', function(){
+      /* อ่าน base URL จาก data-base attribute — ไม่ต้องใช้ extra_js */
+      var base = this.getAttribute('data-base');
+      var y    = selY ? selY.value : '';
+      var m    = selM ? selM.value : '';
+      window.location.href = base + '?year=' + y + '&month=' + m;
+    });
   }
-  list.innerHTML = html;
-});
-</script>';
-?>
+
+  var sf = document.getElementById('slipFiles');
+  if(sf){
+    sf.addEventListener('change', function(){
+      var files = this.files;
+      var list  = document.getElementById('slipList');
+      var prev  = document.getElementById('slipPreview');
+      if(!files.length){ prev.style.display='none'; return; }
+      prev.style.display = '';
+      var html = '';
+      var pat  = /^\d{13}_[A-Z]{3}\d{4}\.pdf$/i;
+      for(var i=0;i<files.length;i++){
+        var f  = files[i];
+        var ok = pat.test(f.name);
+        var sz = (f.size/1024/1024).toFixed(2);
+        var ic = ok ? 'file-earmark-pdf text-danger' : 'exclamation-triangle text-warning';
+        var nm = ok ? f.name : '<span style="color:#d97706;font-weight:600">'+f.name+'</span>';
+        var st = ok ? '<small style="color:green">✓ format ถูกต้อง</small>'
+                    : '<small style="color:#d97706">⚠ format ไม่ถูกต้อง</small>';
+        html += '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f3f4f6">';
+        html += '<i class="bi bi-'+ic+'"></i>';
+        html += '<div style="flex:1">'+nm+'<br>'+st+'</div>';
+        html += '<small style="color:#6b7280">'+sz+' MB</small>';
+        html += '</div>';
+      }
+      list.innerHTML = html;
+    });
+  }
+})();
+</script>

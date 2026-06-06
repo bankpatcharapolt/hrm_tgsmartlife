@@ -34,7 +34,8 @@ foreach ($monthly as $r) {
     <option value="<?=$k?>" <?=$month==$k?'selected':''?>><?=$v?></option>
     <?php endforeach;?>
   </select>
-  <button class="btn btn-primary btn-sm" onclick="goFilter()">
+
+  <button class="btn btn-primary btn-sm" id="btnFilter" data-base="<?=base_url('employee/sales')?>">
     <i class="bi bi-search me-1"></i>ดูข้อมูล
   </button>
 </div>
@@ -198,14 +199,9 @@ foreach ($monthly as $r) {
             </td>
             <td class="text-success">
               <?php
-              // โบนัสรายเดือน type=monthly ของเดือนนี้จาก annual_bonuses
-              $mb = $this->db
-                  ->where('user_id', $this->current_user->user_id)
-                  ->where('bonus_type', 'sales')
-                  ->where('bonus_year', $year)
-                  ->where('bonus_month', $mo)
-                  ->get('annual_bonuses')->row();
-              echo $mb ? '฿'.number_format($mb->amount,2) : '–';
+              // [แก้ ข้อ 2] อ่านจาก array ที่ controller เตรียมให้ — ไม่ query DB ใน view
+              $mb_amt = isset($sales_bonus_monthly[$mo]) ? $sales_bonus_monthly[$mo] : 0;
+              echo $mb_amt > 0 ? '฿'.number_format($mb_amt, 2) : '–';
               ?>
             </td>
             <td style="font-size:.8rem;color:#6b7280"><?=$sale?htmlspecialchars($sale->note??''):''?></td>
@@ -238,80 +234,69 @@ foreach ($monthly as $r) {
   </div>
 </div>
 
-<?php $extra_js = '
+
 <script>
-function goFilter(){
-  var y = document.getElementById("selYear").value;
-  var m = document.getElementById("selMonth").value;
-  window.location = "'.base_url('employee/sales').'?year="+y+"&month="+m;
-}
+window.addEventListener('load', function(){
+  (function(){
+    // ── Filter button ─────────────────────────────────────────────
+    var btn = document.getElementById('btnFilter');
+    if(btn){
+      btn.addEventListener('click', function(){
+        var base = this.getAttribute('data-base');
+        var y = document.getElementById('selYear').value;
+        var m = document.getElementById('selMonth').value;
+        window.location.href = base + '?year=' + y + '&month=' + m;
+      });
+    }
 
-// ── Chart ยอดขายรายเดือน ──────────────────────────────────────────
-var actualData = '.json_encode(array_values($chart_actual)).';
-var targetData = '.json_encode(array_values($chart_target)).';
-var labels     = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+    // ── Chart ยอดขายรายเดือน ──────────────────────────────────────
+    var actualData = <?= json_encode(array_values($chart_actual)) ?>;
+    var targetData = <?= json_encode(array_values($chart_target)) ?>;
+    var labels = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 
-new Chart(document.getElementById("monthlySalesChart"), {
-  type: "bar",
-  data: {
-    labels: labels,
-    datasets: [
-      {
-        label: "ยอดขายจริง",
-        data: actualData,
-        backgroundColor: "rgba(26,86,219,.75)",
-        borderRadius: 5,
-        order: 1,
+    new Chart(document.getElementById('monthlySalesChart'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'ยอดขายจริง', data: actualData, backgroundColor: 'rgba(26,86,219,.75)', borderRadius: 5, order: 1 },
+          { label: 'เป้าหมาย', data: targetData, type: 'line', borderColor: '#f59e0b',
+            backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, tension: 0.3, order: 0 }
+        ]
       },
-      {
-        label: "เป้าหมาย",
-        data: targetData,
-        type: "line",
-        borderColor: "#f59e0b",
-        backgroundColor: "transparent",
-        borderWidth: 2,
-        pointRadius: 3,
-        tension: 0.3,
-        order: 0,
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom', labels: { font: { family: 'Sarabun' } } } },
+        scales: {
+          x: { ticks: { font: { family: 'Sarabun', size: 11 } } },
+          y: { ticks: { font: { family: 'Sarabun', size: 11 },
+                        callback: function(v){ return '฿' + Number(v).toLocaleString(); } } }
+        }
       }
-    ]
-  },
-  options: {
-    responsive: true,
-    plugins: { legend: { position:"bottom", labels:{ font:{family:"Sarabun"} } } },
-    scales: {
-      x: { ticks:{ font:{family:"Sarabun",size:11} } },
-      y: { ticks:{ font:{family:"Sarabun",size:11},
-                   callback: function(v){ return "฿"+Number(v).toLocaleString(); } } }
-    }
-  }
-});
+    });
 
-// ── Chart เปรียบเทียบย้อนหลัง ─────────────────────────────────────
-var histYears  = '.json_encode(array_keys($history)).';
-var histTotals = '.json_encode(array_values($history)).';
-new Chart(document.getElementById("historyChart"), {
-  type: "bar",
-  data: {
-    labels: histYears,
-    datasets:[{
-      label: "ยอดขายรวมต่อปี",
-      data: histTotals,
-      backgroundColor: histYears.map(function(y,i){
-        return i===histYears.length-1 ? "rgba(26,86,219,.8)" : "rgba(26,86,219,.3)";
-      }),
-      borderRadius: 6,
-    }]
-  },
-  options:{
-    responsive:true,
-    plugins:{ legend:{display:false} },
-    scales:{
-      x:{ ticks:{font:{family:"Sarabun",size:11}} },
-      y:{ ticks:{font:{family:"Sarabun",size:11},
-                 callback:function(v){return "฿"+Number(v).toLocaleString();}} }
-    }
-  }
+    // ── Chart เปรียบเทียบย้อนหลัง ────────────────────────────────
+    var histYears  = <?= json_encode(array_keys($history)) ?>;
+    var histTotals = <?= json_encode(array_values($history)) ?>;
+    new Chart(document.getElementById('historyChart'), {
+      type: 'bar',
+      data: {
+        labels: histYears,
+        datasets: [{ label: 'ยอดขายรวมต่อปี', data: histTotals,
+          backgroundColor: histYears.map(function(y,i){
+            return i === histYears.length-1 ? 'rgba(26,86,219,.8)' : 'rgba(26,86,219,.3)';
+          }), borderRadius: 6 }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { font: { family: 'Sarabun', size: 11 } } },
+          y: { ticks: { font: { family: 'Sarabun', size: 11 },
+                        callback: function(v){ return '฿' + Number(v).toLocaleString(); } } }
+        }
+      }
+    });
+  })();
 });
 </script>
-'; ?>

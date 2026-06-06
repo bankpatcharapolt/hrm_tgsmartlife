@@ -3,7 +3,9 @@
   <div class="col-lg-8">
     <div class="card mb-3">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-cash-stack me-2 text-primary"></i>รายการเงินเดือน</span>
+        <span>
+          <!-- <i class="bi bi-cash-stack me-2 text-primary"></i> -->
+        รายการเงินเดือน</span>
         <select class="form-select form-select-sm" style="width:auto" onchange="window.location='<?=base_url('employee/salary')?>?year='+this.value"><?php for($y=date('Y');$y>=date('Y')-3;$y--):?><option value="<?=$y?>" <?=$year==$y?'selected':''?>><?=$y?></option><?php endfor;?></select>
       </div>
       <div class="card-body p-0">
@@ -27,7 +29,9 @@
     </div>
     <!-- Bonuses 3 ประเภท -->
     <div class="card">
-      <div class="card-header"><i class="bi bi-gift me-2 text-warning"></i>โบนัสของฉัน</div>
+      <div class="card-header">
+        <!-- <i class="bi bi-gift me-2 text-warning"></i> -->
+        โบนัสของฉัน</div>
       <?php
       $type_label = array('monthly'=>'โบนัสรายเดือน','special'=>'โบนัสพิเศษ','sales'=>'โบนัสตามยอดขาย','annual'=>'โบนัสประจำปี');
       $type_color = array('monthly'=>'primary','special'=>'warning','sales'=>'success','annual'=>'danger');
@@ -84,7 +88,8 @@
       </div>
       <?php else:?>
       <div class="card-body text-center text-muted py-4 small">
-        <i class="bi bi-gift fs-2 d-block mb-2 text-warning opacity-50"></i>ยังไม่มีข้อมูลโบนัส
+        <!-- <i class="bi bi-gift fs-2 d-block mb-2 text-warning opacity-50"></i> -->
+        ยังไม่มีข้อมูลโบนัส
       </div>
       <?php endif;?>
     </div>
