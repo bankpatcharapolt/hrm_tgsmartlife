@@ -29,6 +29,7 @@
             <th>วัน</th>
             <th>เหตุผล</th>
             <th>สถานะ</th>
+            <th>เอกสาร</th>
             <th>จัดการ</th>
           </tr>
         </thead>
@@ -46,6 +47,27 @@
                   <?= htmlspecialchars(mb_substr($req->reason, 0, 40)) ?>    <?= mb_strlen($req->reason) > 40 ? '...' : '' ?></td>
                 <td><span
                     class="badge bg-<?= array('pending' => 'warning text-dark', 'approved' => 'success', 'rejected' => 'danger', 'cancelled' => 'secondary')[$req->status] ?? 'secondary' ?>"><?= array('pending' => 'รอการอนุมัติ', 'approved' => 'อนุมัติ', 'rejected' => 'ปฏิเสธ', 'cancelled' => 'ยกเลิก')[$req->status] ?? $req->status ?></span>
+                </td>
+                <td>
+                  <div class="d-flex gap-1 flex-wrap">
+                    <?php if(!empty($req->document_path)): ?>
+                    <a href="<?= base_url($req->document_path) ?>" target="_blank"
+                       class="btn btn-outline-secondary btn-sm px-2 py-0"
+                       title="เอกสารประกอบ">
+                      <i class="bi bi-file-earmark"></i>
+                    </a>
+                    <?php endif; ?>
+                    <?php if(!empty($req->medical_cert_path)): ?>
+                    <a href="<?= base_url($req->medical_cert_path) ?>" target="_blank"
+                       class="btn btn-outline-warning btn-sm px-2 py-0"
+                       title="ใบรับรองแพทย์">
+                      <i class="bi bi-file-medical"></i>
+                    </a>
+                    <?php endif; ?>
+                    <?php if(empty($req->document_path) && empty($req->medical_cert_path)): ?>
+                    <span class="text-muted small">–</span>
+                    <?php endif; ?>
+                  </div>
                 </td>
                 <td>
                   <?php if ($req->status === 'pending'): ?>
@@ -91,7 +113,7 @@
               </div>
             <?php endforeach; else: ?>
             <tr>
-              <td colspan="7" class="text-center text-muted py-5">ไม่มีข้อมูลการลา</td>
+              <td colspan="8" class="text-center text-muted py-5">ไม่มีข้อมูลการลา</td>
             </tr><?php endif; ?>
         </tbody>
       </table>
