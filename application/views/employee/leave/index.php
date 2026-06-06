@@ -89,9 +89,25 @@ foreach ($requests as $r) {
             </td>
             <td style="font-size:.8rem;color:#6b7280;max-width:140px"><?= htmlspecialchars($r->approver_note??'')?:'–' ?></td>
             <td>
-              <?php if(!empty($r->document_path)): ?>
-              <a href="<?= base_url($r->document_path) ?>" target="_blank" class="btn btn-outline-secondary btn-sm px-2 py-0"><i class="bi bi-file-earmark"></i></a>
-              <?php else: ?><span class="text-muted small">–</span><?php endif; ?>
+              <div class="d-flex gap-1 flex-wrap">
+                <?php if(!empty($r->document_path)): ?>
+                <a href="<?= base_url($r->document_path) ?>" target="_blank"
+                   class="btn btn-outline-secondary btn-sm px-2 py-0"
+                   title="เอกสารประกอบ">
+                  <i class="bi bi-file-earmark"></i>
+                </a>
+                <?php endif; ?>
+                <?php if(!empty($r->medical_cert_path)): ?>
+                <a href="<?= base_url($r->medical_cert_path) ?>" target="_blank"
+                   class="btn btn-outline-warning btn-sm px-2 py-0"
+                   title="ใบรับรองแพทย์">
+                  <i class="bi bi-file-medical"></i>
+                </a>
+                <?php endif; ?>
+                <?php if(empty($r->document_path) && empty($r->medical_cert_path)): ?>
+                <span class="text-muted small">–</span>
+                <?php endif; ?>
+              </div>
             </td>
             <td>
               <?php if($r->status === 'pending'): ?>

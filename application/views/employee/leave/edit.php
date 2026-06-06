@@ -10,7 +10,7 @@
     <div class="row g-3">
       <div class="col-12">
         <label class="form-label">ประเภทการลา *</label>
-        <select name="leave_type_id" class="form-select" required>
+        <select name="leave_type_id" id="leaveTypeEdit" class="form-select" onchange="checkMedCert(this)" required>
           <option value="">-- เลือก --</option>
           <?php foreach($leave_types as $lt):?>
           <option value="<?=$lt->id?>" <?=$r->leave_type_id==$lt->id?'selected':''?>>
@@ -59,8 +59,37 @@
         <label class="form-label">เอกสารประกอบ (ถ้ามี)</label>
         <input type="file" name="document" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
         <?php if(!empty($r->document_path)):?>
-        <div class="mt-1"><a href="<?=base_url($r->document_path)?>" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark me-1"></i>เอกสารปัจจุบัน</a></div>
+        <div class="mt-1">
+          <a href="<?=base_url($r->document_path)?>" target="_blank"
+             class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-file-earmark me-1"></i>ดูเอกสารปัจจุบัน
+          </a>
+          <small class="text-muted ms-1">(อัปโหลดใหม่เพื่อแทนที่)</small>
+        </div>
         <?php endif;?>
+      </div>
+
+      <!-- [ข้อ 2] ใบรับรองแพทย์ — แสดงเฉพาะลาป่วย -->
+      <div class="col-12" id="medCertEditWrap" style="display:none">
+        <div class="p-3 rounded" style="background:#fff7ed;border:1px solid #fed7aa">
+          <label class="form-label fw-semibold" style="color:#c2410c">
+            <i class="bi bi-file-medical me-1"></i>ใบรับรองแพทย์
+            <span class="text-muted fw-normal" style="font-size:.75rem">(ถ้ามี)</span>
+          </label>
+          <!-- แสดงไฟล์เดิมถ้ามี -->
+          <?php if(!empty($r->medical_cert_path)):?>
+          <div class="mb-2 d-flex align-items-center gap-2">
+            <a href="<?=base_url($r->medical_cert_path)?>" target="_blank"
+               class="btn btn-outline-warning btn-sm">
+              <i class="bi bi-file-medical me-1"></i>ดูใบรับรองแพทย์ปัจจุบัน
+            </a>
+            <small class="text-muted">(อัปโหลดใหม่เพื่อแทนที่)</small>
+          </div>
+          <?php endif;?>
+          <input type="file" name="medical_cert" id="medCertFileEdit"
+                 class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+          <div class="form-text">รองรับ PDF, JPG, PNG ขนาดไม่เกิน 5MB</div>
+        </div>
       </div>
     </div>
     <div class="mt-4 d-flex gap-2">
@@ -71,11 +100,35 @@
   </div>
 </div>
 <script>
-function toggleHour(v){document.getElementById('hourSection').style.display=v==='hour'?'':'none';}
+function toggleHour(v){
+  document.getElementById('hourSection').style.display = v==='hour' ? '' : 'none';
+}
 function calcDays(){
-  var s=document.querySelector('[name=start_date]').value,e=document.querySelector('[name=end_date]').value;
-  var u=document.getElementById('leaveUnit').value,di=document.getElementById('daysInfo');
-  if(s&&e&&u==='day'){var d=Math.round((new Date(e)-new Date(s))/86400000)+1;if(d>0){di.textContent='รวม '+d+' วัน';return;}}
+  var s = document.querySelector('[name=start_date]').value;
+  var e = document.querySelector('[name=end_date]').value;
+  var u = document.getElementById('leaveUnit').value;
+  var di = document.getElementById('daysInfo');
+  if(s && e && u==='day'){
+    var d = Math.round((new Date(e)-new Date(s))/86400000)+1;
+    if(d>0){ di.textContent='รวม '+d+' วัน'; return; }
+  }
   di.textContent='';
 }
+
+// [ข้อ 2] แสดง/ซ่อนใบรับรองแพทย์ตาม leave_type ที่เลือก
+var _sickKw = ['ลาป่วย','sick','ป่วย'];
+function checkMedCert(sel) {
+  var wrap = document.getElementById('medCertEditWrap');
+  if (!wrap || !sel) return;
+  var txt  = sel.options[sel.selectedIndex]
+             ? sel.options[sel.selectedIndex].text.toLowerCase() : '';
+  var sick = _sickKw.some(function(k){ return txt.indexOf(k) !== -1; });
+  wrap.style.display = sick ? '' : 'none';
+}
+
+// init ตอนโหลดหน้า — ถ้าประเภทที่บันทึกไว้เป็นลาป่วย ให้แสดงบล็อกทันที
+document.addEventListener('DOMContentLoaded', function(){
+  var sel = document.getElementById('leaveTypeEdit');
+  if (sel) checkMedCert(sel);
+});
 </script>
