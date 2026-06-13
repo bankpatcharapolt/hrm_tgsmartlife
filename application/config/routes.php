@@ -105,3 +105,7 @@ $route['admin/leave_types/store']        = 'admin/leave_types/store';
 $route['admin/leave_types/edit/(:num)']  = 'admin/leave_types/edit/$1';
 $route['admin/leave_types/update/(:num)']= 'admin/leave_types/update/$1';
 $route['admin/leave_types/delete/(:num)']= 'admin/leave_types/delete/$1';
+
+// Attendance manual approval
+$route['admin/attendance/approve_manual/(:num)'] = 'admin/attendance/approve_manual/$1';
+$route['admin/attendance/reject_manual/(:num)']  = 'admin/attendance/reject_manual/$1';

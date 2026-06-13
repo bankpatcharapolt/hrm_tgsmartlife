@@ -221,4 +221,57 @@ class Attendance extends Admin_Controller {
         }
         redirect('admin/attendance/shifts');
     }
+
+    // ── อนุมัติการบันทึกย้อนหลัง ──────────────────────────────────
+    public function approve_manual($id) {
+        $att = $this->db->where('id',$id)->where('is_manual',1)->get('attendance')->row();
+        if (!$att) { $this->session->set_flashdata('error','ไม่พบรายการ'); redirect('admin/attendance'); }
+
+        $this->db->where('id',$id)->update('attendance', array(
+            'approval_status' => 'approved',
+            'approved_by'     => $this->current_user->user_id,
+            'approved_at'     => date('Y-m-d H:i:s'),
+        ));
+
+        // แจ้งเตือนพนักงาน
+        $this->load->model('Notification_model');
+        $this->Notification_model->create(array(
+            'user_id'   => $att->user_id,
+            'sender_id' => $this->current_user->user_id,
+            'type'      => 'attendance_approved',
+            'title'     => 'คำขอบันทึกย้อนหลังได้รับการอนุมัติ',
+            'message'   => 'การบันทึกย้อนหลังวันที่ ' . date('d/m/Y', strtotime($att->date)) . ' ได้รับการอนุมัติแล้ว',
+            'link'      => base_url('employee/attendance'),
+        ));
+        $this->session->set_flashdata('success', 'อนุมัติสำเร็จ');
+        redirect('admin/attendance');
+    }
+
+    // ── ปฏิเสธการบันทึกย้อนหลัง ───────────────────────────────────
+    public function reject_manual($id) {
+        if ($this->input->method() !== 'post') redirect('admin/attendance');
+        $att = $this->db->where('id',$id)->where('is_manual',1)->get('attendance')->row();
+        if (!$att) { $this->session->set_flashdata('error','ไม่พบรายการ'); redirect('admin/attendance'); }
+
+        $reason = $this->input->post('reason', TRUE) ?: 'ไม่ระบุ';
+        $this->db->where('id',$id)->update('attendance', array(
+            'approval_status' => 'rejected',
+            'approved_by'     => $this->current_user->user_id,
+            'approved_at'     => date('Y-m-d H:i:s'),
+            'reject_reason'   => $reason,
+        ));
+
+        // แจ้งเตือนพนักงาน
+        $this->load->model('Notification_model');
+        $this->Notification_model->create(array(
+            'user_id'   => $att->user_id,
+            'sender_id' => $this->current_user->user_id,
+            'type'      => 'attendance_rejected',
+            'title'     => 'คำขอบันทึกย้อนหลังถูกปฏิเสธ',
+            'message'   => 'การบันทึกย้อนหลังวันที่ ' . date('d/m/Y', strtotime($att->date)) . ' ถูกปฏิเสธ: ' . $reason,
+            'link'      => base_url('employee/attendance'),
+        ));
+        $this->session->set_flashdata('info', 'ปฏิเสธคำขอแล้ว');
+        redirect('admin/attendance');
+    }
 }

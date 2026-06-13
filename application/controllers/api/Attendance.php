@@ -46,11 +46,92 @@ class Attendance extends MY_Controller
 
         $today = $this->Attendance_model->get_today($uid);
         if ($today && $today->is_late) {
-            $this->Notification_model->send_to_role(
-                $uid, 'admin', 'late_checkin', 'พนักงานมาสาย',
-                $this->current_user->full_name . ' มาสาย ' . $today->late_minutes . ' นาที',
-                base_url('admin/attendance')
-            );
+            // ── ข้อมูลพนักงานที่มาสาย ────────────────────────────────
+            $emp = $this->db->where('id', $uid)->get('users')->row();
+            $emp_name = $emp
+                ? ($emp->first_name . ' ' . $emp->last_name . ' (' . ($emp->employee_id ?? '') . ')')
+                : 'พนักงาน';
+            $late_min = $today->late_minutes;
+            $msg   = $emp_name . ' มาสาย ' . $late_min . ' นาที';
+            $title = 'แจ้งเตือน: พนักงานมาสาย';
+            $link  = base_url('admin/attendance');
+
+            // ── รายชื่อ user ที่ต้องแจ้งเตือน (ไม่ซ้ำ, ไม่รวมตัวเอง) ──
+            $notified = array();
+
+            // 1. หัวหน้างานในทีมเดียวกัน (role = manager + team_id เดียวกัน)
+            if (!empty($emp) && !empty($emp->team_id)) {
+                $team_managers = $this->db
+                    ->select('u.id')
+                    ->from('users u')
+                    ->join('roles r', 'r.id = u.role_id')
+                    ->where('r.slug', 'manager')
+                    ->where('u.team_id', $emp->team_id)
+                    ->where('u.status', 'active')
+                    ->where('u.id !=', $uid)
+                    ->get()->result();
+                foreach ($team_managers as $m) {
+                    if (!in_array($m->id, $notified)) {
+                        $this->Notification_model->create(array(
+                            'user_id'   => $m->id,
+                            'sender_id' => $uid,
+                            'type'      => 'late_checkin',
+                            'title'     => $title,
+                            'message'   => $msg,
+                            'link'      => $link,
+                        ));
+                        $notified[] = $m->id;
+                    }
+                }
+            }
+
+            // 2. ถ้าไม่มีหัวหน้าในทีม ให้แจ้ง manager ทุกคน
+            if (empty($notified)) {
+                $all_managers = $this->db
+                    ->select('u.id')
+                    ->from('users u')
+                    ->join('roles r', 'r.id = u.role_id')
+                    ->where('r.slug', 'manager')
+                    ->where('u.status', 'active')
+                    ->where('u.id !=', $uid)
+                    ->get()->result();
+                foreach ($all_managers as $m) {
+                    if (!in_array($m->id, $notified)) {
+                        $this->Notification_model->create(array(
+                            'user_id'   => $m->id,
+                            'sender_id' => $uid,
+                            'type'      => 'late_checkin',
+                            'title'     => $title,
+                            'message'   => $msg,
+                            'link'      => $link,
+                        ));
+                        $notified[] = $m->id;
+                    }
+                }
+            }
+
+            // 3. แจ้ง admin และ owner เสมอ (ไม่ว่าจะมีหัวหน้าหรือไม่)
+            $admins_owners = $this->db
+                ->select('u.id')
+                ->from('users u')
+                ->join('roles r', 'r.id = u.role_id')
+                ->where_in('r.slug', array('admin', 'owner'))
+                ->where('u.status', 'active')
+                ->where('u.id !=', $uid)
+                ->get()->result();
+            foreach ($admins_owners as $a) {
+                if (!in_array($a->id, $notified)) {
+                    $this->Notification_model->create(array(
+                        'user_id'   => $a->id,
+                        'sender_id' => $uid,
+                        'type'      => 'late_checkin',
+                        'title'     => $title,
+                        'message'   => $msg,
+                        'link'      => $link,
+                    ));
+                    $notified[] = $a->id;
+                }
+            }
         }
 
         $this->json_ok(array(

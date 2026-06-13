@@ -164,8 +164,55 @@ class Attendance extends Employee_Controller {
             }
         }
 
-        $this->Attendance_model->manual_add($data);
-        $this->session->set_flashdata('success', 'บันทึกสำเร็จ');
+        // [อนุมัติ] ลงย้อนหลัง = รอการอนุมัติ
+        $data['is_manual']       = 1;
+        $data['approval_status'] = 'pending';
+
+        $att_id = $this->Attendance_model->manual_add($data);
+
+        // แจ้งเตือนหัวหน้างาน + admin + owner
+        $this->load->model('Notification_model');
+        $uid      = $this->current_user->user_id;
+        $emp      = $this->db->where('id', $uid)->get('users')->row();
+        $emp_name = $emp ? ($emp->first_name . ' ' . $emp->last_name) : 'พนักงาน';
+        $msg      = $emp_name . ' ขอบันทึกการเข้างานย้อนหลัง วันที่ ' . $date . ' รอการอนุมัติ';
+        $link     = base_url('admin/attendance');
+        $notified = array();
+
+        // หัวหน้างานในทีมเดียวกัน
+        if (!empty($emp) && !empty($emp->team_id)) {
+            $managers = $this->db->select('u.id')->from('users u')
+                ->join('roles r','r.id=u.role_id')
+                ->where('r.slug','manager')->where('u.team_id',$emp->team_id)
+                ->where('u.status','active')->where('u.id !=', $uid)->get()->result();
+            foreach ($managers as $m) {
+                if (!in_array($m->id,$notified)) {
+                    $this->Notification_model->create(array('user_id'=>$m->id,'sender_id'=>$uid,'type'=>'manual_attendance','title'=>'ขอบันทึกย้อนหลัง','message'=>$msg,'link'=>$link));
+                    $notified[] = $m->id;
+                }
+            }
+        }
+        if (empty($notified)) {
+            $all_mgr = $this->db->select('u.id')->from('users u')->join('roles r','r.id=u.role_id')
+                ->where('r.slug','manager')->where('u.status','active')->where('u.id !=', $uid)->get()->result();
+            foreach ($all_mgr as $m) {
+                if (!in_array($m->id,$notified)) {
+                    $this->Notification_model->create(array('user_id'=>$m->id,'sender_id'=>$uid,'type'=>'manual_attendance','title'=>'ขอบันทึกย้อนหลัง','message'=>$msg,'link'=>$link));
+                    $notified[] = $m->id;
+                }
+            }
+        }
+        // admin + owner เสมอ
+        $ao = $this->db->select('u.id')->from('users u')->join('roles r','r.id=u.role_id')
+            ->where_in('r.slug',array('admin','owner'))->where('u.status','active')->where('u.id !=', $uid)->get()->result();
+        foreach ($ao as $a) {
+            if (!in_array($a->id,$notified)) {
+                $this->Notification_model->create(array('user_id'=>$a->id,'sender_id'=>$uid,'type'=>'manual_attendance','title'=>'ขอบันทึกย้อนหลัง','message'=>$msg,'link'=>$link));
+                $notified[] = $a->id;
+            }
+        }
+
+        $this->session->set_flashdata('success', 'ส่งคำขอบันทึกย้อนหลังสำเร็จ รอการอนุมัติจากหัวหน้างาน');
         redirect('employee/attendance');
     }
 

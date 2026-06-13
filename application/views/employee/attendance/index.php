@@ -82,7 +82,7 @@
         <thead>
           <tr>
             <th>วันที่</th><th>กะ</th><th>เข้างาน</th><th>ออกงาน</th>
-            <th>สถานะ</th><th>สาย</th><th>OT</th><th>หมายเหตุ</th><th>จัดการ</th>
+            <th>สถานะ</th><th>สาย</th><th>OT</th><th>หมายเหตุ</th><th>คำขอย้อนหลัง</th><th>จัดการ</th>
           </tr>
         </thead>
         <tbody>
@@ -145,12 +145,29 @@
                   <?= $r->late_minutes > 0 ? $r->late_minutes . ' น.' : '–' ?></td>
                 <td class="small"><?= $r->ot_hours > 0 ? number_format($r->ot_hours, 1) . ' ชม.' : '–' ?></td>
                 <td style="font-size:.8rem;max-width:120px"><?= htmlspecialchars($r->note ?? '') ?></td>
+                <!-- สถานะคำขอย้อนหลัง -->
                 <td>
+                  <?php if(!empty($r->is_manual)): ?>
+                    <?php if($r->approval_status==='pending'): ?>
+                    <span class="badge bg-warning text-dark">รอการอนุมัติ</span>
+                    <?php elseif($r->approval_status==='approved'): ?>
+                    <span class="badge bg-success">อนุมัติแล้ว</span>
+                    <?php elseif($r->approval_status==='rejected'): ?>
+                    <span class="badge bg-danger"
+                          title="<?=htmlspecialchars($r->reject_reason??'')?>">ไม่อนุมัติ</span>
+                    <?php endif; ?>
+                  <?php else: ?><span class="text-muted small">–</span><?php endif; ?>
+                </td>
+                <td>
+                  <?php if(empty($r->is_manual) || $r->approval_status==='rejected'): ?>
                   <a href="<?= base_url('employee/attendance/delete/' . $r->id) ?>"
                     onclick="return confirm('ลบรายการวันที่ <?= date('d/m/Y', strtotime($r->date)) ?> ใช่ไหม?')"
                     class="btn btn-outline-danger btn-sm px-2 py-0 ms-1" title="ลบ">
                     <i class="bi bi-trash"></i>
                   </a>
+                  <?php elseif($r->approval_status==='pending'): ?>
+                  <span class="text-muted small">รอผล</span>
+                  <?php endif; ?>
                 </td>
               </tr>
           <?php endif; endforeach; else: ?>

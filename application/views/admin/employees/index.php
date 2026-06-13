@@ -9,7 +9,7 @@
       <div class="col-md-3"><input type="text" name="search" class="form-control form-control-sm" placeholder="ชื่อ / รหัส / เบอร์โทร" value="<?=htmlspecialchars($filters['search']??'')?>"></div>
       <div class="col-md-2"><select name="dept" class="form-select form-select-sm"><option value="">-- ทุกแผนก --</option><?php foreach($departments as $d):?><option value="<?=$d->id?>" <?=($filters['department_id']??'')==$d->id?'selected':''?>><?=$d->name?></option><?php endforeach;?></select></div>
       <div class="col-md-2"><select name="role" class="form-select form-select-sm"><option value="">-- ทุกบทบาท --</option><?php foreach($roles as $r):?><option value="<?=$r->id?>" <?=($filters['role_id']??'')==$r->id?'selected':''?>><?=$r->name?></option><?php endforeach;?></select></div>
-      <div class="col-md-2"><select name="status" class="form-select form-select-sm"><option value="active" <?=($filters['status']??'active')==='active'?'selected':''?>>ใช้งาน</option><option value="inactive" <?=($filters['status']??'')==='inactive'?'selected':''?>>ไม่ใช้งาน</option><option value="">ทั้งหมด</option></select></div>
+      <div class="col-md-2"><select name="status" class="form-select form-select-sm"><option value="" <?=($filters['status']??'')==''?'selected':'' ?>>-- ทั้งหมด --</option><option value="active" <?=($filters['status']??'')=='active'?'selected':'' ?>>ใช้งาน</option><option value="inactive" <?=($filters['status']??'')=='inactive'?'selected':'' ?>>ไม่ใช้งาน</option></select></div>
       <div class="col-auto"><button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button> <a href="<?=base_url('admin/employees')?>" class="btn btn-outline-secondary btn-sm">ล้าง</a></div>
     <?=form_close()?>
   </div>

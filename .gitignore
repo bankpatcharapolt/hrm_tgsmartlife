@@ -1,0 +1,7 @@
+# Ignore all log files
+application/logs/*
+
+uploads/*
+
+# (Optional) อนุญาตให้อัปโหลดเฉพาะไฟล์ index.html เพื่อเก็บโครงสร้างโฟลเดอร์ไว้
+!application/logs/index.html

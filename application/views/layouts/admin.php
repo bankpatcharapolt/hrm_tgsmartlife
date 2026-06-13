@@ -47,7 +47,7 @@
 .nd-item{padding:.6rem 1rem;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:.15s;}
 .nd-item:hover{background:#f9fafb;}.nd-item.unread{background:#eff6ff;}
 .nd-title{font-size:.82rem;font-weight:600;margin-bottom:.15rem;}.nd-msg{font-size:.77rem;color:var(--mu);}.nd-time{font-size:.69rem;color:var(--mu);}
-@media(max-width:768px){#sb{transform:translateX(-100%);} #main{margin-left:0;} #sb.open{transform:translateX(0);}}
+@media(max-width:768px){#sb{transform:translateX(-100%);} #main{margin-left:0;max-width:100vw;} #sb.open{transform:translateX(0);} #sbToggle{display:inline-flex!important;} .stat-card{flex-direction:column;} .table-responsive{font-size:.8rem;} th,td{padding:.35rem .5rem!important;}}
 .sb-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;}
 @media(max-width:768px){.sb-ov.show{display:block;}}
 /* Tom Select override — ให้ดูเข้ากับ Bootstrap ของโปรเจค */
@@ -105,7 +105,7 @@
 <div id="main">
   <div class="topbar">
     <div class="d-flex align-items-center gap-2">
-      <button class="bico d-lg-none" onclick="toggleSB()"><i class="bi bi-list fs-5"></i></button>
+      <button class="bico d-lg-none" onclick="toggleSB()" style="font-size:1.3rem;line-height:1">☰</button>
       <h1 class="pg-title"><?=$page_title??''?></h1>
     </div>
     <div class="d-flex align-items-center gap-2">

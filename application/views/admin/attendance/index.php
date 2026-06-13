@@ -102,12 +102,20 @@
                 <td class="small"><?= $r->ot_hours > 0 ? number_format($r->ot_hours, 1) . ' ชม.' : '–' ?></td>
                 <td>
                   <?php if (!empty($r->id)): ?>
+                  <?php if(!empty($r->is_manual) && $r->approval_status==='pending'): ?>
+                  <a href="<?=base_url('admin/attendance/approve_manual/'.$r->id)?>"
+                     onclick="return confirm('อนุมัติคำขอนี้?')"
+                     class="btn btn-success btn-sm px-2 py-0" title="อนุมัติ">✓</a>
+                  <button type="button" class="btn btn-danger btn-sm px-2 py-0 ms-1"
+                          onclick="openReject(<?=$r->id?>)" title="ปฏิเสธ">✗</button>
+                  <?php elseif(!empty($r->is_manual)): ?>
+                  <span class="badge bg-<?=$r->approval_status==='approved'?'success':'secondary'?> me-1" style="font-size:.7rem"><?=$r->approval_status==='approved'?'อนุมัติแล้ว':'ปฏิเสธ'?></span>
+                  <?php endif; ?>
                     <a href="<?= base_url('admin/attendance/edit/' . $r->id) ?>"
                       class="btn btn-outline-secondary btn-sm px-2 py-0" title="แก้ไข"><i class="bi bi-pencil"></i></a>
                     <a href="<?= base_url('admin/attendance/delete/' . $r->id) ?>"
                       onclick="return confirm('ลบรายการวันที่ <?= date('d/m/Y', strtotime($r->date)) ?> ของ <?= $r->first_name ?> ใช่ไหม?')"
                       class="btn btn-outline-danger btn-sm px-2 py-0 ms-1" title="ลบ"><i class="bi bi-trash"></i></a>
-
                   <?php endif; ?>
                 </td>
               </tr>
@@ -176,3 +184,32 @@ if ($total_pages > 1):
     </div>
   </nav>
 <?php endif; ?>
+<!-- Modal ปฏิเสธคำขอ -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2 bg-danger text-white">
+        <h6 class="modal-title mb-0">ปฏิเสธคำขอ</h6>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <?=form_open('',array('id'=>'rejectForm'))?>
+      <input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
+      <div class="modal-body">
+        <label class="form-label small fw-semibold">เหตุผล (จำเป็น)</label>
+        <textarea name="reason" class="form-control form-control-sm" rows="3" required
+                  placeholder="ระบุเหตุผลที่ปฏิเสธ"></textarea>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="submit" class="btn btn-danger btn-sm">ยืนยัน</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+      </div>
+      <?=form_close()?>
+    </div>
+  </div>
+</div>
+<script>
+function openReject(id) {
+  document.getElementById('rejectForm').action = '<?=base_url('admin/attendance/reject_manual/')?>' + id;
+  new bootstrap.Modal(document.getElementById('rejectModal')).show();
+}
+</script>
