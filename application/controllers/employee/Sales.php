@@ -4,7 +4,13 @@ class Sales extends Employee_Controller {
 
     public function __construct() {
         parent::__construct();
-        $this->require_permission('can_view_sales');
+        // อนุญาต: มี can_view_sales หรือ เป็น manager/admin/owner
+        $role_slug = (string)($this->session->userdata('role_slug') ?? '');
+        $is_full   = (bool)$this->session->userdata('is_full_access');
+        $is_manager_above = in_array($role_slug, array('manager','admin','owner'));
+        if (!$is_full && !$this->session->userdata('can_view_sales') && !$is_manager_above) {
+            $this->show_403();
+        }
         $this->load->model(array('Sales_model', 'Salary_model'));
     }
 

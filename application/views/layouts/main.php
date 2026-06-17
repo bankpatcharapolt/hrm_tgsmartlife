@@ -38,14 +38,6 @@
 .notif-toast.out{animation:tOut .25s ease forwards;}
 @keyframes tIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes tOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(8px)}}
-@media(max-width:768px){
-  .container-fluid{padding-left:.75rem;padding-right:.75rem;}
-  .card{margin-bottom:.75rem;}
-  .table-responsive{font-size:.8rem;}
-  th,td{padding:.3rem .4rem!important;}
-  .stat-card{flex-direction:column;}
-  .row.g-3>[class*=col-]{padding:.4rem;}
-}
 </style>
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 <style>
@@ -62,7 +54,7 @@
 <nav class="navbar navbar-expand-lg">
   <div class="container-fluid">
     <a class="navbar-brand" href="<?=base_url('employee/dashboard')?>">ระบบ HRM</a>
-    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#nm" style="color:rgba(255,255,255,.7);font-size:1.3rem">☰<!--<i class="bi bi-list fs-4"></i>--></button>
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#nm" style="color:rgba(255,255,255,.7)"><i class="bi bi-list fs-4"></i></button>
     <div class="collapse navbar-collapse" id="nm">
       <ul class="navbar-nav me-auto">
         <?php $c=strtolower($this->router->fetch_class()); ?>
@@ -74,7 +66,10 @@
         // แสดงเมนูยอดขายเฉพาะแผนกที่เกี่ยวกับการขาย
         $dept_nm = strtolower($current_user->department_name ?? '');
         $is_sales_dept = (strpos($dept_nm,'ขาย') !== false || strpos($dept_nm,'sale') !== false);
-        if(!empty($current_user->can_view_sales) && $is_sales_dept):
+        $role_slug = strtolower($current_user->role_slug ?? $current_user->role_name ?? '');
+        $is_manager_or_above = in_array($role_slug, ['manager','admin','owner','เจ้าของ','ผู้ดูแลระบบ','หัวหน้างาน']);
+        // แสดงเมนูยอดขาย: มี can_view_sales หรือ เป็น manager ขึ้นไป — ทั้งคู่ต้องอยู่แผนกขาย
+        if((!empty($current_user->can_view_sales) || $is_manager_or_above) && $is_sales_dept):
         ?>
         <li class="nav-item"><a class="nav-link <?=$c==='sales'&&$this->router->fetch_method()!=='team'?'on':''?>" href="<?=base_url('employee/sales')?>"><i class="bi bi-graph-up-arrow me-1"></i>ยอดขายของฉัน</a></li>
         <li class="nav-item"><a class="nav-link <?=$c==='sales'&&$this->router->fetch_method()==='team'?'on':''?>" href="<?=base_url('employee/sales/team')?>"><i class="bi bi-people-fill me-1"></i>ยอดขายของทีม</a></li>
