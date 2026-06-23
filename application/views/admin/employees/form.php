@@ -16,7 +16,10 @@
       <div class="col-md-3"><label class="form-label">นามสกุล (EN)</label><input type="text" name="last_name_en" class="form-control" value="<?=$e?htmlspecialchars($e->last_name_en??''):''?>"></div>
       <div class="col-md-3"><label class="form-label">ชื่อเล่น</label><input type="text" name="nickname" class="form-control" value="<?=$e?htmlspecialchars($e->nickname??''):''?>"></div>
       <div class="col-md-3"><label class="form-label">เพศ</label><select name="gender" class="form-select"><option value="male" <?=($e&&$e->gender==='male')?'selected':''?>>ชาย</option><option value="female" <?=($e&&$e->gender==='female')?'selected':''?>>หญิง</option><option value="other">อื่นๆ</option></select></div>
-      <div class="col-md-3"><label class="form-label">วันเกิด</label><input type="date" name="dob" class="form-control" value="<?=$e?$e->date_of_birth:''?>"></div>
+      <div class="col-md-3"><label class="form-label">วันเกิด</label><input type="text" class="form-control jq-date-only" id="empDob"
+               placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer"
+               value="<?=$e&&$e->date_of_birth?date('d/m/Y',strtotime($e->date_of_birth)):''?>">
+        <input type="hidden" name="dob" id="empDobHidden" value="<?=$e?$e->date_of_birth:''?>"></div>
       <div class="col-md-4"><label class="form-label">เลขบัตรประชาชน</label><input type="text" name="id_card" class="form-control" maxlength="13" value="<?=$e?htmlspecialchars($e->id_card_number??''):''?>"></div>
     </div>
 
@@ -29,7 +32,10 @@
       <div class="col-md-4"><label class="form-label">ตำแหน่ง</label><input type="text" name="position" class="form-control" value="<?=$e?htmlspecialchars($e->position??''):''?>" placeholder="ผู้จัดการ / พนักงานขาย ฯลฯ"></div>
       <div class="col-md-4"><label class="form-label">บทบาทในระบบ *</label><select name="role_id" class="form-select" required><?php foreach($roles as $r):?><option value="<?=$r->id?>" <?=($e&&$e->role_id==$r->id)?'selected':''?>><?=$r->name?></option><?php endforeach;?></select></div>
       <div class="col-md-4"><label class="form-label">ประเภทพนักงาน</label><select name="employee_type" class="form-select"><?php foreach(['รายเดือน','รายวัน','พาร์ทไทม์','สัญญาจ้าง'] as $et):?><option <?=($e&&($e->employee_type??'รายเดือน')===$et)?'selected':''?>><?=$et?></option><?php endforeach;?></select></div>
-      <div class="col-md-4"><label class="form-label">วันที่เริ่มทำงาน *</label><input type="date" name="start_date" class="form-control" value="<?=$e?$e->start_date:date('Y-m-d')?>" required></div>
+      <div class="col-md-4"><label class="form-label">วันที่เริ่มทำงาน *</label><input type="text" class="form-control jq-date-only" id="empStartDate"
+               placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer"
+               value="<?=$e&&$e->start_date?date('d/m/Y',strtotime($e->start_date)):date('d/m/Y')?>" required>
+        <input type="hidden" name="start_date" id="empStartDateHidden" value="<?=$e?$e->start_date:date('Y-m-d')?>"></div>
       <div class="col-md-4"><label class="form-label">สถานะ</label><select name="status" class="form-select"><option value="active" <?=($e&&$e->status==='active')?'selected':''?>>ใช้งาน</option><option value="inactive" <?=($e&&$e->status==='inactive')?'selected':''?>>ไม่ใช้งาน / ลาออก</option><option value="suspended" <?=($e&&$e->status==='suspended')?'selected':''?>>ระงับ</option></select></div>
     </div>
 
@@ -84,3 +90,17 @@
     <?=form_close()?>
   </div>
 </div>
+
+<script>
+$(document).ready(function(){
+    function _dispToISO(str){var p=str.split('/');return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:'';}
+    $('#empDob').datepicker({
+        dateFormat:'dd/mm/yy', yearRange:'1950:2010', changeYear:true, changeMonth:true,
+        onSelect:function(d){$('#empDobHidden').val(_dispToISO(d));}
+    });
+    $('#empStartDate').datepicker({
+        dateFormat:'dd/mm/yy', yearRange:'2000:2035', changeYear:true, changeMonth:true,
+        onSelect:function(d){$('#empStartDateHidden').val(_dispToISO(d));}
+    });
+});
+</script>

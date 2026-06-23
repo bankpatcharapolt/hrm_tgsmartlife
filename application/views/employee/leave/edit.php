@@ -28,24 +28,34 @@
       </div>
       <div class="col-md-4">
         <label class="form-label">วันที่เริ่มลา *</label>
-        <input type="date" name="start_date" class="form-control" value="<?=$r->start_date?>" onchange="calcDays()" required>
+        <input type="text" class="form-control jq-date-only" id="startDate"
+               placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer"
+               value="<?=$r->start_date?date('d/m/Y',strtotime($r->start_date)):''?>" required>
+        <input type="hidden" name="start_date" id="startDateHidden" value="<?=$r->start_date?>">
       </div>
       <div class="col-md-4">
         <label class="form-label">วันที่สิ้นสุด *</label>
-        <input type="date" name="end_date" class="form-control" value="<?=$r->end_date?>" onchange="calcDays()" required>
+        <input type="text" class="form-control jq-date-only" id="endDate"
+               placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer"
+               value="<?=$r->end_date?date('d/m/Y',strtotime($r->end_date)):''?>" required>
+        <input type="hidden" name="end_date" id="endDateHidden" value="<?=$r->end_date?>">
       </div>
       <!-- ชั่วโมง -->
       <div class="col-12" id="hourSection" <?=($r->leave_unit==='hour')?'':'style="display:none"'?>>
         <div class="p-2 rounded" style="background:#eff6ff;border:1px solid #bae6fd">
-          <div class="row g-2">
+          <div class="row g-2 align-items-end">
             <div class="col-5">
               <label class="form-label small">เวลาเริ่มลา</label>
-              <input type="time" name="leave_start_time" class="form-control form-control-sm" value="<?=$r->start_time?substr($r->start_time,0,5):''?>">
+              <div class="leave-time-wrap" id="lsTimeWrap">
+                <input type="hidden" name="leave_start_time" id="lsTime" value="<?=$r->start_time?substr($r->start_time,0,5):''">
+              </div>
             </div>
             <div class="col-2 d-flex align-items-end pb-1 justify-content-center">–</div>
             <div class="col-5">
               <label class="form-label small">เวลาสิ้นสุด</label>
-              <input type="time" name="leave_end_time" class="form-control form-control-sm" value="<?=$r->end_time?substr($r->end_time,0,5):''?>">
+              <div class="leave-time-wrap" id="leTimeWrap">
+                <input type="hidden" name="leave_end_time" id="leTime" value="<?=$r->end_time?substr($r->end_time,0,5):''">
+              </div>
             </div>
           </div>
         </div>
@@ -103,9 +113,55 @@
 function toggleHour(v){
   document.getElementById('hourSection').style.display = v==='hour' ? '' : 'none';
 }
+// helper: dd/mm/yyyy → YYYY-MM-DD
+function _dispToISO(str) {
+    if (!str) return '';
+    var p = str.split('/');
+    return p.length===3 ? p[2]+'-'+p[1]+'-'+p[0] : '';
+}
+
+function buildLeaveTimeWidget(wrapId, hiddenId) {
+    var $wrap   = $('#' + wrapId);
+    var initVal = $('#' + hiddenId).val() || '00:00';
+    var parts   = initVal.split(':');
+    var ch = parseInt(parts[0], 10) || 0;
+    var cm = parseInt(parts[1], 10) || 0;
+    var $selH = $("<select class=\"dt-hh\"></select>");
+    for(var h=0;h<=23;h++){var hv=(h<10?"0":"")+h;var $o=$("<option>").val(hv).text(hv);if(h===ch)$o.prop("selected",true);$selH.append($o);}
+    var $selM = $("<select class=\"dt-mm\"></select>");
+    for(var m=0;m<=59;m++){var mv=(m<10?"0":"")+m;var $p=$("<option>").val(mv).text(mv);if(m===cm)$p.prop("selected",true);$selM.append($p);}
+    $wrap.find('.dt-time-wrap').remove();
+    var $tw = $('<div class="dt-time-wrap" style="flex:1"></div>');
+    $tw.append('<select class="dt-hh">' + sh + '</select>');
+    $tw.append('<span class="dt-colon">:</span>');
+    $tw.append('<select class="dt-mm">' + sm + '</select>');
+    $wrap.prepend($tw);
+    function sync() {
+        $('#' + hiddenId).val($wrap.find('.dt-hh').val() + ':' + $wrap.find('.dt-mm').val() + ':00');
+    }
+    $wrap.find('.dt-hh, .dt-mm').on('change', sync);
+    sync();
+}
+
+$(document).ready(function(){
+    buildLeaveTimeWidget('lsTimeWrap', 'lsTime');
+    buildLeaveTimeWidget('leTimeWrap', 'leTime');
+    $('#startDate').datepicker({
+        dateFormat:'dd/mm/yy',
+        onSelect:function(d){$('#startDateHidden').val(_dispToISO(d));calcDays();}
+    });
+    $('#endDate').datepicker({
+        dateFormat:'dd/mm/yy',
+        onSelect:function(d){$('#endDateHidden').val(_dispToISO(d));calcDays();}
+    });
+    calcDays();
+    var selEdit = document.getElementById('leaveTypeEdit');
+    if (selEdit) checkMedCert(selEdit);
+});
+
 function calcDays(){
-  var s = document.querySelector('[name=start_date]').value;
-  var e = document.querySelector('[name=end_date]').value;
+  var s = document.getElementById('startDateHidden').value;
+  var e = document.getElementById('endDateHidden').value;
   var u = document.getElementById('leaveUnit').value;
   var di = document.getElementById('daysInfo');
   if(s && e && u==='day'){
@@ -126,9 +182,5 @@ function checkMedCert(sel) {
   wrap.style.display = sick ? '' : 'none';
 }
 
-// init ตอนโหลดหน้า — ถ้าประเภทที่บันทึกไว้เป็นลาป่วย ให้แสดงบล็อกทันที
-document.addEventListener('DOMContentLoaded', function(){
-  var sel = document.getElementById('leaveTypeEdit');
-  if (sel) checkMedCert(sel);
-});
+// init checkMedCert ถูกเรียกแล้วใน $(document).ready
 </script>

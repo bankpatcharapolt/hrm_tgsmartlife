@@ -257,8 +257,8 @@ class Salary extends Admin_Controller {
         $tax_list = $this->db->order_by('u.employee_id ASC')->get()->result();
 
         $this->render('admin/salary/tax_docs', array(
-            'title'      => 'ทวิ 50',
-            'page_title' => 'เอกสารทวิ 50 (ภ.ง.ด.1ก)',
+            'title'      => 'ใบทวิ 50',
+            'page_title' => 'เอกสารใบ 50 ทวิ',
             'employees'  => $this->User_model->get_all(array('status'=>'active'), 300),
             'tax_list'   => $tax_list,
             'year'       => $y,
@@ -313,8 +313,8 @@ class Salary extends Admin_Controller {
                     'user_id'   => $uid,
                     'sender_id' => $this->current_user->user_id,
                     'type'      => 'document_uploaded',
-                    'title'     => 'ทวิ 50 พร้อมแล้ว',
-                    'message'   => 'เอกสารทวิ 50 ปี '.$y.' พร้อมดาวน์โหลด',
+                    'title'     => 'ใบทวิ 50 พร้อมแล้ว',
+                    'message'   => 'เอกสารใบทวิ 50 ปี '.$y.' พร้อมดาวน์โหลด',
                     'link'      => base_url('employee/salary'),
                 ));
                 $success++;

@@ -16,11 +16,21 @@
       </div>
       <div class="col-md-4">
         <label class="form-label">เวลาเข้างาน</label>
-        <input type="datetime-local" name="check_in" class="form-control" value="<?=$r->check_in_time?date('Y-m-d\TH:i',strtotime($r->check_in_time)):''?>">
+        <div class="jq-dt-wrap">
+          <input type="text" class="form-control dt-date" placeholder="dd/mm/yyyy" autocomplete="off"
+                 value="<?=$r->check_in_time?date('d/m/Y',strtotime($r->check_in_time)):''?>">
+          <input type="hidden" name="check_in" class="dt-hidden"
+                 value="<?=$r->check_in_time??''?>">
+        </div>
       </div>
       <div class="col-md-4">
         <label class="form-label">เวลาออกงาน</label>
-        <input type="datetime-local" name="check_out" class="form-control" value="<?=$r->check_out_time?date('Y-m-d\TH:i',strtotime($r->check_out_time)):''?>">
+        <div class="jq-dt-wrap">
+          <input type="text" class="form-control dt-date" placeholder="dd/mm/yyyy" autocomplete="off"
+                 value="<?=$r->check_out_time?date('d/m/Y',strtotime($r->check_out_time)):''?>">
+          <input type="hidden" name="check_out" class="dt-hidden"
+                 value="<?=$r->check_out_time??''?>">
+        </div>
       </div>
       <div class="col-md-3">
         <label class="form-label">OT (ชั่วโมง)</label>
@@ -30,10 +40,10 @@
         <label class="form-label">สถานะ</label>
         <select name="status" class="form-select" id="statusSel" onchange="toggleLeave(this.value)">
           <option value="present" <?=$r->status==='present'?'selected':''?>>มาทำงาน</option>
-          <option value="absent" <?=$r->status==='absent'?'selected':''?>>ขาดงาน</option>
-          <option value="leave" <?=$r->status==='leave'?'selected':''?>>ลา</option>
+          <option value="absent"  <?=$r->status==='absent' ?'selected':''?>>ขาดงาน</option>
+          <option value="leave"   <?=$r->status==='leave'  ?'selected':''?>>ลา</option>
           <option value="holiday" <?=$r->status==='holiday'?'selected':''?>>วันหยุด</option>
-          <option value="half_day" <?=$r->status==='half_day'?'selected':''?>>ครึ่งวัน</option>
+          <option value="half_day"<?=$r->status==='half_day'?'selected':''?>>ครึ่งวัน</option>
         </select>
       </div>
       <div class="col-md-4">
@@ -57,14 +67,23 @@
             <div class="col-md-4">
               <label class="form-label small">หน่วยการลา</label>
               <select name="leave_unit" class="form-select form-select-sm" id="leaveUnit" onchange="toggleHourLeave(this.value)">
-                <option value="day" <?=$r->leave_hours==0?'selected':''?>>ลาเต็มวัน</option>
-                <option value="hour" <?=$r->leave_hours>0?'selected':''?>>ลาเป็นชั่วโมง</option>
+                <option value="day"  <?=$r->leave_hours==0?'selected':''?>>ลาเต็มวัน</option>
+                <option value="hour" <?=$r->leave_hours>0 ?'selected':''?>>ลาเป็นชั่วโมง</option>
               </select>
             </div>
             <div class="col-md-3" id="hourLeaveSection" <?=$r->leave_hours>0?'':'style="display:none"'?>>
               <label class="form-label small">จำนวนชั่วโมง</label>
               <div class="input-group input-group-sm">
-                <input type="number" name="leave_hours_direct" class="form-control" value="<?=$r->leave_hours?>" min="0.5" max="8" step="0.5" placeholder="ชม.">
+                <?php
+                  /* ถ้า leave_hours <= 0 ให้ value เป็น "" แทน "0.00"
+                     เพื่อไม่ให้ browser ยิง min-validation ตอน field ซ่อนอยู่ */
+                  $lh_val = ($r->leave_hours > 0) ? $r->leave_hours : '';
+                ?>
+                <input type="number" name="leave_hours_direct" id="leaveHoursDirect"
+                       class="form-control"
+                       value="<?=$lh_val?>"
+                       min="0.5" max="8" step="0.5" placeholder="ชม."
+                       <?=$r->leave_hours>0?'':'disabled'?>>
                 <span class="input-group-text">ชม.</span>
               </div>
             </div>
@@ -81,6 +100,46 @@
   </div>
 </div>
 <script>
-function toggleLeave(v){document.getElementById("leaveSection").style.display=v==="leave"?"":"none";}
-function toggleHourLeave(v){document.getElementById("hourLeaveSection").style.display=v==="hour"?"":"none";}
+function toggleLeave(v) {
+  var sec = document.getElementById('leaveSection');
+  var show = v === 'leave';
+  sec.style.display = show ? '' : 'none';
+  // disable fields ทั้งหมดใน leaveSection เมื่อซ่อน → browser ข้าม validation
+  sec.querySelectorAll('input, select, textarea').forEach(function(el) {
+    el.disabled = !show;
+  });
+  if (show) {
+    // restore hourLeaveSection ตาม leaveUnit ปัจจุบัน
+    toggleHourLeave(document.getElementById('leaveUnit').value);
+  }
+}
+function toggleHourLeave(v) {
+  var hourSec = document.getElementById('hourLeaveSection');
+  var inp     = document.getElementById('leaveHoursDirect');
+  var show    = v === 'hour';
+  hourSec.style.display = show ? '' : 'none';
+  // disable/enable เพื่อหลีกเลี่ยง min/max validation ตอนซ่อน
+  if (inp) {
+    inp.disabled = !show;
+    if (!show) inp.value = '';        // เคลียร์ค่าเมื่อซ่อน
+  }
+}
+// init ตอนโหลดหน้า
+(function() {
+  var status = document.getElementById('statusSel').value;
+  if (status !== 'leave') {
+    // disable ทุก field ใน leaveSection ทันที ก่อน browser validate
+    var sec = document.getElementById('leaveSection');
+    sec.querySelectorAll('input, select, textarea').forEach(function(el) {
+      el.disabled = true;
+    });
+  } else {
+    // ถ้าสถานะเป็น leave แต่ไม่ได้ลาชั่วโมง → disable leaveHoursDirect
+    var unit = document.getElementById('leaveUnit').value;
+    if (unit !== 'hour') {
+      var inp = document.getElementById('leaveHoursDirect');
+      if (inp) inp.disabled = true;
+    }
+  }
+})();
 </script>

@@ -83,8 +83,8 @@ class Attendance extends Admin_Controller {
                 'user_id'        => $this->input->post('user_id'),
                 'shift_id'       => $this->input->post('shift_id') ?: null,
                 'date'           => $this->input->post('date'),
-                'check_in_time'  => $this->input->post('check_in')  ?: null,
-                'check_out_time' => $this->input->post('check_out') ?: null,
+                'check_in_time'  => $this->_normalize_datetime($this->input->post('check_in')),
+                'check_out_time' => $this->_normalize_datetime($this->input->post('check_out')),
                 'status'         => $status,
                 'note'           => $this->input->post('note',TRUE),
                 'is_late'        => 0,
@@ -130,8 +130,8 @@ class Attendance extends Admin_Controller {
             $status = $this->input->post('status') ?: 'present';
             $data = array(
                 'shift_id'       => $this->input->post('shift_id') ?: null,
-                'check_in_time'  => $this->input->post('check_in')  ?: null,
-                'check_out_time' => $this->input->post('check_out') ?: null,
+                'check_in_time'  => $this->_normalize_datetime($this->input->post('check_in')),
+                'check_out_time' => $this->_normalize_datetime($this->input->post('check_out')),
                 'status'         => $status,
                 'note'           => $this->input->post('note',TRUE),
                 'ot_hours'       => (float)$this->input->post('ot_hours'),
@@ -184,10 +184,24 @@ class Attendance extends Admin_Controller {
     }
     public function store_shift() {
         if ($this->input->method()!=='post') redirect('admin/attendance/shifts');
+
+        $name = trim($this->input->post('name', TRUE));
+        $st   = $this->input->post('start_time') ?: '08:30:00';
+        $en   = $this->input->post('end_time')   ?: '17:30:00';
+
+        // fallback: ถ้า value เป็น HH:mm (ไม่มี :ss) เติม :00 ให้
+        if ($st && strlen($st) === 5) $st .= ':00';
+        if ($en && strlen($en) === 5) $en .= ':00';
+
+        if (!$name) {
+            $this->session->set_flashdata('error','กรุณาระบุชื่อกะ');
+            redirect('admin/attendance/shifts');
+        }
+
         $data = array(
-            'name'                    => $this->input->post('name',TRUE),
-            'start_time'              => $this->input->post('start_time'),
-            'end_time'                => $this->input->post('end_time'),
+            'name'                    => $name,
+            'start_time'              => $st,
+            'end_time'                => $en,
             'break_minutes'           => (int)$this->input->post('break_minutes'),
             'late_threshold_minutes'  => (int)$this->input->post('late_threshold_minutes'),
             'ot_starts_after_minutes' => (int)$this->input->post('ot_starts_after_minutes'),
@@ -274,4 +288,26 @@ class Attendance extends Admin_Controller {
         $this->session->set_flashdata('info', 'ปฏิเสธคำขอแล้ว');
         redirect('admin/attendance');
     }
+
+    /**
+     * แปลงวันที่ทุกรูปแบบ → Y-m-d H:i:s สำหรับ MySQL
+     * รองรับ: dd/mm/yyyy HH:MM, dd/mm/yyyy, Y-m-d H:i:s, Y-m-d, Y-m-dTH:i
+     */
+    private function _normalize_datetime($val) {
+        if (empty($val)) return null;
+        $val = trim($val);
+        // dd/mm/yyyy HH:MM
+        if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/', $val, $m)) {
+            return "{$m[3]}-{$m[2]}-{$m[1]} {$m[4]}:{$m[5]}:00";
+        }
+        // dd/mm/yyyy
+        if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $val, $m)) {
+            return "{$m[3]}-{$m[2]}-{$m[1]}";
+        }
+        // Y-m-dTH:i หรือ Y-m-d H:i หรือ Y-m-d
+        $ts = strtotime($val);
+        if ($ts) return date('Y-m-d H:i:s', $ts);
+        return null;
+    }
+
 }

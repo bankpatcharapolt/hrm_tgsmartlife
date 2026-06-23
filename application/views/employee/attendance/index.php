@@ -197,7 +197,10 @@
         <div class="row g-3">
           <div class="col-6">
             <label class="form-label small">วันที่ *</label>
-            <input type="date" name="date" class="form-control form-control-sm" value="<?= date('Y-m-d') ?>" required>
+            <input type="text" class="form-control form-control-sm jq-date-only" id="addDate"
+                   placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer"
+                   value="<?=date('d/m/Y')?>" required>
+            <input type="hidden" name="date" id="addDateHidden" value="<?=date('Y-m-d')?>">
           </div>
           <!-- [ข้อ 7] กะการทำงาน: pre-select กะของ user + disabled แก้ไขไม่ได้ -->
           <div class="col-6">
@@ -214,11 +217,19 @@
           </div>
           <div class="col-6">
             <label class="form-label small">เวลาเข้างาน</label>
-            <input type="datetime-local" name="check_in" class="form-control form-control-sm" id="addCheckIn">
+            <div class="jq-dt-wrap">
+              <input type="text" class="form-control form-control-sm dt-date"
+                     placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer">
+              <input type="hidden" name="check_in" class="dt-hidden" value="">
+            </div>
           </div>
           <div class="col-6">
             <label class="form-label small">เวลาออกงาน</label>
-            <input type="datetime-local" name="check_out" class="form-control form-control-sm" id="addCheckOut">
+            <div class="jq-dt-wrap">
+              <input type="text" class="form-control form-control-sm dt-date"
+                     placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer">
+              <input type="hidden" name="check_out" class="dt-hidden" value="">
+            </div>
           </div>
           <!-- [ข้อ 7] เพิ่มสถานะ + half_day hours + hourly -->
           <div class="col-12">
@@ -282,40 +293,49 @@ window.onStatusChange = function(v) {
     if (v === "hourly") window.calcHourly();
 };
 
-// คำนวณชั่วโมงรายชั่วโมง
+// คำนวณชั่วโมงรายชั่วโมง — อ่านจาก hidden field (YYYY-MM-DD HH:mm:ss)
 window.calcHourly = function() {
-    var ci = document.getElementById("addCheckIn").value;
-    var co = document.getElementById("addCheckOut").value;
+    // dt-hidden ของ check_in/check_out อยู่ใน modal
+    var ciVal = $('#addModal [name="check_in"].dt-hidden').val() || '';
+    var coVal = $('#addModal [name="check_out"].dt-hidden').val() || '';
     var el = document.getElementById("hourlyCalc");
-    
-    if (!ci || !co) { 
-        if (el) el.textContent = ""; 
-        return; 
+
+    if (!ciVal || !coVal) {
+        if (el) el.textContent = "";
+        return;
     }
-    
-    var diff = (new Date(co) - new Date(ci)) / 3600000;
-    if (diff <= 0) { 
-        if (el) el.textContent = "⚠ เวลาออกต้องหลังเวลาเข้า"; 
-        return; 
+    // แปลง "YYYY-MM-DD HH:mm:ss" → Date
+    var ci = new Date(ciVal.replace(' ', 'T'));
+    var co = new Date(coVal.replace(' ', 'T'));
+    var diff = (co - ci) / 3600000;
+    if (isNaN(diff) || diff <= 0) {
+        if (el) el.textContent = "⚠ เวลาออกต้องหลังเวลาเข้า";
+        return;
     }
     if (el) el.textContent = "ชั่วโมงทำงาน: " + diff.toFixed(2) + " ชม.";
 };
 
-// ผูก Event Listener เช็คเวลาพิมพ์
-document.addEventListener("DOMContentLoaded", function() {
-    var addCheckIn = document.getElementById("addCheckIn");
-    var addCheckOut = document.getElementById("addCheckOut");
-    var addStatus = document.getElementById("addStatus");
-
-    if (addCheckIn && addStatus) {
-        addCheckIn.addEventListener("change", function() { 
-            if (addStatus.value === "hourly") window.calcHourly(); 
+// init datepicker สำหรับ #addDate ใน modal + ผูก calcHourly เมื่อ modal เปิด
+$(document).ready(function(){
+    // addDate: jq-date-only แต่ hidden id ไม่ใช่ pattern Display→Hidden
+    // จัดการเองใน shown.bs.modal
+    $('#addModal').on('shown.bs.modal', function(){
+        initDTPickers(this);
+        // bind addDate → addDateHidden แยกเพราะ id ไม่ตรง pattern
+        var $d = $('#addDate');
+        if ($d.length && !$d.hasClass('hasDatepicker')) {
+            $d.datepicker({
+                dateFormat: 'dd/mm/yy',
+                onSelect: function(d) {
+                    var p = d.split('/');
+                    $('#addDateHidden').val(p.length===3 ? p[2]+'-'+p[1]+'-'+p[0] : '');
+                }
+            });
+        }
+        // ผูก calcHourly กับ time dropdowns ใน modal
+        $(this).find('.dt-hh, .dt-mm').off('change.hourly').on('change.hourly', function(){
+            if ($('#addStatus').val() === 'hourly') window.calcHourly();
         });
-    }
-    if (addCheckOut && addStatus) {
-        addCheckOut.addEventListener("change", function() { 
-            if (addStatus.value === "hourly") window.calcHourly(); 
-        });
-    }
+    });
 });
 </script>

@@ -5,7 +5,7 @@
     <div class="card">
       <div class="card-header"><i class="bi bi-plus-circle me-2"></i>เพิ่ม/แก้ไขกะการทำงาน</div>
       <div class="card-body">
-        <?=form_open('admin/attendance/store_shift')?>
+        <?=form_open('admin/attendance/store_shift', array('onsubmit'=>'return validateShiftForm()'))?>
         <input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
         <input type="hidden" name="shift_id" id="shiftId" value="">
         <div class="mb-3">
@@ -15,11 +15,16 @@
         <div class="row g-2 mb-3">
           <div class="col-6">
             <label class="form-label">เวลาเริ่มกะ *</label>
-            <input type="time" name="start_time" id="sfStart" class="form-control" value="08:30" required>
+            <div class="shift-time-wrap" id="sfStartWrap" style="display:flex;flex-wrap:nowrap;gap:6px;align-items:stretch">
+              <!-- ไม่มี dt-date — time-only widget -->
+              <input type="hidden" name="start_time" id="sfStart" value="08:30:00">
+            </div>
           </div>
           <div class="col-6">
             <label class="form-label">เวลาสิ้นสุดกะ *</label>
-            <input type="time" name="end_time" id="sfEnd" class="form-control" value="17:30" required>
+            <div class="shift-time-wrap" id="sfEndWrap" style="display:flex;flex-wrap:nowrap;gap:6px;align-items:stretch">
+              <input type="hidden" name="end_time" id="sfEnd" value="17:30:00">
+            </div>
           </div>
         </div>
         <div class="row g-2 mb-3">
@@ -129,24 +134,88 @@
     </div>
   </div>
 </div>
+<?php $extra_js = <<<'JSEOF'
 <script>
-function editShift(id,name,start,end,brk,late,ot,color,night){
-  document.getElementById('shiftId').value=id;
-  document.getElementById('sfName').value=name;
-  document.getElementById('sfStart').value=start;
-  document.getElementById('sfEnd').value=end;
-  document.getElementById('sfBreak').value=brk;
-  document.getElementById('sfLate').value=late;
-  document.getElementById('sfOT').value=ot;
-  document.getElementById('sfColor').value=color;
-  document.getElementById('sfColorHex').value=color;
-  document.getElementById('sfNight').checked=night==1;
-  document.getElementById('sfBtn').innerHTML='<i class="bi bi-save me-1"></i>อัปเดตกะ';
-  window.scrollTo({top:0,behavior:'smooth'});
+// time-only widget สำหรับกะการทำงาน
+function buildTimeWidget(wrapId, hiddenId, initVal) {
+  var parts = (initVal || "00:00").split(":");
+  var ch = parseInt(parts[0], 10);
+  var cm = parseInt(parts[1], 10);
+  if (isNaN(ch)) ch = 0;
+  if (isNaN(cm)) cm = 0;
+
+  var $wrap = $("#" + wrapId);
+  $wrap.find(".dt-time-wrap").remove();
+
+  var $tw = $('<div class="dt-time-wrap" style="flex:1"></div>');
+  var $selH = $('<select class="dt-hh"></select>');
+  for (var h = 0; h <= 23; h++) {
+    var hv = (h < 10 ? "0" : "") + h;
+    var $o = $("<option>").val(hv).text(hv);
+    if (h === ch) $o.prop("selected", true);
+    $selH.append($o);
+  }
+  var $selM = $('<select class="dt-mm"></select>');
+  for (var m = 0; m <= 59; m++) {
+    var mv = (m < 10 ? "0" : "") + m;
+    var $p = $("<option>").val(mv).text(mv);
+    if (m === cm) $p.prop("selected", true);
+    $selM.append($p);
+  }
+  $tw.append($selH);
+  $tw.append('<span class="dt-colon">:</span>');
+  $tw.append($selM);
+  $wrap.empty().append($tw);
+
+  function sync() {
+    var hVal = $wrap.find(".dt-hh").val();
+    var mVal = $wrap.find(".dt-mm").val();
+    $("#" + hiddenId).val(hVal + ":" + mVal + ":00");
+  }
+  $selH.on("change", sync);
+  $selM.on("change", sync);
+  sync(); // sync ทันทีหลัง build
 }
-function resetShiftForm(){
-  document.getElementById('shiftId').value='';
-  document.getElementById('sfBtn').innerHTML='<i class="bi bi-save me-1"></i>บันทึก';
+
+$(document).ready(function() {
+  buildTimeWidget("sfStartWrap", "sfStart", "08:30");
+  buildTimeWidget("sfEndWrap",   "sfEnd",   "17:30");
+  document.getElementById("sfColor").addEventListener("input", function() {
+    document.getElementById("sfColorHex").value = this.value;
+  });
+});
+
+function editShift(id, name, start, end, brk, late, ot, color, night) {
+  document.getElementById("shiftId").value    = id;
+  document.getElementById("sfName").value     = name;
+  buildTimeWidget("sfStartWrap", "sfStart", start);
+  buildTimeWidget("sfEndWrap",   "sfEnd",   end);
+  document.getElementById("sfBreak").value    = brk;
+  document.getElementById("sfLate").value     = late;
+  document.getElementById("sfOT").value       = ot;
+  document.getElementById("sfColor").value    = color;
+  document.getElementById("sfColorHex").value = color;
+  document.getElementById("sfNight").checked  = (night == 1);
+  document.getElementById("sfBtn").innerHTML  = '<i class="bi bi-save me-1"></i>อัปเดตกะ';
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
-document.getElementById('sfColor').addEventListener('input',function(){document.getElementById('sfColorHex').value=this.value;});
+
+function resetShiftForm() {
+  document.getElementById("shiftId").value   = "";
+  buildTimeWidget("sfStartWrap", "sfStart", "08:30");
+  buildTimeWidget("sfEndWrap",   "sfEnd",   "17:30");
+  document.getElementById("sfBtn").innerHTML = '<i class="bi bi-save me-1"></i>บันทึก';
+}
+
+function validateShiftForm() {
+  var st = document.getElementById("sfStart").value;
+  var en = document.getElementById("sfEnd").value;
+  var nm = document.getElementById("sfName").value.trim();
+  if (!nm)                  { alert("กรุณาระบุชื่อกะ"); return false; }
+  if (!st || st === "::")   { alert("กรุณาเลือกเวลาเริ่มกะ"); return false; }
+  if (!en || en === "::")   { alert("กรุณาเลือกเวลาสิ้นสุดกะ"); return false; }
+  return true;
+}
 </script>
+JSEOF;
+?>

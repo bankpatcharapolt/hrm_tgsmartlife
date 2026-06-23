@@ -121,7 +121,7 @@
             <div class="flex-fill"><div style="font-size:.83rem">ทวิ 50 ปี <?=$t->tax_year?></div><div style="font-size:.72rem;color:#6b7280"><?=htmlspecialchars($t->file_name)?></div></div>
             <i class="bi bi-download text-muted"></i>
           </a>
-          <?php endforeach;else:?><div class="list-group-item text-center text-muted py-3 small">ยังไม่มีเอกสารทวิ 50</div><?php endif;?>
+          <?php endforeach;else:?><div class="list-group-item text-center text-muted py-3 small">ยังไม่มีเอกสารใบทวิ 50</div><?php endif;?>
         </div>
       </div>
     </div>

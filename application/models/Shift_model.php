@@ -42,10 +42,16 @@ class Shift_model extends CI_Model {
     // คำนวณ OT
     public function calc_ot($shift, $checkout_time) {
         if (!$checkout_time) return 0;
-        $end  = strtotime($shift->end_time);
-        $cout = strtotime($checkout_time);
-        // Night shift ข้ามวัน
-        if ($shift->is_night_shift && $cout < $end) $cout += 86400;
+        // ต้องใช้วันที่เดียวกับ checkout เพื่อเทียบเวลาให้ถูกต้อง
+        $date   = date('Y-m-d', strtotime($checkout_time));
+        $end    = strtotime($date . ' ' . $shift->end_time);
+        $cout   = strtotime($checkout_time);
+        // Night shift ข้ามวัน: end_time อยู่วันถัดไป
+        if (!empty($shift->is_night_shift)) {
+            // ถ้า shift เริ่มหลัง 18:00 และ end_time < start_time → ข้ามวัน
+            $start = strtotime($date . ' ' . $shift->start_time);
+            if ($end < $start) $end += 86400;
+        }
         $diff = ($cout - $end) / 3600;
         return max(0, round($diff, 2));
     }

@@ -38,8 +38,8 @@ class Leave extends Admin_Controller {
     public function store() {
         if ($this->input->method() !== 'post') redirect('admin/leave');
 
-        $sd   = $this->input->post('start_date');
-        $ed   = $this->input->post('end_date');
+        $sd   = $this->_normalize_date($this->input->post('start_date'));
+        $ed   = $this->_normalize_date($this->input->post('end_date'));
         $unit = $this->input->post('leave_unit') ?: 'day';
         $days = max(1, round((strtotime($ed) - strtotime($sd)) / 86400) + 1);
 
@@ -268,4 +268,15 @@ class Leave extends Admin_Controller {
         $this->session->set_flashdata('warning', 'ปฏิเสธสำเร็จ');
         redirect('admin/leave');
     }
+
+    private function _normalize_date($val) {
+        if (empty($val)) return null;
+        $val = trim($val);
+        if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $val, $m)) {
+            return "{$m[3]}-{$m[2]}-{$m[1]}";
+        }
+        $ts = strtotime($val);
+        return $ts ? date('Y-m-d', $ts) : null;
+    }
+
 }

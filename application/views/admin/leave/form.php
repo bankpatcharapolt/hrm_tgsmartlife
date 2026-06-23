@@ -52,36 +52,44 @@
       <!-- วันที่เริ่มลา -->
       <div class="col-md-4">
         <label class="form-label">วันที่เริ่มลา <span class="text-danger">*</span></label>
-        <input type="date" name="start_date" class="form-control"
-               value="<?=$r?$r->start_date:''?>" id="startDate" onchange="calcDays()" required>
+        <input type="text" name="start_date_display" class="form-control jq-date-only"
+               placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer"
+               value="<?=$r?date('d/m/Y',strtotime($r->start_date)):''?>" id="startDate" required>
+        <input type="hidden" name="start_date" id="startDateHidden"
+               value="<?=$r?$r->start_date:''?>">
       </div>
 
       <!-- วันที่สิ้นสุด -->
       <div class="col-md-4" id="endDateWrap">
         <label class="form-label">วันที่สิ้นสุดการลา <span class="text-danger">*</span></label>
-        <input type="date" name="end_date" class="form-control"
-               value="<?=$r?$r->end_date:''?>" id="endDate" onchange="calcDays()" required>
+        <input type="text" name="end_date_display" class="form-control jq-date-only"
+               placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer"
+               value="<?=$r?date('d/m/Y',strtotime($r->end_date)):''?>" id="endDate" required>
+        <input type="hidden" name="end_date" id="endDateHidden"
+               value="<?=$r?$r->end_date:''?>">
       </div>
 
       <!-- ช่วงเวลา (ลาชั่วโมง) -->
       <div class="col-12" id="hourSection" <?=(!$r || ($r->leave_unit??'day')!=='hour')?'style="display:none"':''?>>
         <div class="p-3 rounded" style="background:#eff6ff;border:1px solid #bae6fd">
           <div class="fw-semibold small mb-2"><i class="bi bi-clock me-1"></i>ช่วงเวลาที่ลา</div>
-          <div class="row g-2">
+          <div class="row g-2 align-items-end">
             <div class="col-md-3">
               <label class="form-label small">เวลาเริ่มลา</label>
-              <input type="time" name="leave_start_time" class="form-control"
-                     value="<?=$r&&!empty($r->start_time)?substr($r->start_time,0,5):''?>"
-                     id="lsTime" onchange="calcHours()">
+              <div class="leave-time-wrap" id="lsTimeWrap">
+                <input type="hidden" name="leave_start_time" id="lsTime"
+                       value="<?=$r&&!empty($r->start_time)?substr($r->start_time,0,5):''?>">
+              </div>
             </div>
             <div class="col-md-3">
               <label class="form-label small">เวลาสิ้นสุดลา</label>
-              <input type="time" name="leave_end_time" class="form-control"
-                     value="<?=$r&&!empty($r->end_time)?substr($r->end_time,0,5):''?>"
-                     id="leTime" onchange="calcHours()">
+              <div class="leave-time-wrap" id="leTimeWrap">
+                <input type="hidden" name="leave_end_time" id="leTime"
+                       value="<?=$r&&!empty($r->end_time)?substr($r->end_time,0,5):''?>">
+              </div>
             </div>
             <div class="col-md-4 d-flex align-items-end">
-              <div class="alert alert-info py-1 px-2 mb-0 small" id="hoursResult" style="display:none">
+              <div class="alert alert-info py-1 px-2 mb-0 small w-100" id="hoursResult" style="display:none">
                 รวม <strong id="hoursNum">0</strong> ชั่วโมง
               </div>
             </div>
@@ -180,14 +188,31 @@
 </div>
 
 <script>
+// helper: แปลง dd/mm/yyyy → Date object
+function _parseDispDate(str) {
+    if (!str) return null;
+    var p = str.split('/');
+    if (p.length !== 3) return null;
+    return new Date(parseInt(p[2],10), parseInt(p[1],10)-1, parseInt(p[0],10));
+}
+// helper: แปลง dd/mm/yyyy → YYYY-MM-DD
+function _dispToISO(str) {
+    if (!str) return '';
+    var p = str.split('/');
+    if (p.length !== 3) return '';
+    return p[2]+'-'+p[1]+'-'+p[0];
+}
+
 function toggleHourSection(v) {
     var h = document.getElementById('hourSection');
-    var ed = document.getElementById('endDateWrap');
     if (v === 'hour') {
         h.style.display = '';
-        // ลาชั่วโมง → end_date = start_date
-        var sd = document.getElementById('startDate').value;
-        if (sd) document.querySelector('[name=end_date]').value = sd;
+        // ลาชั่วโมง → copy start_date → end_date
+        var sdDisp = document.getElementById('startDate').value;
+        if (sdDisp) {
+            document.getElementById('endDate').value = sdDisp;
+            document.getElementById('endDateHidden').value = _dispToISO(sdDisp);
+        }
     } else {
         h.style.display = 'none';
     }
@@ -195,36 +220,85 @@ function toggleHourSection(v) {
 }
 
 function calcDays() {
-    var s = document.getElementById('startDate').value;
-    var e = document.querySelector('[name=end_date]').value;
+    // อ่านจาก hidden (YYYY-MM-DD) เพราะ display เป็น dd/mm/yyyy
+    var s = document.getElementById('startDateHidden').value;
+    var e = document.getElementById('endDateHidden').value;
     var unit = document.getElementById('leaveUnit').value;
     var info = document.getElementById('daysInfo');
     var cnt  = document.getElementById('daysCount');
     if (s && e && unit === 'day') {
         var d = Math.round((new Date(e) - new Date(s)) / 86400000) + 1;
         if (d > 0) { cnt.textContent = d; info.style.display = ''; }
+        else { info.style.display = 'none'; }
     } else {
-        info.style.display = unit === 'hour' ? 'none' : 'none';
+        info.style.display = 'none';
     }
 }
 
 function calcHours() {
-    var s = document.getElementById('lsTime').value;
+    var s = document.getElementById('lsTime').value;   // hidden HH:mm:ss
     var e = document.getElementById('leTime').value;
     var res = document.getElementById('hoursResult');
     var num = document.getElementById('hoursNum');
     if (s && e) {
         var h = ((new Date('2000-01-01 '+e)) - (new Date('2000-01-01 '+s))) / 3600000;
         if (h > 0) { num.textContent = h.toFixed(1); res.style.display = ''; }
+        else { res.style.display = 'none'; }
     } else { res.style.display = 'none'; }
 }
 
-// init
-document.addEventListener('DOMContentLoaded', function() {
+// init datepickers + time widgets
+$(document).ready(function(){
+    // start_date picker
+    $('#startDate').datepicker({
+        dateFormat:'dd/mm/yy',
+        onSelect: function(d){
+            $('#startDateHidden').val(_dispToISO(d));
+            calcDays();
+        }
+    });
+    // end_date picker
+    $('#endDate').datepicker({
+        dateFormat:'dd/mm/yy',
+        onSelect: function(d){
+            $('#endDateHidden').val(_dispToISO(d));
+            calcDays();
+        }
+    });
+    // time widgets สำหรับช่วงเวลาลา
+    buildLeaveTimeWidget('lsTimeWrap', 'lsTime');
+    buildLeaveTimeWidget('leTimeWrap', 'leTime');
     calcDays();
     calcHours();
     checkMedCert();
 });
+
+// สร้าง time-only widget สำหรับ leave (อ่านค่าเริ่มต้นจาก hidden)
+function buildLeaveTimeWidget(wrapId, hiddenId) {
+    var $wrap   = $('#' + wrapId);
+    var initVal = $('#' + hiddenId).val() || '00:00';
+    var parts   = initVal.split(':');
+    var ch = parseInt(parts[0], 10) || 0;
+    var cm = parseInt(parts[1], 10) || 0;
+    var $selH = $("<select class=\"dt-hh\"></select>");
+    for(var h=0;h<=23;h++){var hv=(h<10?"0":"")+h;var $o=$("<option>").val(hv).text(hv);if(h===ch)$o.prop("selected",true);$selH.append($o);}
+    var $selM = $("<select class=\"dt-mm\"></select>");
+    for(var m=0;m<=59;m++){var mv=(m<10?"0":"")+m;var $p=$("<option>").val(mv).text(mv);if(m===cm)$p.prop("selected",true);$selM.append($p);}
+    $wrap.find('.dt-time-wrap').remove();
+    var $tw = $('<div class="dt-time-wrap" style="flex:1"></div>');
+    $tw.append('<select class="dt-hh">' + sh + '</select>');
+    $tw.append('<span class="dt-colon">:</span>');
+    $tw.append('<select class="dt-mm">' + sm + '</select>');
+    $wrap.prepend($tw);
+    function sync() {
+        var hh = $wrap.find('.dt-hh').val();
+        var mm = $wrap.find('.dt-mm').val();
+        $('#' + hiddenId).val(hh + ':' + mm + ':00');
+        calcHours();
+    }
+    $wrap.find('.dt-hh, .dt-mm').on('change', sync);
+    sync();
+}
 
 // [ข้อ 2] ตรวจว่าเลือกลาป่วยไหม → แสดง/ซ่อนใบรับรองแพทย์
 var sickNames = ['ลาป่วย','sick','ป่วย'];

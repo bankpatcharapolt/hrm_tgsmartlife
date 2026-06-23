@@ -25,15 +25,26 @@
       </div>
       <div class="col-md-3">
         <label class="form-label">วันที่ *</label>
-        <input type="date" name="date" class="form-control" value="<?=date('Y-m-d')?>" required>
+        <input type="text" class="form-control jq-date-only" id="manualDateDisplay"
+               placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer"
+               value="<?=date('d/m/Y')?>">
+        <input type="hidden" name="date" id="manualDateHidden" value="<?=date('Y-m-d')?>">
       </div>
       <div class="col-md-4">
         <label class="form-label">เวลาเข้างาน</label>
-        <input type="datetime-local" name="check_in" class="form-control">
+        <div class="jq-dt-wrap">
+          <input type="text" class="form-control dt-date" placeholder="dd/mm/yyyy"
+                 autocomplete="off" readonly style="cursor:pointer">
+          <input type="hidden" name="check_in" class="dt-hidden" value="">
+        </div>
       </div>
       <div class="col-md-4">
         <label class="form-label">เวลาออกงาน</label>
-        <input type="datetime-local" name="check_out" class="form-control">
+        <div class="jq-dt-wrap">
+          <input type="text" class="form-control dt-date" placeholder="dd/mm/yyyy"
+                 autocomplete="off" readonly style="cursor:pointer">
+          <input type="hidden" name="check_out" class="dt-hidden" value="">
+        </div>
       </div>
       <div class="col-md-4">
         <label class="form-label">OT (ชั่วโมง)</label>
@@ -78,9 +89,13 @@
             <div class="col-md-4" id="hourLeaveSection" style="display:none">
               <label class="form-label small">ช่วงเวลาที่ลา</label>
               <div class="input-group input-group-sm">
-                <input type="time" name="leave_start_hour" class="form-control" placeholder="เริ่ม">
-                <span class="input-group-text">–</span>
-                <input type="time" name="leave_end_hour" class="form-control" placeholder="สิ้นสุด">
+                <div class="leave-time-wrap" id="lshWrap" style="border-radius:8px 0 0 8px;overflow:hidden">
+                  <input type="hidden" name="leave_start_hour" id="lshHidden" value="">
+                </div>
+                <span class="input-group-text px-2">–</span>
+                <div class="leave-time-wrap" id="lehWrap" style="border-radius:0 8px 8px 0;overflow:hidden">
+                  <input type="hidden" name="leave_end_hour" id="lehHidden" value="">
+                </div>
               </div>
               <div class="form-text text-primary" id="leaveHoursCalc"></div>
             </div>
@@ -95,14 +110,71 @@
     <?=form_close()?>
   </div>
 </div>
-<?php $extra_js='<script>
+<?php $extra_js = <<<'JSEOF'
+<script>
 function toggleLeave(v){document.getElementById("leaveSection").style.display=v==="leave"?"":"none";}
 function toggleHourLeave(v){document.getElementById("hourLeaveSection").style.display=v==="hour"?"":"none";}
-// คำนวณชั่วโมงลา
-document.querySelectorAll("[name=leave_start_hour],[name=leave_end_hour]").forEach(function(el){
-  el.addEventListener("change",function(){
-    var s=document.querySelector("[name=leave_start_hour]").value,e=document.querySelector("[name=leave_end_hour]").value;
-    if(s&&e){var h=((new Date("2000-01-01 "+e))-(new Date("2000-01-01 "+s)))/3600000;document.getElementById("leaveHoursCalc").textContent=h>0?"ลา "+h.toFixed(1)+" ชั่วโมง":"";}
+
+// init datepicker + time widgets (รันหลัง jQuery โหลด ผ่าน $extra_js)
+$(document).ready(function(){
+  $("#manualDateDisplay").datepicker({
+    dateFormat: "dd/mm/yy",
+    onSelect: function(d) {
+      var p = d.split("/");
+      $("#manualDateHidden").val(p[2]+"-"+p[1]+"-"+p[0]);
+    }
   });
+  initDTPickers();
+  buildLeaveHourWidget("lshWrap", "lshHidden");
+  buildLeaveHourWidget("lehWrap", "lehHidden");
 });
-</script>';?>
+
+// time-only widget สำหรับ leave hours (ใช้ jQuery สร้าง option แทน string)
+function buildLeaveHourWidget(wrapId, hiddenId) {
+  var $w = $("#" + wrapId);
+  var iv = $("#" + hiddenId).val() || "00:00";
+  var p  = iv.split(":");
+  var ch = parseInt(p[0], 10) || 0;
+  var cm = parseInt(p[1], 10) || 0;
+  $w.find(".dt-time-wrap").remove();
+  var $tw = $('<div class="dt-time-wrap" style="flex:1"></div>');
+  var $sh = $('<select class="dt-hh"></select>');
+  for (var h = 0; h <= 23; h++) {
+    var hv = (h < 10 ? "0" : "") + h;
+    var $o = $("<option>").val(hv).text(hv);
+    if (h === ch) $o.prop("selected", true);
+    $sh.append($o);
+  }
+  var $sm = $('<select class="dt-mm"></select>');
+  for (var m = 0; m <= 59; m++) {
+    var mv = (m < 10 ? "0" : "") + m;
+    var $p = $("<option>").val(mv).text(mv);
+    if (m === cm) $p.prop("selected", true);
+    $sm.append($p);
+  }
+  $tw.append($sh);
+  $tw.append('<span class="dt-colon">:</span>');
+  $tw.append($sm);
+  $w.prepend($tw);
+  function syncLeave() {
+    $("#" + hiddenId).val($w.find(".dt-hh").val() + ":" + $w.find(".dt-mm").val() + ":00");
+    calcLeaveHours();
+  }
+  $w.find(".dt-hh, .dt-mm").on("change", syncLeave);
+  syncLeave();
+}
+
+function calcLeaveHours() {
+  var sh = document.getElementById("lshHidden");
+  var eh = document.getElementById("lehHidden");
+  var s = sh ? sh.value : "";
+  var e = eh ? eh.value : "";
+  var el = document.getElementById("leaveHoursCalc");
+  if (s && e) {
+    var h = ((new Date("2000-01-01 " + e)) - (new Date("2000-01-01 " + s))) / 3600000;
+    if (el) el.textContent = h > 0 ? "ลา " + h.toFixed(1) + " ชั่วโมง" : "";
+  }
+}
+</script>
+JSEOF;
+?>

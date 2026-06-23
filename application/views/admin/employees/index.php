@@ -8,6 +8,7 @@
     <?=form_open('admin/employees',array('method'=>'GET','class'=>'row g-2 align-items-end'))?>
       <div class="col-md-3"><input type="text" name="search" class="form-control form-control-sm" placeholder="ชื่อ / รหัส / เบอร์โทร" value="<?=htmlspecialchars($filters['search']??'')?>"></div>
       <div class="col-md-2"><select name="dept" class="form-select form-select-sm"><option value="">-- ทุกแผนก --</option><?php foreach($departments as $d):?><option value="<?=$d->id?>" <?=($filters['department_id']??'')==$d->id?'selected':''?>><?=$d->name?></option><?php endforeach;?></select></div>
+      <div class="col-md-2"><select name="team" class="form-select form-select-sm"><option value="">-- ทุกทีม/สาขา --</option><?php foreach($teams as $t):?><option value="<?=$t->id?>" <?=($filters['team_id']??'')==$t->id?'selected':''?>><?=$t->team_name?></option><?php endforeach;?></select></div>
       <div class="col-md-2"><select name="role" class="form-select form-select-sm"><option value="">-- ทุกบทบาท --</option><?php foreach($roles as $r):?><option value="<?=$r->id?>" <?=($filters['role_id']??'')==$r->id?'selected':''?>><?=$r->name?></option><?php endforeach;?></select></div>
       <div class="col-md-2"><select name="status" class="form-select form-select-sm"><option value="" <?=($filters['status']??'')==''?'selected':'' ?>>-- ทั้งหมด --</option><option value="active" <?=($filters['status']??'')=='active'?'selected':'' ?>>ใช้งาน</option><option value="inactive" <?=($filters['status']??'')=='inactive'?'selected':'' ?>>ไม่ใช้งาน</option></select></div>
       <div class="col-auto"><button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button> <a href="<?=base_url('admin/employees')?>" class="btn btn-outline-secondary btn-sm">ล้าง</a></div>
@@ -37,7 +38,19 @@
             <td>
               <a href="<?=base_url('admin/employees/view/'.$e->id)?>" class="btn btn-outline-primary btn-sm px-2 py-0" title="ดูข้อมูล"><i class="bi bi-eye"></i></a>
               <a href="<?=base_url('admin/employees/edit/'.$e->id)?>" class="btn btn-outline-secondary btn-sm px-2 py-0" title="แก้ไข"><i class="bi bi-pencil"></i></a>
-              <?php if($e->status==='active'):?><a href="<?=base_url('admin/employees/deactivate/'.$e->id)?>" onclick="return confirm('ปิดการใช้งานพนักงานคนนี้?')" class="btn btn-outline-danger btn-sm px-2 py-0" title="ปิดใช้งาน"><i class="bi bi-person-dash"></i></a><?php endif;?>
+              <?php if($e->status==='active'):?>
+                <a href="<?=base_url('admin/employees/toggle_status/'.$e->id)?>"
+                   onclick="return confirm('ปิดการใช้งานพนักงาน <?=htmlspecialchars($e->first_name.' '.$e->last_name)?> ใช่ไหม?')"
+                   class="btn btn-outline-danger btn-sm px-2 py-0" title="ปิดใช้งาน">
+                  <i class="bi bi-person-dash"></i>
+                </a>
+              <?php else:?>
+                <a href="<?=base_url('admin/employees/toggle_status/'.$e->id)?>"
+                   onclick="return confirm('เปิดการใช้งานพนักงาน <?=htmlspecialchars($e->first_name.' '.$e->last_name)?> ใช่ไหม?')"
+                   class="btn btn-outline-success btn-sm px-2 py-0" title="เปิดใช้งาน">
+                  <i class="bi bi-person-check"></i>
+                </a>
+              <?php endif;?>
             </td>
           </tr>
           <?php endforeach;else:?><tr><td colspan="8" class="text-center text-muted py-5"><i class="bi bi-people fs-1 d-block mb-2 text-muted"></i>ไม่พบข้อมูลพนักงาน</td></tr><?php endif;?>

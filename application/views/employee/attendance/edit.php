@@ -7,11 +7,23 @@
     <div class="row g-3">
       <div class="col-md-6">
         <label class="form-label">เวลาเข้างาน</label>
-        <input type="datetime-local" name="check_in" class="form-control" value="<?=$r->check_in_time?date('Y-m-d\TH:i',strtotime($r->check_in_time)):''?>">
+        <div class="jq-dt-wrap">
+          <input type="text" class="form-control dt-date" placeholder="dd/mm/yyyy"
+                 autocomplete="off" readonly style="cursor:pointer"
+                 value="<?=$r->check_in_time?date('d/m/Y',strtotime($r->check_in_time)):''?>">
+          <input type="hidden" name="check_in" class="dt-hidden"
+                 value="<?=$r->check_in_time??''?>">
+        </div>
       </div>
       <div class="col-md-6">
         <label class="form-label">เวลาออกงาน</label>
-        <input type="datetime-local" name="check_out" class="form-control" value="<?=$r->check_out_time?date('Y-m-d\TH:i',strtotime($r->check_out_time)):''?>">
+        <div class="jq-dt-wrap">
+          <input type="text" class="form-control dt-date" placeholder="dd/mm/yyyy"
+                 autocomplete="off" readonly style="cursor:pointer"
+                 value="<?=$r->check_out_time?date('d/m/Y',strtotime($r->check_out_time)):''?>">
+          <input type="hidden" name="check_out" class="dt-hidden"
+                 value="<?=$r->check_out_time??''?>">
+        </div>
       </div>
       <div class="col-md-6">
         <label class="form-label">สถานะ</label>
@@ -48,12 +60,16 @@
               <div class="row g-1">
                 <div class="col-5">
                   <label class="form-label small">เวลาเริ่ม</label>
-                  <input type="time" name="leave_start_hour" class="form-control form-control-sm" value="<?=$r->check_in_time?date('H:i',strtotime($r->check_in_time)):''?>">
+                  <div class="leave-time-wrap" id="lshWrap">
+                    <input type="hidden" name="leave_start_hour" id="lshHidden" value="<?=$r->check_in_time?date('H:i',strtotime($r->check_in_time)):''?>">
+                  </div>
                 </div>
                 <div class="col-2 d-flex align-items-end pb-1 justify-content-center"><span>–</span></div>
                 <div class="col-5">
                   <label class="form-label small">เวลาสิ้นสุด</label>
-                  <input type="time" name="leave_end_hour" class="form-control form-control-sm" value="<?=$r->check_out_time?date('H:i',strtotime($r->check_out_time)):''?>">
+                  <div class="leave-time-wrap" id="lehWrap">
+                    <input type="hidden" name="leave_end_hour" id="lehHidden" value="<?=$r->check_out_time?date('H:i',strtotime($r->check_out_time)):''?>">
+                  </div>
                 </div>
               </div>
             </div>
@@ -76,4 +92,28 @@
 <script>
 function toggleLeave(v){document.getElementById('leaveSection').style.display=v==='leave'?'':'none';}
 function toggleHour(v){document.getElementById('hourSection').style.display=v==='hour'?'':'none';}
+</script>
+
+<script>
+// init leave hour time widgets (runs after jQuery via layout)
+$(document).ready(function(){
+  function buildLTW(wrapId, hiddenId) {
+    var $w=$("#"+wrapId), iv=$("#"+hiddenId).val()||"00:00";
+    var p=iv.split(":"), ch=parseInt(p[0],10)||0, cm=parseInt(p[1],10)||0;
+    var $selH = $("<select class=\"dt-hh\"></select>");
+    for(var h=0;h<=23;h++){var hv=(h<10?"0":"")+h;var $o=$("<option>").val(hv).text(hv);if(h===ch)$o.prop("selected",true);$selH.append($o);}
+    var $selM = $("<select class=\"dt-mm\"></select>");
+    for(var m=0;m<=59;m++){var mv=(m<10?"0":"")+m;var $p=$("<option>").val(mv).text(mv);if(m===cm)$p.prop("selected",true);$selM.append($p);}
+    $w.find(".dt-time-wrap").remove();
+    var $t=$('<div class="dt-time-wrap" style="flex:1"></div>');
+    $t.append('<select class="dt-hh">'+sh+'</select>');
+    $t.append('<span class="dt-colon">:</span>');
+    $t.append('<select class="dt-mm">'+sm+'</select>');
+    $w.prepend($t);
+    function s(){$("#"+hiddenId).val($w.find(".dt-hh").val()+":"+$w.find(".dt-mm").val()+":00");}
+    $w.find(".dt-hh,.dt-mm").on("change",s); s();
+  }
+  buildLTW("lshWrap","lshHidden");
+  buildLTW("lehWrap","lehHidden");
+});
 </script>

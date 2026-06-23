@@ -129,8 +129,8 @@ class Attendance extends Employee_Controller {
             'user_id'        => $uid,
             'shift_id'       => $shift->id,
             'date'           => $date,
-            'check_in_time'  => $this->input->post('check_in')  ?: null,
-            'check_out_time' => $this->input->post('check_out') ?: null,
+            'check_in_time'  => $this->_normalize_datetime($this->input->post('check_in')),
+            'check_out_time' => $this->_normalize_datetime($this->input->post('check_out')),
             'status'         => $status,
             'note'           => $this->input->post('note', TRUE),
             'is_late'        => 0,
@@ -273,4 +273,26 @@ class Attendance extends Employee_Controller {
         }
         redirect('employee/attendance');
     }
+
+    /**
+     * แปลงวันที่ทุกรูปแบบ → Y-m-d H:i:s สำหรับ MySQL
+     * รองรับ: dd/mm/yyyy HH:MM, dd/mm/yyyy, Y-m-d H:i:s, Y-m-d, Y-m-dTH:i
+     */
+    private function _normalize_datetime($val) {
+        if (empty($val)) return null;
+        $val = trim($val);
+        // dd/mm/yyyy HH:MM
+        if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/', $val, $m)) {
+            return "{$m[3]}-{$m[2]}-{$m[1]} {$m[4]}:{$m[5]}:00";
+        }
+        // dd/mm/yyyy
+        if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $val, $m)) {
+            return "{$m[3]}-{$m[2]}-{$m[1]}";
+        }
+        // Y-m-dTH:i หรือ Y-m-d H:i หรือ Y-m-d
+        $ts = strtotime($val);
+        if ($ts) return date('Y-m-d H:i:s', $ts);
+        return null;
+    }
+
 }

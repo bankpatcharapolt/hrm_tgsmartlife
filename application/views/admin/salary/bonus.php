@@ -106,7 +106,10 @@ foreach($bonuses as $b){
 
         <div class="mb-3">
           <label class="form-label">วันที่จ่าย</label>
-          <input type="date" name="payment_date" class="form-control" value="<?=date('Y-m-d')?>">
+          <input type="text" class="form-control jq-date-only" id="bonusPayDate"
+                 placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer"
+                 value="<?=date('d/m/Y')?>">
+          <input type="hidden" name="payment_date" id="bonusPayDateHidden" value="<?=date('Y-m-d')?>">
         </div>
 
         <div class="mb-3">
@@ -251,5 +254,15 @@ function selectBonusType(type) {
 window.addEventListener('load', function(){
   var checked = document.querySelector('[name=bonus_type]:checked');
   if (checked) selectBonusType(checked.value);
+});
+</script>
+
+<script>
+$(document).ready(function(){
+    function _dispToISO(str){var p=str.split('/');return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:'';}
+    $('#bonusPayDate').datepicker({
+        dateFormat:'dd/mm/yy',
+        onSelect:function(d){$('#bonusPayDateHidden').val(_dispToISO(d));}
+    });
 });
 </script>

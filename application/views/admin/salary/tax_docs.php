@@ -4,7 +4,7 @@
   <!-- ── Upload Form ── -->
   <div class="col-lg-5">
     <div class="card">
-      <div class="card-header"><i class="bi bi-upload me-2"></i>อัปโหลดทวิ 50</div>
+      <div class="card-header"><i class="bi bi-upload me-2"></i>อัปโหลดใบทวิ 50</div>
       <div class="card-body">
         <form method="POST" action="<?=base_url('admin/salary/upload_tax')?>" enctype="multipart/form-data" id="taxUploadForm">
           <input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
@@ -81,7 +81,7 @@
     <!-- List -->
     <div class="card">
       <div class="card-header">
-        <i class="bi bi-file-earmark-text me-2 text-primary"></i>รายการทวิ 50
+        <i class="bi bi-file-earmark-text me-2 text-primary"></i>รายการใบทวิ 50
         <span class="badge bg-secondary ms-1"><?=count($tax_list)?></span>
       </div>
       <div class="card-body p-0">

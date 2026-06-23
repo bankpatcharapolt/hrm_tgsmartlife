@@ -5,6 +5,49 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title><?= $title ?? 'ระบบ HRM' ?></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-ui@1.13.2/themes/base/jquery-ui.min.css">
+   <link rel="stylesheet" href="https://code.jquery.com/ui/1.14.2/themes/base/jquery-ui.css">
+  <style>
+    .ui-datepicker{font-family:Sarabun,sans-serif!important;font-size:.875rem;z-index:9999!important;min-width:240px;box-shadow:0 4px 16px rgba(0,0,0,.12);border-radius:10px;overflow:hidden}
+    .ui-datepicker-header{background:#1a56db!important;color:#fff!important;border:none!important;padding:.5rem}
+    .ui-datepicker-prev,.ui-datepicker-next{cursor:pointer;top:6px!important}
+    .ui-datepicker-prev span,.ui-datepicker-next span{display:none!important}
+    .ui-datepicker-prev:after{content:"‹";color:#fff;font-size:1.3rem;line-height:1}
+    .ui-datepicker-next:after{content:"›";color:#fff;font-size:1.3rem;line-height:1}
+    .ui-datepicker th{color:#6b7280!important;font-size:.75rem;background:#f9fafb;padding:.3rem}
+    .ui-datepicker td{padding:1px}
+    .ui-datepicker td a,.ui-datepicker td span{text-align:center!important;padding:.25rem;border-radius:5px}
+    .ui-state-default{border:none!important;background:transparent!important;color:#374151!important}
+    .ui-state-hover{background:#f3f4f6!important;color:#111827!important}
+    .ui-state-highlight{background:#eff6ff!important;color:#1a56db!important;border:1px solid #bae6fd!important;border-radius:5px}
+    .ui-state-active{background:#1a56db!important;color:#fff!important;border:none!important;border-radius:5px}
+    .ui-datepicker select.ui-datepicker-month,.ui-datepicker select.ui-datepicker-year{font-family:Sarabun,sans-serif;font-size:.8rem;border-radius:4px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:#fff;padding:1px 2px}
+    /* ── jQuery datepicker datetime widget ── */
+    .dt-hidden{display:none!important}
+    .jq-dt-wrap{display:flex;flex-wrap:nowrap;gap:6px;align-items:stretch}
+    .jq-dt-wrap .dt-date{flex:1 1 110px;min-width:100px;max-width:140px}
+    .dt-time-wrap{display:flex;gap:0;align-items:center;flex-shrink:0;
+                  border:1px solid #d1d5db;border-radius:8px;overflow:hidden;background:#fff}
+    .dt-time-wrap:focus-within{border-color:#1a56db;box-shadow:0 0 0 3px rgba(26,86,219,.1)}
+    .dt-time-wrap select{
+      width:52px;padding:.4rem .2rem;
+      font-size:.875rem;font-family:Sarabun,sans-serif;
+      border:none;outline:none;background:transparent;color:#374151;
+      text-align:center;text-align-last:center;
+      cursor:pointer;
+      -webkit-appearance:none;-moz-appearance:none;appearance:none
+    }
+    .dt-time-wrap select:hover{background:rgba(26,86,219,.04)}
+    .dt-colon{
+      font-weight:700;color:#9ca3af;padding:0 2px;
+      line-height:1;align-self:center;user-select:none;font-size:1rem
+    }
+    /* ── time-only widget wrapper (leave/shift) — ไม่ถูก initDTPickers ทับ ── */
+    .leave-time-wrap,.shift-time-wrap{display:flex;flex-wrap:nowrap;gap:6px;align-items:stretch;flex:1}
+    .leave-time-wrap .dt-time-wrap,.shift-time-wrap .dt-time-wrap{flex:1}
+    /* ขนาด input วันที่ใน Bootstrap col */
+    .jq-dt-wrap .form-control.dt-date{min-height:38px;height:38px}
+  </style>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -553,7 +596,7 @@
       <a href="<?= base_url('admin/salary/bonus') ?>" class="<?= ($ctrl === 'salary' && $seg3 === 'bonus') ? 'on' : '' ?>"><i
           class="bi bi-gift-fill"></i>โบนัสประจำปี</a>
       <a href="<?= base_url('admin/salary/tax_docs') ?>" class="<?= ($ctrl === 'salary' && $seg3 === 'tax_docs') ? 'on' : '' ?>"><i
-          class="bi bi-file-earmark-text-fill"></i>ทวิ 50</a>
+          class="bi bi-file-earmark-text-fill"></i>ใบทวิ 50</a>
       <div class="sb-sec">รายงาน</div>
       <a href="<?= base_url('admin/sales') ?>" class="<?= $ctrl === 'sales' ? 'on' : '' ?>"><i
           class="bi bi-graph-up-arrow"></i>ยอดขาย</a>
@@ -671,6 +714,61 @@
         });
       });
     }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery-ui@1.13.2/dist/jquery-ui.min.js"></script>
+  <script>
+  $.datepicker.setDefaults({dateFormat:"dd/mm/yy",changeMonth:true,changeYear:true,yearRange:"2010:2035",firstDay:1});
+  var _HH='<option value="00">00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option>', _MM='<option value="00">00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option><option value="35">35</option><option value="36">36</option><option value="37">37</option><option value="38">38</option><option value="39">39</option><option value="40">40</option><option value="41">41</option><option value="42">42</option><option value="43">43</option><option value="44">44</option><option value="45">45</option><option value="46">46</option><option value="47">47</option><option value="48">48</option><option value="49">49</option><option value="50">50</option><option value="51">51</option><option value="52">52</option><option value="53">53</option><option value="54">54</option><option value="55">55</option><option value="56">56</option><option value="57">57</option><option value="58">58</option><option value="59">59</option>';
+  function initDTPickers(root){
+    var ctx=root?$(root):$(document);
+    ctx.find(".jq-dt-wrap:not([data-dt-init])").each(function(){
+      $(this).attr("data-dt-init","1");
+      var $w=$(this),$d=$w.find(".dt-date"),$h=$w.find(".dt-hidden");
+      // บังคับ readonly — ห้ามพิมพ์โดยตรง
+      $d.prop("readonly",true).css("cursor","pointer");
+      var cv=$h.val()||"",ch=0,cm=0;
+      if(cv&&cv.indexOf(" ")>0){var t=cv.split(" ")[1];ch=parseInt(t.substr(0,2),10);cm=parseInt(t.substr(3,2),10);}
+      // ใช้แค่ class dt-hh/dt-mm ไม่ใส่ form-select-sm เพื่อหลีกเลี่ยง Bootstrap override appearance
+      var $tw=$('<div class="dt-time-wrap"></div>');
+      var $selH=$('<select class="dt-hh"></select>');
+      for(var h=0;h<=23;h++){var hv=(h<10?"0":"")+h;var $o=$("<option>").val(hv).text(hv);if(h===ch)$o.prop("selected",true);$selH.append($o);}
+      var $selM=$('<select class="dt-mm"></select>');
+      for(var m=0;m<=59;m++){var mv=(m<10?"0":"")+m;var $p=$("<option>").val(mv).text(mv);if(m===cm)$p.prop("selected",true);$selM.append($p);}
+      $tw.append($selH);
+      $tw.append('<span class="dt-colon">:</span>');
+      $tw.append($selM);
+      $w.append($tw);
+      var $sh=$w.find(".dt-hh"),$sm=$w.find(".dt-mm");
+      function merge(){
+        var dv=$d.val(),hh=$sh.val(),mm=$sm.val();
+        if(!dv){$h.val("");return;}
+        var p=dv.split("/");
+        if(p.length===3)$h.val(p[2]+"-"+p[1]+"-"+p[0]+" "+hh+":"+mm+":00");
+      }
+      $d.datepicker({dateFormat:"dd/mm/yy",onSelect:function(d){merge();}});
+      $sh.on("change",merge);$sm.on("change",merge);
+      merge();
+    });
+    // jq-date-only: bind datepicker, บางตัวมี hidden pair (id naming: xxxDisplay → xxxHidden)
+    ctx.find(".jq-date-only:not(.hasDatepicker)").each(function(){
+      var $inp=$(this);
+      $inp.prop("readonly",true).css("cursor","pointer");
+      var hidId=$inp.attr("id")?$inp.attr("id").replace(/Display$/,"Hidden"):null;
+      var $hid=hidId?$("#"+hidId):null;
+      $inp.datepicker({
+        dateFormat:"dd/mm/yy",
+        onSelect:function(d){
+          if($hid&&$hid.length){
+            var p=d.split("/");
+            $hid.val(p.length===3?p[2]+"-"+p[1]+"-"+p[0]:"");
+          }
+        }
+      });
+    });
+  }
+  $(document).ready(function(){initDTPickers();});
+  $(document).on("shown.bs.modal",function(e){initDTPickers(e.target);});
   </script>
   <?php if (!empty($extra_js))
     echo $extra_js; ?>
