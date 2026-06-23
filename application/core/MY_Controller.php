@@ -54,16 +54,14 @@ class MY_Controller extends CI_Controller {
                          'autoload','router','benchmark');
         foreach ($ci_vars as $k) unset($d[$k]);
 
-        // CI3 inject $mimes ผ่าน _ci_cached_vars — ต้อง clear ก่อน load view
-        $CI =& get_instance();
-        if (isset($CI->load) && isset($CI->load->_ci_cached_vars['mimes'])) {
-            // unset ใน cached_vars โดยตรงผ่าน reference
-            $cached = &$CI->load->_ci_cached_vars;
-            if (is_array($cached)) unset($cached['mimes']);
-        }
+        // CI3 inject $mimes ผ่าน _ci_cached_vars — override ด้วย array ว่างก่อน load view
+        // $_ci_cached_vars เป็น protected เข้าตรงไม่ได้ → ใช้ vars() override แทน
+        $this->load->vars(array('mimes' => array()));
 
         if ($this->layout) {
             $d['content_view'] = $this->load->view($view, $d, true);
+            // override อีกรอบก่อน layout
+            $this->load->vars(array('mimes' => array()));
             $this->load->view($this->layout, $d);
         } else {
             $this->load->view($view, $d);

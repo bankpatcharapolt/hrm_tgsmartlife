@@ -88,11 +88,23 @@
               <?php endif;?>
             </td>
             <td>
-              <?php if(!empty($req->document_path)):?>
-              <a href="<?=base_url($req->document_path)?>" target="_blank" class="btn btn-outline-secondary btn-sm px-2 py-0" title="ดูเอกสาร">
-                <i class="bi bi-file-earmark"></i>
+              <?php
+                $hasDoc  = !empty($req->document_path);
+                $hasMed  = !empty($req->medical_cert_path);
+              ?>
+              <?php if($hasDoc):?>
+              <a href="<?=base_url($req->document_path)?>" target="_blank"
+                 class="btn btn-outline-secondary btn-sm px-2 py-0 d-block mb-1" title="เอกสารประกอบ">
+                <i class="bi bi-file-earmark me-1"></i><span style="font-size:.7rem">เอกสาร</span>
               </a>
-              <?php else:?><span class="text-muted small">–</span><?php endif;?>
+              <?php endif;?>
+              <?php if($hasMed):?>
+              <a href="<?=base_url($req->medical_cert_path)?>" target="_blank"
+                 class="btn btn-outline-warning btn-sm px-2 py-0 d-block" title="ใบรับรองแพทย์">
+                <i class="bi bi-file-medical me-1"></i><span style="font-size:.7rem">ใบรับรองแพทย์</span>
+              </a>
+              <?php endif;?>
+              <?php if(!$hasDoc && !$hasMed):?><span class="text-muted small">–</span><?php endif;?>
             </td>
             <td>
               <!-- Quick Approve/Reject (pending only) -->

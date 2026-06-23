@@ -61,11 +61,13 @@ class Attendance_model extends CI_Model {
         } else {
             $shift = $this->Shift_model->get_for_user($uid);
         }
-        $ot = $shift ? $this->Shift_model->calc_ot($shift, date('Y-m-d H:i:s')) : 0;
+        $now = date('Y-m-d H:i:s');
+        // ส่ง check_in_time ให้ calc_ot เพื่อตรวจ sanity + คำนวณ OT วันหยุดถูกต้อง
+        $ot = $shift ? $this->Shift_model->calc_ot($shift, $now, $att->check_in_time) : 0;
         $this->db->where('id',$att_id)->update('attendance',array(
-            'check_out_time' => date('Y-m-d H:i:s'),
+            'check_out_time' => $now,
             'ot_hours'       => $ot,
-            'updated_at'     => date('Y-m-d H:i:s')
+            'updated_at'     => $now
         ));
         return true;
     }

@@ -99,8 +99,8 @@
 
       <!-- สรุปวัน -->
       <div class="col-12">
-        <div id="daysInfo" class="alert alert-info py-2 px-3 mb-0 small" <?=$r?'':'style="display:none"'?>>
-          <i class="bi bi-calendar me-1"></i>รวม <strong id="daysCount"><?=$r?$r->total_days:0?></strong> วัน
+        <div id="daysInfo" class="alert alert-info py-2 px-3 mb-0 small" style="display:none">
+          <i class="bi bi-calendar me-1"></i>รวม <strong id="daysCount">0</strong> วัน
         </div>
       </div>
 
@@ -145,7 +145,7 @@
         <div class="form-text text-muted">รองรับ PDF, JPG, PNG ขนาดไม่เกิน 5MB</div>
       </div>
 
-      <!-- [ข้อ 2] ใบรับรองแพทย์ (แสดงเฉพาะเมื่อเลือก leave_type ที่มีชื่อ "ลาป่วย") -->
+      <!-- ใบรับรองแพทย์ -->
       <div class="col-12" id="medCertWrap" style="display:none">
         <div class="p-3 rounded" style="background:#fff7ed;border:1px solid #fed7aa">
           <label class="form-label fw-semibold" style="color:#c2410c">
@@ -163,7 +163,6 @@
             </a>
             <small class="text-muted ms-2">(อัปโหลดใหม่เพื่อแทนที่)</small>
           </div>
-          <?php elseif($r && !empty($r->medical_cert_path) === false && $r->leave_type_id):?>
           <?php endif;?>
           <div class="form-text">รองรับ PDF, JPG, PNG ขนาดไม่เกิน 5MB</div>
         </div>
@@ -188,133 +187,171 @@
 </div>
 
 <script>
-// helper: แปลง dd/mm/yyyy → Date object
-function _parseDispDate(str) {
-    if (!str) return null;
-    var p = str.split('/');
-    if (p.length !== 3) return null;
-    return new Date(parseInt(p[2],10), parseInt(p[1],10)-1, parseInt(p[0],10));
-}
-// helper: แปลง dd/mm/yyyy → YYYY-MM-DD
+// ── Pure vanilla JS ────────────────────────────────────────────────────────
+
 function _dispToISO(str) {
-    if (!str) return '';
-    var p = str.split('/');
-    if (p.length !== 3) return '';
-    return p[2]+'-'+p[1]+'-'+p[0];
+  if (!str) return '';
+  var p = str.split('/');
+  return p.length === 3 ? p[2] + '-' + p[1] + '-' + p[0] : '';
 }
 
 function toggleHourSection(v) {
-    var h = document.getElementById('hourSection');
-    if (v === 'hour') {
-        h.style.display = '';
-        // ลาชั่วโมง → copy start_date → end_date
-        var sdDisp = document.getElementById('startDate').value;
-        if (sdDisp) {
-            document.getElementById('endDate').value = sdDisp;
-            document.getElementById('endDateHidden').value = _dispToISO(sdDisp);
-        }
-    } else {
-        h.style.display = 'none';
+  var h = document.getElementById('hourSection');
+  if (!h) return;
+  if (v === 'hour') {
+    h.style.display = '';
+    var sdDisp = document.getElementById('startDate');
+    var edDisp = document.getElementById('endDate');
+    var edHid  = document.getElementById('endDateHidden');
+    if (sdDisp && sdDisp.value && edDisp && edHid) {
+      edDisp.value = sdDisp.value;
+      edHid.value  = _dispToISO(sdDisp.value);
     }
-    calcDays();
+  } else {
+    h.style.display = 'none';
+  }
+  calcDays();
 }
 
 function calcDays() {
-    // อ่านจาก hidden (YYYY-MM-DD) เพราะ display เป็น dd/mm/yyyy
-    var s = document.getElementById('startDateHidden').value;
-    var e = document.getElementById('endDateHidden').value;
-    var unit = document.getElementById('leaveUnit').value;
-    var info = document.getElementById('daysInfo');
-    var cnt  = document.getElementById('daysCount');
-    if (s && e && unit === 'day') {
-        var d = Math.round((new Date(e) - new Date(s)) / 86400000) + 1;
-        if (d > 0) { cnt.textContent = d; info.style.display = ''; }
-        else { info.style.display = 'none'; }
-    } else {
-        info.style.display = 'none';
-    }
+  var sEl   = document.getElementById('startDateHidden');
+  var eEl   = document.getElementById('endDateHidden');
+  var uEl   = document.getElementById('leaveUnit');
+  var info  = document.getElementById('daysInfo');
+  var cnt   = document.getElementById('daysCount');
+  if (!sEl || !eEl || !uEl || !info || !cnt) return;
+
+  var s    = sEl.value;
+  var e    = eEl.value;
+  var unit = uEl.value;
+
+  if (s && e && unit === 'day') {
+    var d = Math.round((new Date(e) - new Date(s)) / 86400000) + 1;
+    if (d > 0) { cnt.textContent = d; info.style.display = ''; }
+    else { info.style.display = 'none'; }
+  } else {
+    info.style.display = 'none';
+  }
 }
 
 function calcHours() {
-    var s = document.getElementById('lsTime').value;   // hidden HH:mm:ss
-    var e = document.getElementById('leTime').value;
-    var res = document.getElementById('hoursResult');
-    var num = document.getElementById('hoursNum');
-    if (s && e) {
-        var h = ((new Date('2000-01-01 '+e)) - (new Date('2000-01-01 '+s))) / 3600000;
-        if (h > 0) { num.textContent = h.toFixed(1); res.style.display = ''; }
-        else { res.style.display = 'none'; }
-    } else { res.style.display = 'none'; }
+  var sEl  = document.getElementById('lsTime');
+  var eEl  = document.getElementById('leTime');
+  var res  = document.getElementById('hoursResult');
+  var num  = document.getElementById('hoursNum');
+  if (!sEl || !eEl || !res || !num) return;
+  var s = sEl.value;
+  var e = eEl.value;
+  if (s && e) {
+    var h = (new Date('2000-01-01 ' + e) - new Date('2000-01-01 ' + s)) / 3600000;
+    if (h > 0) { num.textContent = h.toFixed(1); res.style.display = ''; return; }
+  }
+  res.style.display = 'none';
 }
 
-// init datepickers + time widgets
-$(document).ready(function(){
-    // start_date picker
-    $('#startDate').datepicker({
-        dateFormat:'dd/mm/yy',
-        onSelect: function(d){
-            $('#startDateHidden').val(_dispToISO(d));
-            calcDays();
-        }
-    });
-    // end_date picker
-    $('#endDate').datepicker({
-        dateFormat:'dd/mm/yy',
-        onSelect: function(d){
-            $('#endDateHidden').val(_dispToISO(d));
-            calcDays();
-        }
-    });
-    // time widgets สำหรับช่วงเวลาลา
-    buildLeaveTimeWidget('lsTimeWrap', 'lsTime');
-    buildLeaveTimeWidget('leTimeWrap', 'leTime');
-    calcDays();
+function buildLeaveTimeWidget(wrapId, hiddenId) {
+  var wrap   = document.getElementById(wrapId);
+  var hidden = document.getElementById(hiddenId);
+  if (!wrap || !hidden) return;
+
+  var initVal = hidden.value || '00:00';
+  var parts   = initVal.split(':');
+  var ch = parseInt(parts[0], 10) || 0;
+  var cm = parseInt(parts[1], 10) || 0;
+
+  var old = wrap.querySelector('.dt-time-wrap');
+  if (old) old.parentNode.removeChild(old);
+
+  var tw = document.createElement('div');
+  tw.className = 'dt-time-wrap';
+  tw.style.flex = '1';
+
+  var selH = document.createElement('select');
+  selH.className = 'dt-hh';
+  for (var h = 0; h <= 23; h++) {
+    var hv = (h < 10 ? '0' : '') + h;
+    var o  = document.createElement('option');
+    o.value = hv; o.textContent = hv;
+    if (h === ch) o.selected = true;
+    selH.appendChild(o);
+  }
+
+  var colon = document.createElement('span');
+  colon.className = 'dt-colon';
+  colon.textContent = ':';
+
+  var selM = document.createElement('select');
+  selM.className = 'dt-mm';
+  for (var m = 0; m <= 59; m++) {
+    var mv = (m < 10 ? '0' : '') + m;
+    var p  = document.createElement('option');
+    p.value = mv; p.textContent = mv;
+    if (m === cm) p.selected = true;
+    selM.appendChild(p);
+  }
+
+  tw.appendChild(selH);
+  tw.appendChild(colon);
+  tw.appendChild(selM);
+  wrap.appendChild(tw);
+
+  function sync() {
+    hidden.value = tw.querySelector('.dt-hh').value + ':' + tw.querySelector('.dt-mm').value + ':00';
     calcHours();
-    checkMedCert();
+  }
+  selH.addEventListener('change', sync);
+  selM.addEventListener('change', sync);
+  sync();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  buildLeaveTimeWidget('lsTimeWrap', 'lsTime');
+  buildLeaveTimeWidget('leTimeWrap', 'leTime');
+
+  // แสดง daysInfo ถ้าเป็น edit mode และมีค่าวันที่อยู่แล้ว
+  calcDays();
+  calcHours();
+  checkMedCert();
+
+  var typeSel = document.querySelector('[name=leave_type_id]');
+  if (typeSel) typeSel.addEventListener('change', checkMedCert);
+
+  // datepickers — รอ jQuery โหลด (layout inject ท้าย body)
+  waitForjQuery(function () {
+    $.datepicker.setDefaults({ dateFormat: 'dd/mm/yy', changeMonth: true, changeYear: true });
+    $('#startDate').datepicker({
+      dateFormat: 'dd/mm/yy',
+      onSelect: function (d) {
+        document.getElementById('startDateHidden').value = _dispToISO(d);
+        calcDays();
+      }
+    });
+    $('#endDate').datepicker({
+      dateFormat: 'dd/mm/yy',
+      onSelect: function (d) {
+        document.getElementById('endDateHidden').value = _dispToISO(d);
+        calcDays();
+      }
+    });
+  });
 });
 
-// สร้าง time-only widget สำหรับ leave (อ่านค่าเริ่มต้นจาก hidden)
-function buildLeaveTimeWidget(wrapId, hiddenId) {
-    var $wrap   = $('#' + wrapId);
-    var initVal = $('#' + hiddenId).val() || '00:00';
-    var parts   = initVal.split(':');
-    var ch = parseInt(parts[0], 10) || 0;
-    var cm = parseInt(parts[1], 10) || 0;
-    var $selH = $("<select class=\"dt-hh\"></select>");
-    for(var h=0;h<=23;h++){var hv=(h<10?"0":"")+h;var $o=$("<option>").val(hv).text(hv);if(h===ch)$o.prop("selected",true);$selH.append($o);}
-    var $selM = $("<select class=\"dt-mm\"></select>");
-    for(var m=0;m<=59;m++){var mv=(m<10?"0":"")+m;var $p=$("<option>").val(mv).text(mv);if(m===cm)$p.prop("selected",true);$selM.append($p);}
-    $wrap.find('.dt-time-wrap').remove();
-    var $tw = $('<div class="dt-time-wrap" style="flex:1"></div>');
-    $tw.append('<select class="dt-hh">' + sh + '</select>');
-    $tw.append('<span class="dt-colon">:</span>');
-    $tw.append('<select class="dt-mm">' + sm + '</select>');
-    $wrap.prepend($tw);
-    function sync() {
-        var hh = $wrap.find('.dt-hh').val();
-        var mm = $wrap.find('.dt-mm').val();
-        $('#' + hiddenId).val(hh + ':' + mm + ':00');
-        calcHours();
-    }
-    $wrap.find('.dt-hh, .dt-mm').on('change', sync);
-    sync();
+function waitForjQuery(fn) {
+  if (typeof jQuery !== 'undefined') { fn(); return; }
+  var t = setInterval(function () {
+    if (typeof jQuery !== 'undefined') { clearInterval(t); fn(); }
+  }, 30);
 }
 
-// [ข้อ 2] ตรวจว่าเลือกลาป่วยไหม → แสดง/ซ่อนใบรับรองแพทย์
-var sickNames = ['ลาป่วย','sick','ป่วย'];
+var sickNames = ['ลาป่วย', 'sick', 'ป่วย'];
 function checkMedCert() {
-    var sel  = document.querySelector('[name=leave_type_id]');
-    var wrap = document.getElementById('medCertWrap');
-    var inp  = document.getElementById('medCertInput');
-    if (!sel || !wrap) return;
-    var txt = (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '').toLowerCase();
-    var isSick = sickNames.some(function(k){ return txt.indexOf(k) !== -1; });
-    wrap.style.display = isSick ? '' : 'none';
-    if (inp) inp.required = isSick;
+  var sel  = document.querySelector('[name=leave_type_id]');
+  var wrap = document.getElementById('medCertWrap');
+  var inp  = document.getElementById('medCertInput');
+  if (!sel || !wrap) return;
+  var txt    = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text.toLowerCase() : '';
+  var isSick = sickNames.some(function (k) { return txt.indexOf(k) !== -1; });
+  wrap.style.display = isSick ? '' : 'none';
+  if (inp) inp.required = isSick;
 }
-document.querySelector('[name=leave_type_id]') &&
-  document.querySelector('[name=leave_type_id]').addEventListener('change', checkMedCert);
-// TomSelect fires custom event
-document.querySelector('[name=leave_type_id]') &&
-  document.querySelector('[name=leave_type_id]').addEventListener('change', checkMedCert);
 </script>

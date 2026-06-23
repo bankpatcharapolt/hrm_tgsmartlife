@@ -16,7 +16,6 @@
           <div class="col-6">
             <label class="form-label">เวลาเริ่มกะ *</label>
             <div class="shift-time-wrap" id="sfStartWrap" style="display:flex;flex-wrap:nowrap;gap:6px;align-items:stretch">
-              <!-- ไม่มี dt-date — time-only widget -->
               <input type="hidden" name="start_time" id="sfStart" value="08:30:00">
             </div>
           </div>
@@ -134,88 +133,111 @@
     </div>
   </div>
 </div>
-<?php $extra_js = <<<'JSEOF'
+
 <script>
-// time-only widget สำหรับกะการทำงาน
-function buildTimeWidget(wrapId, hiddenId, initVal) {
-  var parts = (initVal || "00:00").split(":");
+// Pure vanilla JS — time-only widget สำหรับกะการทำงาน (ไม่ใช้ jQuery)
+function buildShiftTimeWidget(wrapId, hiddenId, initVal) {
+  var parts = (initVal || '00:00').split(':');
   var ch = parseInt(parts[0], 10);
   var cm = parseInt(parts[1], 10);
   if (isNaN(ch)) ch = 0;
   if (isNaN(cm)) cm = 0;
 
-  var $wrap = $("#" + wrapId);
-  $wrap.find(".dt-time-wrap").remove();
+  var wrap = document.getElementById(wrapId);
+  // ลบ dt-time-wrap เดิมออกก่อน (ถ้ามี)
+  var old = wrap.querySelector('.dt-time-wrap');
+  if (old) old.parentNode.removeChild(old);
 
-  var $tw = $('<div class="dt-time-wrap" style="flex:1"></div>');
-  var $selH = $('<select class="dt-hh"></select>');
+  var tw = document.createElement('div');
+  tw.className = 'dt-time-wrap';
+  tw.style.flex = '1';
+
+  var selH = document.createElement('select');
+  selH.className = 'dt-hh';
   for (var h = 0; h <= 23; h++) {
-    var hv = (h < 10 ? "0" : "") + h;
-    var $o = $("<option>").val(hv).text(hv);
-    if (h === ch) $o.prop("selected", true);
-    $selH.append($o);
+    var hv = (h < 10 ? '0' : '') + h;
+    var o = document.createElement('option');
+    o.value = hv;
+    o.textContent = hv;
+    if (h === ch) o.selected = true;
+    selH.appendChild(o);
   }
-  var $selM = $('<select class="dt-mm"></select>');
+
+  var colon = document.createElement('span');
+  colon.className = 'dt-colon';
+  colon.textContent = ':';
+
+  var selM = document.createElement('select');
+  selM.className = 'dt-mm';
   for (var m = 0; m <= 59; m++) {
-    var mv = (m < 10 ? "0" : "") + m;
-    var $p = $("<option>").val(mv).text(mv);
-    if (m === cm) $p.prop("selected", true);
-    $selM.append($p);
+    var mv = (m < 10 ? '0' : '') + m;
+    var p = document.createElement('option');
+    p.value = mv;
+    p.textContent = mv;
+    if (m === cm) p.selected = true;
+    selM.appendChild(p);
   }
-  $tw.append($selH);
-  $tw.append('<span class="dt-colon">:</span>');
-  $tw.append($selM);
-  $wrap.empty().append($tw);
+
+  tw.appendChild(selH);
+  tw.appendChild(colon);
+  tw.appendChild(selM);
+  wrap.appendChild(tw);
 
   function sync() {
-    var hVal = $wrap.find(".dt-hh").val();
-    var mVal = $wrap.find(".dt-mm").val();
-    $("#" + hiddenId).val(hVal + ":" + mVal + ":00");
+    var hVal = tw.querySelector('.dt-hh').value;
+    var mVal = tw.querySelector('.dt-mm').value;
+    document.getElementById(hiddenId).value = hVal + ':' + mVal + ':00';
   }
-  $selH.on("change", sync);
-  $selM.on("change", sync);
-  sync(); // sync ทันทีหลัง build
+  selH.addEventListener('change', sync);
+  selM.addEventListener('change', sync);
+  sync();
 }
 
-$(document).ready(function() {
-  buildTimeWidget("sfStartWrap", "sfStart", "08:30");
-  buildTimeWidget("sfEndWrap",   "sfEnd",   "17:30");
-  document.getElementById("sfColor").addEventListener("input", function() {
-    document.getElementById("sfColorHex").value = this.value;
+document.addEventListener('DOMContentLoaded', function () {
+  buildShiftTimeWidget('sfStartWrap', 'sfStart', '08:30');
+  buildShiftTimeWidget('sfEndWrap',   'sfEnd',   '17:30');
+
+  document.getElementById('sfColor').addEventListener('input', function () {
+    document.getElementById('sfColorHex').value = this.value;
   });
 });
 
 function editShift(id, name, start, end, brk, late, ot, color, night) {
-  document.getElementById("shiftId").value    = id;
-  document.getElementById("sfName").value     = name;
-  buildTimeWidget("sfStartWrap", "sfStart", start);
-  buildTimeWidget("sfEndWrap",   "sfEnd",   end);
-  document.getElementById("sfBreak").value    = brk;
-  document.getElementById("sfLate").value     = late;
-  document.getElementById("sfOT").value       = ot;
-  document.getElementById("sfColor").value    = color;
-  document.getElementById("sfColorHex").value = color;
-  document.getElementById("sfNight").checked  = (night == 1);
-  document.getElementById("sfBtn").innerHTML  = '<i class="bi bi-save me-1"></i>อัปเดตกะ';
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  document.getElementById('shiftId').value    = id;
+  document.getElementById('sfName').value     = name;
+  buildShiftTimeWidget('sfStartWrap', 'sfStart', start);
+  buildShiftTimeWidget('sfEndWrap',   'sfEnd',   end);
+  document.getElementById('sfBreak').value    = brk;
+  document.getElementById('sfLate').value     = late;
+  document.getElementById('sfOT').value       = ot;
+  document.getElementById('sfColor').value    = color;
+  document.getElementById('sfColorHex').value = color;
+  document.getElementById('sfNight').checked  = (night == 1);
+  document.getElementById('sfBtn').innerHTML  = '<i class="bi bi-save me-1"></i>อัปเดตกะ';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function resetShiftForm() {
-  document.getElementById("shiftId").value   = "";
-  buildTimeWidget("sfStartWrap", "sfStart", "08:30");
-  buildTimeWidget("sfEndWrap",   "sfEnd",   "17:30");
-  document.getElementById("sfBtn").innerHTML = '<i class="bi bi-save me-1"></i>บันทึก';
+  document.getElementById('shiftId').value   = '';
+  document.getElementById('sfName').value    = '';
+  buildShiftTimeWidget('sfStartWrap', 'sfStart', '08:30');
+  buildShiftTimeWidget('sfEndWrap',   'sfEnd',   '17:30');
+  document.getElementById('sfBreak').value   = '60';
+  document.getElementById('sfLate').value    = '15';
+  document.getElementById('sfOT').value      = '0';
+  document.getElementById('sfColor').value   = '#1a56db';
+  document.getElementById('sfColorHex').value = '#1a56db';
+  document.getElementById('sfNight').checked = false;
+  document.getElementById('sfBtn').innerHTML = '<i class="bi bi-save me-1"></i>บันทึก';
 }
 
 function validateShiftForm() {
-  var st = document.getElementById("sfStart").value;
-  var en = document.getElementById("sfEnd").value;
-  var nm = document.getElementById("sfName").value.trim();
-  if (!nm)                  { alert("กรุณาระบุชื่อกะ"); return false; }
-  if (!st || st === "::")   { alert("กรุณาเลือกเวลาเริ่มกะ"); return false; }
-  if (!en || en === "::")   { alert("กรุณาเลือกเวลาสิ้นสุดกะ"); return false; }
+  var st = document.getElementById('sfStart').value;
+  var en = document.getElementById('sfEnd').value;
+  var nm = document.getElementById('sfName').value.trim();
+  if (!nm)                { alert('กรุณาระบุชื่อกะ'); return false; }
+  if (!st || st === '::') { alert('กรุณาเลือกเวลาเริ่มกะ'); return false; }
+  if (!en || en === '::') { alert('กรุณาเลือกเวลาสิ้นสุดกะ'); return false; }
   return true;
 }
 </script>
-JSEOF;
-?>

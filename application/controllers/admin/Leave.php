@@ -3,8 +3,10 @@ class Leave extends Admin_Controller {
 
     public function __construct() {
         parent::__construct();
+
+        
         $this->load->model('Leave_model');
-        $this->load->library('upload');
+       // $this->load->library('upload');
     }
 
     // ── รายการคำขอลา ──────────────────────────────────────
