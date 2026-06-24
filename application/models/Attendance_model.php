@@ -142,6 +142,16 @@ class Attendance_model extends CI_Model {
         if ($last_day > $today) $last_day = $today;
         if ($first_day > $today) return array();
 
+        // อ่านวันเริ่มนับขาดงานจาก config (ป้องกันปัญหาตอน deploy ใหม่)
+        $CI =& get_instance();
+        $track_start = $CI->config->item('attendance_track_start');
+        if (!empty($track_start)) {
+            // ถ้าทั้งเดือนอยู่ก่อน track_start → ไม่มีขาดเลย
+            if ($last_day < $track_start) return array();
+            // ถ้า first_day อยู่ก่อน track_start → เริ่มนับจาก track_start แทน
+            if ($first_day < $track_start) $first_day = $track_start;
+        }
+
         // ดึงวันหยุดนักขัตฤกษ์ไทยของเดือนนั้น
         $holidays = $this->_get_thai_holidays($y);
 

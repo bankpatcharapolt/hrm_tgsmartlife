@@ -48,3 +48,9 @@ $config['compress_output']   = FALSE;
 $config['time_reference']    = 'local';
 $config['rewrite_short_tags'] = FALSE;
 $config['reverse_proxy_ips'] = '';
+
+// ── วันเริ่มต้นนับการขาดงาน ──────────────────────────────────────────────────
+// ระบบจะไม่นับวันก่อนหน้าวันนี้เป็น "ขาดงาน" เพื่อป้องกันปัญหาตอน deploy ใหม่
+// รูปแบบ: 'YYYY-MM-DD' หรือ '' (ว่าง = นับทุกวันตั้งแต่ต้นเดือน)
+// ตัวอย่าง: deploy วันที่ 1 ส.ค. 2026 → ตั้งเป็น '2026-08-01'
+$config['attendance_track_start'] = '2026-06-01';
