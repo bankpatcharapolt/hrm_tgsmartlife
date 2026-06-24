@@ -14,47 +14,48 @@ class Attendance extends Manager_Controller {
 
     // รายการการเข้างานของทีมตัวเอง
     public function index() {
-        $team_id    = $this->_my_team_id();
-        $y          = $this->input->get('year')    ?: date('Y');
-        $m          = $this->input->get('month')   ?: date('n');
-        $uid_filter = $this->input->get('user_id') ?: null;
+        $team_id       = $this->_my_team_id();
+        $y             = $this->input->get('year')          ?: date('Y');
+        $m             = $this->input->get('month')         ?: date('n');
+        $uid_filter    = $this->input->get('user_id')       ?: null;
+        $status_filter = $this->input->get('status_filter') ?: 'present'; // default = มาทำงาน
 
         // ดึงรายชื่อพนักงานในทีม
         $team_members = $this->_get_team_members($team_id);
 
-        // ดึงข้อมูลการเข้างานทีม
+        // ดึงข้อมูลการเข้างานทีม (ดึงทั้งหมดก่อน filter ใน view เพราะ absent ต้องคำนวณแยก)
         $records = $this->_get_team_attendance($team_id, $y, $m, $uid_filter);
 
         // คำนวณวันขาดงานสำหรับพนักงานแต่ละคน
-        // ถ้า filter รายคน → คำนวณคนเดียว, ถ้าดูทั้งทีม → คำนวณทุกคน
-        $absent_map = array(); // [user_id => [date => full_name]]
-        $targets    = $uid_filter
-            ? array_filter($team_members, function($m) use ($uid_filter){ return $m->id == $uid_filter; })
+        $absent_map = array();
+        $targets = $uid_filter
+            ? array_filter($team_members, function($mem) use ($uid_filter) { return $mem->id == $uid_filter; })
             : $team_members;
 
         foreach ($targets as $member) {
             $days = $this->Attendance_model->get_absent_days($member->id, $y, $m);
             foreach ($days as $d) {
                 $absent_map[$d][] = array(
-                    'user_id'    => $member->id,
-                    'first_name' => $member->first_name,
-                    'last_name'  => $member->last_name,
-                    'employee_id'=> $member->employee_id,
+                    'user_id'     => $member->id,
+                    'first_name'  => $member->first_name,
+                    'last_name'   => $member->last_name,
+                    'employee_id' => $member->employee_id,
                 );
             }
         }
         ksort($absent_map);
 
         $this->render('manager/attendance/index', array(
-            'title'        => 'การเข้างานทีม',
-            'page_title'   => 'การเข้างานของทีม',
-            'records'      => $records,
-            'absent_map'   => $absent_map,
-            'team_members' => $team_members,
-            'year'         => $y,
-            'month'        => $m,
-            'uid_filter'   => $uid_filter,
-            'my_team_id'   => $team_id,
+            'title'         => 'การเข้างานทีม',
+            'page_title'    => 'การเข้างานของทีม',
+            'records'       => $records,
+            'absent_map'    => $absent_map,
+            'team_members'  => $team_members,
+            'year'          => $y,
+            'month'         => $m,
+            'uid_filter'    => $uid_filter,
+            'status_filter' => $status_filter,
+            'my_team_id'    => $team_id,
         ));
     }
 
