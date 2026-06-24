@@ -606,8 +606,8 @@
       <a href="<?= base_url('admin/teams') ?>" class="<?= $ctrl === 'teams' ? 'on' : '' ?>"><i
           class="bi bi-diagram-3"></i>จัดการทีม</a>
       <?php if (!empty($current_user->is_full_access) || !empty($current_user->can_manage_employees)): ?>
-        <a href="<?= base_url('admin/roles') ?>" class="<?= $ctrl === 'roles' ? 'on' : '' ?>"><i
-            class="bi bi-shield-check"></i>บทบาทและสิทธิ์</a>
+        <!-- <a href="<?= base_url('admin/roles') ?>" class="<?= $ctrl === 'roles' ? 'on' : '' ?>"><i
+            class="bi bi-shield-check"></i>บทบาทและสิทธิ์</a> -->
       <?php endif; ?>
       <a href="<?= base_url('employee/profile') ?>"><i class="bi bi-person-circle"></i>โปรไฟล์ของฉัน</a>
       <a href="<?= base_url('auth/logout') ?>" onclick="return confirm('ออกจากระบบ?')"><i
