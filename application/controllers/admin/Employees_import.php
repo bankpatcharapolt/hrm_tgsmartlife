@@ -256,11 +256,29 @@ class Employees_import extends Admin_Controller {
             }
         }
 
-        // สถานะ
-        $status = 'active';
+        // ── แปลงสถานะ ────────────────────────────────────────
+        // active  : พนักงาน | ใช้งาน | active | ทำงาน | ปกติ | (ว่าง)
+        // inactive: ลาออก | ไม่ใช้งาน | ไม่ใช้ | พ้นสภาพ | inactive | ออก
+        // suspended: ระงับ | พักงาน | suspended
+        $status = 'active'; // default
         $sl = mb_strtolower(trim($status_raw));
-        if (mb_strpos($sl,'ลาออก')!==false || $sl==='inactive') $status='inactive';
-        elseif (mb_strpos($sl,'ระงับ')!==false) $status='suspended';
+        $inactive_keywords  = array('ลาออก','ไม่ใช้งาน','ไม่ใช้','พ้นสภาพ','inactive','ออกงาน','ออกแล้ว','ไม่ active');
+        $suspended_keywords = array('ระงับ','พักงาน','suspended');
+        $active_keywords    = array('พนักงาน','ใช้งาน','active','ทำงาน','ปกติ','ยังทำงาน');
+
+        $matched = false;
+        foreach ($inactive_keywords as $kw) {
+            if (mb_strpos($sl, $kw) !== false) { $status = 'inactive'; $matched = true; break; }
+        }
+        if (!$matched) {
+            foreach ($suspended_keywords as $kw) {
+                if (mb_strpos($sl, $kw) !== false) { $status = 'suspended'; $matched = true; break; }
+            }
+        }
+        if (!$matched && !empty($sl)) {
+            // ถ้ามีค่าแต่ไม่ match กลุ่มไหนเลย → ถือเป็น active (เช่น "พนักงาน", "ใช้งาน")
+            $status = 'active';
+        }
 
         // หา/สร้าง department
         $dept_id = null;
