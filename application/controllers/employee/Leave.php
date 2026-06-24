@@ -164,12 +164,14 @@ class Leave extends Employee_Controller {
 
         $id = $this->Leave_model->create($data);
         if ($id) {
-            $this->Notification_model->send_to_role($uid, 'admin', 'leave_request', 'มีคำขอลาใหม่',
-                $this->current_user->full_name.' ขอลา '.$days.' วัน ('.($sd===$ed?$sd:$sd.' ถึง '.$ed).')',
-                base_url('admin/leave'));
-            $this->Notification_model->send_to_role($uid, 'manager', 'leave_request', 'มีคำขอลาใหม่',
-                $this->current_user->full_name.' ขอลา '.$days.' วัน',
-                base_url('manager/leave'));
+            // แจ้งเตือนเฉพาะหัวหน้าทีมเดียวกัน + admin + owner (ไม่ส่งข้ามสาขา)
+            $this->Notification_model->send_to_team_manager(
+                $uid,
+                'leave_request',
+                'มีคำขอลาใหม่',
+                $this->current_user->full_name . ' ขอลา ' . $days . ' วัน (' . ($sd === $ed ? $sd : $sd . ' ถึง ' . $ed) . ')',
+                base_url('admin/leave')
+            );
             $this->session->set_flashdata('success', 'ส่งคำขอลาสำเร็จ รอการอนุมัติ');
         } else {
             $this->session->set_flashdata('error', 'เกิดข้อผิดพลาด');
