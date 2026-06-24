@@ -870,8 +870,7 @@
       });
     });
   }
-  $(document).ready(function(){initDTPickers();});
-  $(document).on("shown.bs.modal",function(e){initDTPickers(e.target);});
+  window.addEventListener("load",function(){if(typeof $!=="undefined"){initDTPickers();$(document).on("shown.bs.modal",function(e){initDTPickers(e.target);});}});
   </script>
   <?php if (!empty($extra_js))
     echo $extra_js; ?>

@@ -183,7 +183,7 @@
   </div>
 </div>
 
-<!-- Modal: ลงข้อมูลการมาทำงานย้อนหลัง [ข้อ 7] -->
+<!-- Modal: ลงข้อมูลการมาทำงานย้อนหลัง -->
 <div class="modal fade" id="addModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -195,14 +195,17 @@
       <input type="hidden" name="<?= $this->security->get_csrf_token_name() ?>" value="<?= $this->security->get_csrf_hash() ?>">
       <div class="modal-body">
         <div class="row g-3">
+
+          <!-- วันที่ -->
           <div class="col-6">
             <label class="form-label small">วันที่ *</label>
-            <input type="text" class="form-control form-control-sm jq-date-only" id="addDate"
+            <input type="text" class="form-control form-control-sm" id="addDateDisp"
                    placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer"
                    value="<?=date('d/m/Y')?>" required>
             <input type="hidden" name="date" id="addDateHidden" value="<?=date('Y-m-d')?>">
           </div>
-          <!-- [ข้อ 7] กะการทำงาน: pre-select กะของ user + disabled แก้ไขไม่ได้ -->
+
+          <!-- กะการทำงาน -->
           <div class="col-6">
             <label class="form-label small">กะการทำงาน</label>
             <select name="shift_id" class="form-select form-select-sm" disabled>
@@ -212,36 +215,42 @@
                 </option>
               <?php endforeach; ?>
             </select>
-            <!-- hidden เพราะ disabled ไม่ submit -->
             <input type="hidden" name="shift_id" value="<?= $default_shift_id ?>">
           </div>
+
+          <!-- เวลาเข้างาน: date + time แยกกัน -->
           <div class="col-6">
             <label class="form-label small">เวลาเข้างาน</label>
-            <div class="jq-dt-wrap">
-              <input type="text" class="form-control form-control-sm dt-date"
-                     placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer">
-              <input type="hidden" name="check_in" class="dt-hidden" value="">
+            <!-- วันที่ของเวลาเข้า (sync จาก addDateDisp อัตโนมัติ) -->
+            <div class="d-flex gap-1 align-items-center">
+              <div class="leave-time-wrap" id="ciTimeWrap" style="flex:1">
+                <input type="hidden" id="ciTimeHidden" value="08:30">
+              </div>
             </div>
+            <!-- hidden ที่ controller รับ: format YYYY-MM-DD HH:mm:ss -->
+            <input type="hidden" name="check_in" id="checkInFull" value="">
           </div>
+
+          <!-- เวลาออกงาน -->
           <div class="col-6">
             <label class="form-label small">เวลาออกงาน</label>
-            <div class="jq-dt-wrap">
-              <input type="text" class="form-control form-control-sm dt-date"
-                     placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer">
-              <input type="hidden" name="check_out" class="dt-hidden" value="">
+            <div class="leave-time-wrap" id="coTimeWrap" style="flex:1">
+              <input type="hidden" id="coTimeHidden" value="17:30">
             </div>
+            <input type="hidden" name="check_out" id="checkOutFull" value="">
           </div>
-          <!-- [ข้อ 7] เพิ่มสถานะ + half_day hours + hourly -->
+
+          <!-- สถานะ -->
           <div class="col-12">
             <label class="form-label small">สถานะ</label>
-            <select name="status" id="addStatus" class="form-select form-select-sm" onchange="onStatusChange(this.value)">
+            <select name="status" id="addStatus" class="form-select form-select-sm">
               <option value="present">มาทำงานเต็มวัน</option>
               <option value="half_day">มาทำงานครึ่งวัน</option>
               <option value="hourly">มาทำงานรายชั่วโมง</option>
             </select>
           </div>
 
-          <!-- [ข้อ 7] ครึ่งวัน: ใส่ชั่วโมง -->
+          <!-- ครึ่งวัน -->
           <div class="col-12" id="halfDaySection" style="display:none">
             <div class="p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0">
               <label class="form-label small mb-1">จำนวนชั่วโมงที่มาทำงาน</label>
@@ -252,18 +261,20 @@
             </div>
           </div>
 
-          <!-- [ข้อ 7] รายชั่วโมง: แสดงช่วงเวลา -->
+          <!-- รายชั่วโมง -->
           <div class="col-12" id="hourlySection" style="display:none">
             <div class="p-2 rounded" style="background:#eff6ff;border:1px solid #bae6fd">
-              <div class="small text-muted mb-1"><i class="bi bi-info-circle me-1"></i>ระบุเวลาเข้า-ออกด้านบน ระบบจะคำนวณชั่วโมงให้อัตโนมัติ</div>
+              <div class="small text-muted mb-1"><i class="bi bi-info-circle me-1"></i>ระบบจะคำนวณชั่วโมงจากเวลาเข้า–ออกให้อัตโนมัติ</div>
               <div id="hourlyCalc" class="fw-semibold text-primary small"></div>
             </div>
           </div>
 
+          <!-- เหตุผล -->
           <div class="col-12">
             <label class="form-label small">เหตุผล</label>
             <input type="text" name="note" class="form-control form-control-sm">
           </div>
+
         </div>
       </div>
       <div class="modal-footer py-2">
@@ -274,68 +285,136 @@
     </div>
   </div>
 </div>
+
 <script>
-// บังคับให้เป็น Global Function ด้วย window.
+// ── Pure Vanilla JS — ไม่ใช้ $ เลย ────────────────────────────────────────
+
+// navigate ปี/เดือน
 window.goF = function(el, k) {
-    var url = new URL(window.location);
-    url.searchParams.set(k, el.value);
-    window.location = url;
+  var url = new URL(window.location.href);
+  url.searchParams.set(k, el.value);
+  window.location.href = url.toString();
 };
 
-// จัดการ status change
-window.onStatusChange = function(v) {
-    var halfDaySec = document.getElementById("halfDaySection");
-    var hourlySec = document.getElementById("hourlySection");
-    
-    if (halfDaySec) halfDaySec.style.display = (v === "half_day") ? "" : "none";
-    if (hourlySec) hourlySec.style.display = (v === "hourly") ? "" : "none";
-    
-    if (v === "hourly") window.calcHourly();
-};
-
-// คำนวณชั่วโมงรายชั่วโมง — อ่านจาก hidden field (YYYY-MM-DD HH:mm:ss)
-window.calcHourly = function() {
-    // dt-hidden ของ check_in/check_out อยู่ใน modal
-    var ciVal = $('#addModal [name="check_in"].dt-hidden').val() || '';
-    var coVal = $('#addModal [name="check_out"].dt-hidden').val() || '';
-    var el = document.getElementById("hourlyCalc");
-
-    if (!ciVal || !coVal) {
-        if (el) el.textContent = "";
-        return;
-    }
-    // แปลง "YYYY-MM-DD HH:mm:ss" → Date
-    var ci = new Date(ciVal.replace(' ', 'T'));
-    var co = new Date(coVal.replace(' ', 'T'));
-    var diff = (co - ci) / 3600000;
-    if (isNaN(diff) || diff <= 0) {
-        if (el) el.textContent = "⚠ เวลาออกต้องหลังเวลาเข้า";
-        return;
-    }
-    if (el) el.textContent = "ชั่วโมงทำงาน: " + diff.toFixed(2) + " ชม.";
-};
-
-// init datepicker สำหรับ #addDate ใน modal + ผูก calcHourly เมื่อ modal เปิด
-$(document).ready(function(){
-    // addDate: jq-date-only แต่ hidden id ไม่ใช่ pattern Display→Hidden
-    // จัดการเองใน shown.bs.modal
-    $('#addModal').on('shown.bs.modal', function(){
-        initDTPickers(this);
-        // bind addDate → addDateHidden แยกเพราะ id ไม่ตรง pattern
-        var $d = $('#addDate');
-        if ($d.length && !$d.hasClass('hasDatepicker')) {
-            $d.datepicker({
-                dateFormat: 'dd/mm/yy',
-                onSelect: function(d) {
-                    var p = d.split('/');
-                    $('#addDateHidden').val(p.length===3 ? p[2]+'-'+p[1]+'-'+p[0] : '');
-                }
-            });
-        }
-        // ผูก calcHourly กับ time dropdowns ใน modal
-        $(this).find('.dt-hh, .dt-mm').off('change.hourly').on('change.hourly', function(){
-            if ($('#addStatus').val() === 'hourly') window.calcHourly();
-        });
-    });
+// toggle section ตาม status
+function onStatusChange(v) {
+  document.getElementById('halfDaySection').style.display = (v === 'half_day') ? '' : 'none';
+  document.getElementById('hourlySection').style.display  = (v === 'hourly')   ? '' : 'none';
+  if (v === 'hourly') calcHourly();
+}
+document.getElementById('addStatus').addEventListener('change', function() {
+  onStatusChange(this.value);
 });
+
+// ── time-only widget: pure vanilla ────────────────────────────────────────
+function buildTimeWidget(wrapId, hiddenId, initVal, onChangeCb) {
+  var wrap   = document.getElementById(wrapId);
+  var hidden = document.getElementById(hiddenId);
+  if (!wrap) return;
+
+  var parts = (initVal || '00:00').split(':');
+  var ch = parseInt(parts[0], 10); if (isNaN(ch)) ch = 0;
+  var cm = parseInt(parts[1], 10); if (isNaN(cm)) cm = 0;
+
+  // ลบ widget เก่า
+  var old = wrap.querySelector('.dt-time-wrap');
+  if (old) wrap.removeChild(old);
+
+  // สร้าง select ชั่วโมง
+  var selH = document.createElement('select');
+  selH.className = 'dt-hh';
+  for (var h = 0; h <= 23; h++) {
+    var o = document.createElement('option');
+    o.value = o.textContent = (h < 10 ? '0' : '') + h;
+    if (h === ch) o.selected = true;
+    selH.appendChild(o);
+  }
+  // สร้าง select นาที
+  var selM = document.createElement('select');
+  selM.className = 'dt-mm';
+  for (var m = 0; m <= 59; m++) {
+    var p = document.createElement('option');
+    p.value = p.textContent = (m < 10 ? '0' : '') + m;
+    if (m === cm) p.selected = true;
+    selM.appendChild(p);
+  }
+  var colon = document.createElement('span');
+  colon.className = 'dt-colon';
+  colon.textContent = ':';
+
+  var tw = document.createElement('div');
+  tw.className = 'dt-time-wrap';
+  tw.style.flex = '1';
+  tw.appendChild(selH);
+  tw.appendChild(colon);
+  tw.appendChild(selM);
+  wrap.insertBefore(tw, wrap.firstChild);
+
+  function sync() {
+    var val = selH.value + ':' + selM.value;
+    if (hidden) hidden.value = val;
+    syncFullDatetime();
+    if (onChangeCb) onChangeCb();
+  }
+  selH.addEventListener('change', sync);
+  selM.addEventListener('change', sync);
+  sync();
+}
+
+// sync เวลาเข้า+ออก รวมกับวันที่ → hidden field ที่ controller รับ
+function syncFullDatetime() {
+  var dateVal = document.getElementById('addDateHidden').value; // YYYY-MM-DD
+  var ciTime  = document.getElementById('ciTimeHidden').value;  // HH:mm
+  var coTime  = document.getElementById('coTimeHidden').value;  // HH:mm
+  if (dateVal) {
+    document.getElementById('checkInFull').value  = ciTime  ? dateVal + ' ' + ciTime  + ':00' : '';
+    document.getElementById('checkOutFull').value = coTime  ? dateVal + ' ' + coTime  + ':00' : '';
+  }
+  calcHourly();
+}
+
+// คำนวณชั่วโมงรายชั่วโมง
+function calcHourly() {
+  var ci  = document.getElementById('checkInFull').value;
+  var co  = document.getElementById('checkOutFull').value;
+  var el  = document.getElementById('hourlyCalc');
+  if (!el) return;
+  if (!ci || !co) { el.textContent = ''; return; }
+  var diff = (new Date(co.replace(' ', 'T')) - new Date(ci.replace(' ', 'T'))) / 3600000;
+  if (isNaN(diff) || diff <= 0) {
+    el.textContent = '⚠ เวลาออกต้องหลังเวลาเข้า';
+  } else {
+    el.textContent = 'ชั่วโมงทำงาน: ' + diff.toFixed(2) + ' ชม.';
+  }
+}
+
+// init เมื่อ DOM พร้อม
+document.addEventListener('DOMContentLoaded', function() {
+  buildTimeWidget('ciTimeWrap', 'ciTimeHidden', '08:30', calcHourly);
+  buildTimeWidget('coTimeWrap', 'coTimeHidden', '17:30', calcHourly);
+  syncFullDatetime();
+});
+
+// datepicker สำหรับ addDateDisp — ต้องรอ jQuery (โหลดท้าย body)
+// ใช้ Bootstrap modal event แทน เพราะ modal เปิดหลัง jQuery พร้อมแล้ว
+var _addModalEl = document.getElementById('addModal');
+if (_addModalEl) {
+  _addModalEl.addEventListener('shown.bs.modal', function() {
+    // init datepicker ผ่าน jQuery ที่โหลดแล้วตอน modal เปิด
+    if (typeof $ !== 'undefined' && typeof $.fn.datepicker !== 'undefined') {
+      var $d = $('#addDateDisp');
+      if ($d.length && !$d.hasClass('hasDatepicker')) {
+        $d.datepicker({
+          dateFormat: 'dd/mm/yy',
+          maxDate: 0, // ย้อนหลังได้อย่างเดียว
+          onSelect: function(d) {
+            var p = d.split('/');
+            document.getElementById('addDateHidden').value = p[2] + '-' + p[1] + '-' + p[0];
+            syncFullDatetime();
+          }
+        });
+      }
+    }
+  });
+}
 </script>
