@@ -8,13 +8,14 @@ class Leave_model extends CI_Model {
             ->where('lr.id',$id)->get()->row();
     }
     public function get_requests($filters=array(),$limit=30,$offset=0) {
-        $this->db->select('lr.*,lt.name AS leave_type_name,u.first_name,u.last_name,u.employee_id,ap.first_name AS ap_fn,ap.last_name AS ap_ln')
+        $this->db->select('lr.*,lt.name AS leave_type_name,u.first_name,u.last_name,u.employee_id,u.team_id AS emp_team_id,ap.first_name AS ap_fn,ap.last_name AS ap_ln')
             ->from('leave_requests lr')->join('leave_types lt','lt.id=lr.leave_type_id')
             ->join('users u','u.id=lr.user_id')->join('users ap','ap.id=lr.approved_by','left');
-        if (!empty($filters['user_id'])) $this->db->where('lr.user_id',$filters['user_id']);
-        if (!empty($filters['status'])) $this->db->where('lr.status',$filters['status']);
-        if (!empty($filters['dept_id'])) $this->db->where('u.department_id',$filters['dept_id']);
-        if (!empty($filters['year'])) $this->db->where('YEAR(lr.start_date)',$filters['year']);
+        if (!empty($filters['user_id']))  $this->db->where('lr.user_id',$filters['user_id']);
+        if (!empty($filters['status']))   $this->db->where('lr.status',$filters['status']);
+        if (!empty($filters['dept_id']))  $this->db->where('u.department_id',$filters['dept_id']);
+        if (!empty($filters['team_id']))  $this->db->where('u.team_id',$filters['team_id']);
+        if (!empty($filters['year']))     $this->db->where('YEAR(lr.start_date)',$filters['year']);
         $this->db->order_by('lr.created_at','DESC');
         if ($limit>0) $this->db->limit($limit,$offset);
         return $this->db->get()->result();

@@ -106,7 +106,10 @@
         <li class="nav-item"><a class="nav-link <?=$c==='sales'&&$this->router->fetch_method()!=='team'?'on':''?>" href="<?=base_url('employee/sales')?>"><i class="bi bi-graph-up-arrow me-1"></i>ยอดขายของฉัน</a></li>
         <li class="nav-item"><a class="nav-link <?=$c==='sales'&&$this->router->fetch_method()==='team'?'on':''?>" href="<?=base_url('employee/sales/team')?>"><i class="bi bi-people-fill me-1"></i>ยอดขายของทีม</a></li>
         <?php endif;?>
-        <?php if(!empty($current_user->can_approve_leave)):?><li class="nav-item"><a class="nav-link" href="<?=base_url('manager/leave')?>"><i class="bi bi-check2-circle me-1"></i>อนุมัติการลา</a></li><?php endif;?>
+        <?php if(!empty($current_user->can_approve_leave)):?>
+          <li class="nav-item"><a class="nav-link <?=($this->router->fetch_class()==='leave'&&$this->router->fetch_directory()==='manager/')?'on':''?>" href="<?=base_url('manager/leave')?>"><i class="bi bi-check2-circle me-1"></i>อนุมัติการลา</a></li>
+          <li class="nav-item"><a class="nav-link <?=($this->router->fetch_class()==='attendance'&&$this->router->fetch_directory()==='manager/')?'on':''?>" href="<?=base_url('manager/attendance')?>"><i class="bi bi-people me-1"></i>การเข้างานทีม</a></li>
+        <?php endif;?>
         <?php if(!empty($current_user->can_manage_employees)):?><li class="nav-item"><a class="nav-link" href="<?=base_url('admin/dashboard')?>"><i class="bi bi-gear me-1"></i>จัดการระบบ</a></li><?php endif;?>
       </ul>
       <ul class="navbar-nav ms-auto align-items-center">
