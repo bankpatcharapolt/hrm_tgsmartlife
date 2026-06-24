@@ -630,25 +630,27 @@
       </div>
       <div class="d-flex align-items-center gap-2">
         <div class="dropdown">
-          <button class="bico" data-bs-toggle="dropdown">
+          <button class="bico" id="adminBellBtn" data-bs-toggle="dropdown">
             <i class="bi bi-bell fs-5"></i>
-            <?php if (!empty($unread_notifications)): ?><span class="nb"><?= $unread_notifications ?></span><?php endif; ?>
+            <span id="adminBellBadge" class="nb"<?= empty($unread_notifications) ? ' style="display:none"' : '' ?>><?= !empty($unread_notifications) ? (int)$unread_notifications : '' ?></span>
           </button>
           <div class="dropdown-menu dropdown-menu-end nd-drop p-0 shadow">
             <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom"><strong
                 style="font-size:.83rem">การแจ้งเตือน</strong><a href="<?= base_url('employee/notifications') ?>"
                 class="text-primary text-decoration-none" style="font-size:.77rem">ดูทั้งหมด</a></div>
-            <?php if (!empty($recent_notifications)):
-              foreach ($recent_notifications as $n): ?>
-                <div class="nd-item <?= !$n->is_read ? 'unread' : '' ?>"
-                  onclick="markRead(<?= $n->id ?>,'<?= addslashes($n->link ?? '') ?>')">
-                  <div class="nd-title"><?= htmlspecialchars($n->title) ?></div>
-                  <div class="nd-msg">
-                    <?= htmlspecialchars(mb_substr($n->message, 0, 55)) ?>    <?= mb_strlen($n->message) > 55 ? '...' : '' ?></div>
-                  <div class="nd-time"><?= date('d/m H:i', strtotime($n->created_at)) ?></div>
-                </div>
-              <?php endforeach; else: ?>
-              <div class="text-center text-muted py-4 small">ไม่มีการแจ้งเตือน</div><?php endif; ?>
+            <div id="adminNotifList">
+              <?php if (!empty($recent_notifications)):
+                foreach ($recent_notifications as $n): ?>
+                  <div class="nd-item <?= !$n->is_read ? 'unread' : '' ?>"
+                    onclick="markRead(<?= $n->id ?>,'<?= addslashes($n->link ?? '') ?>')">
+                    <div class="nd-title"><?= htmlspecialchars($n->title) ?></div>
+                    <div class="nd-msg">
+                      <?= htmlspecialchars(mb_substr($n->message, 0, 55)) ?><?= mb_strlen($n->message) > 55 ? '...' : '' ?></div>
+                    <div class="nd-time"><?= date('d/m H:i', strtotime($n->created_at)) ?></div>
+                  </div>
+                <?php endforeach; else: ?>
+                <div class="text-center text-muted py-4 small">ไม่มีการแจ้งเตือน</div><?php endif; ?>
+            </div>
           </div>
         </div>
         <div class="dropdown">
@@ -673,7 +675,7 @@
     <div class="px-4 pt-3">
       <?php foreach (array('success' => 'check-circle', 'error' => 'exclamation-circle', 'warning' => 'exclamation-triangle', 'info' => 'info-circle') as $t => $ic):
         if (!empty(${'flash_' . $t} ?? '')): ?>
-          <div class="alert alert-<?= $t === 'error' ? 'danger' : $t ?> alert-dismissible fade show">
+          <div class="alert alert-<?= $t === 'error' ? 'danger' : $t ?> alert-dismissible fade show flash-alert">
             <i class="bi bi-<?= $ic ?> me-2"></i><?= ${'flash_' . $t} ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
           </div>
@@ -686,7 +688,108 @@
   <script>
     function toggleSB() { document.getElementById('sb').classList.toggle('open'); document.getElementById('ov').classList.toggle('show'); }
     function markRead(id, link) { fetch('<?= base_url('api/notifications/mark_read/') ?>' + id, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } }); if (link) window.location.href = link; }
-    setTimeout(() => { document.querySelectorAll('.alert').forEach(a => bootstrap.Alert.getOrCreateInstance(a).close()); }, 4000);
+  </script>
+
+  <!-- ── Admin Notification SSE + mark-all-read ─────────────────────────── -->
+  <script>
+  (function () {
+    'use strict';
+    var BASE     = '<?= base_url() ?>';
+    var prevCount = <?= !empty($unread_notifications) ? (int)$unread_notifications : 0 ?>;
+    var latestTs  = 0;
+    var es        = null;
+
+    function startSSE() {
+      if (!window.EventSource) return;
+      if (es) { es.close(); es = null; }
+      var url = BASE + 'api/notifications/stream' + (latestTs ? '?since=' + latestTs : '');
+      es = new EventSource(url);
+      es.addEventListener('notification', function (e) {
+        try {
+          var d = JSON.parse(e.data);
+          if (d.latest_ts) latestTs = d.latest_ts;
+          _updateBadge(d.count);
+          if (d.items) _updateList(d.items);
+          if (d.count > prevCount && d.items && d.items.length > 0) _showToast(d.items[0]);
+          prevCount = d.count;
+        } catch (err) {}
+        es.close();
+        setTimeout(startSSE, 10000);
+      });
+      es.onerror = function () { es.close(); setTimeout(startSSE, 15000); };
+    }
+
+    function _updateBadge(count) {
+      var b = document.getElementById('adminBellBadge');
+      if (!b) return;
+      b.textContent   = count > 99 ? '99+' : (count || '');
+      b.style.display = count > 0 ? '' : 'none';
+    }
+
+    function _updateList(items) {
+      var list = document.getElementById('adminNotifList');
+      if (!list) return;
+      if (!items.length) {
+        list.innerHTML = '<div class="text-center text-muted py-4 small">ไม่มีการแจ้งเตือน</div>';
+        return;
+      }
+      list.innerHTML = items.map(function (n) {
+        var short = (n.message || '').substring(0, 55) + ((n.message || '').length > 55 ? '...' : '');
+        return '<div class="nd-item' + (n.is_read ? '' : ' unread') + '" onclick="markRead(' + n.id + ',\'' + (n.link || '') + '\')">'
+          + '<div class="nd-title">' + _esc(n.title || '') + '</div>'
+          + '<div class="nd-msg">' + _esc(short) + '</div>'
+          + '<div class="nd-time">' + _esc(n.time_ago || '') + '</div>'
+          + '</div>';
+      }).join('');
+    }
+
+    function _showToast(n) {
+      // simple toast สำหรับ admin layout
+      var existing = document.getElementById('adminToastWrap');
+      if (!existing) {
+        existing = document.createElement('div');
+        existing.id = 'adminToastWrap';
+        existing.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;pointer-events:none;';
+        document.body.appendChild(existing);
+      }
+      var t = document.createElement('div');
+      t.style.cssText = 'background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.13);padding:.75rem 1rem;min-width:260px;max-width:320px;border-left:4px solid #1a56db;font-family:Sarabun,sans-serif;cursor:pointer;pointer-events:auto;';
+      t.innerHTML = '<div style="font-size:.83rem;font-weight:600">🔔 ' + _esc(n.title || '') + '</div>'
+        + '<div style="font-size:.78rem;color:#6b7280;margin-top:2px">' + _esc((n.message || '').substring(0, 70)) + '</div>';
+      t.addEventListener('click', function () { if (n.link) window.location.href = n.link; });
+      existing.appendChild(t);
+      setTimeout(function () {
+        t.style.opacity = '0'; t.style.transition = 'opacity .3s';
+        setTimeout(function () { t.parentNode && t.parentNode.removeChild(t); }, 300);
+      }, 6000);
+    }
+
+    function _esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // กดกระดิ่ง → mark all read
+    document.addEventListener('DOMContentLoaded', function () {
+      var btn = document.getElementById('adminBellBtn');
+      if (btn) {
+        btn.addEventListener('click', function () {
+          var b = document.getElementById('adminBellBadge');
+          if (b && b.style.display !== 'none' && parseInt(b.textContent || '0', 10) > 0) {
+            fetch(BASE + 'api/notifications/mark_all_read', {
+              method: 'POST',
+              headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            prevCount = 0;
+            b.style.display = 'none';
+            b.textContent   = '';
+          }
+        });
+      }
+    });
+
+    startSSE();
+    setTimeout(() => { document.querySelectorAll('.flash-alert').forEach(a => bootstrap.Alert.getOrCreateInstance(a).close()); }, 4000);
+  })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
   <script>

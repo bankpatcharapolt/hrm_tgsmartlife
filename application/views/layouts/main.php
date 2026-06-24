@@ -111,7 +111,7 @@
       </ul>
       <ul class="navbar-nav ms-auto align-items-center">
         <li class="nav-item dropdown">
-          <a class="nav-link position-relative" href="#" id="bellBtn" data-bs-toggle="dropdown">
+          <a class="nav-link position-relative" href="#" id="bellBtn" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="bi bi-bell-fill fs-5"></i>
             <span id="bellBadge"
               class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
@@ -160,7 +160,7 @@
 
 <div class="pw">
   <?php foreach(array('success'=>'check-circle','error'=>'exclamation-circle','warning'=>'exclamation-triangle','info'=>'info-circle') as $t=>$ic):if(!empty(${'flash_'.$t}??'')):?>
-  <div class="alert alert-<?=$t==='error'?'danger':$t?> alert-dismissible fade show mb-3">
+  <div class="alert alert-<?=$t==='error'?'danger':$t?> alert-dismissible fade show mb-3 flash-alert">
     <i class="bi bi-<?=$ic?> me-2"></i><?=${'flash_'.$t}?>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
@@ -174,9 +174,9 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-// auto-dismiss flash alerts
+// auto-dismiss flash alerts only (not static info/hint boxes)
 setTimeout(function(){
-  document.querySelectorAll('.alert').forEach(function(a){
+  document.querySelectorAll('.flash-alert').forEach(function(a){
     bootstrap.Alert.getOrCreateInstance(a).close();
   });
 }, 4000);
@@ -194,29 +194,57 @@ setTimeout(function(){
   var BASE      = '<?= base_url() ?>';
   var SSE_URL   = BASE + 'api/notifications/stream';
   var prevCount = <?= !empty($unread_notifications) ? (int)$unread_notifications : 0 ?>;
+  var latestTs  = 0;
   var es        = null;
 
-  // ── เริ่ม EventSource ────────────────────────────────────────────
+  // ── เริ่ม EventSource พร้อมส่ง ?since= ────────────────────────
   function startSSE() {
-    if (!window.EventSource) return; // IE fallback — ไม่ทำอะไร
+    if (!window.EventSource) return;
+    if (es) { es.close(); es = null; }
 
-    es = new EventSource(SSE_URL);
+    var url = SSE_URL + (latestTs ? '?since=' + latestTs : '');
+    es = new EventSource(url);
 
     es.addEventListener('notification', function (e) {
       try {
         var d = JSON.parse(e.data);
+        if (d.latest_ts) latestTs = d.latest_ts;
         updateBell(d.count, d.items);
         if (d.count > prevCount && d.items && d.items.length > 0) {
           showToast(d.items[0]);
         }
         prevCount = d.count;
-      } catch (err) { /* JSON parse error — ไม่ทำอะไร */ }
+        // SSE ส่ง retry:10000 → reconnect ทุก 10 วิ แต่ต้องปิดก่อนแล้วเปิดใหม่
+        // เพื่อส่ง since= ที่อัปเดตแล้ว
+        es.close();
+        setTimeout(startSSE, 10000);
+      } catch (err) { /* JSON parse error */ }
     });
 
-    // onerror: EventSource จะ reconnect เองตาม retry header
-    // ไม่จำเป็นต้อง handle เอง แต่ log ไว้ debug ได้
-    es.onerror = function () { /* browser จัดการ reconnect เอง */ };
+    es.onerror = function () {
+      es.close();
+      setTimeout(startSSE, 15000); // retry หลัง error
+    };
   }
+
+  // ── กดกระดิ่ง → mark all read ───────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function () {
+    var bellBtn = document.getElementById('bellBtn');
+    if (bellBtn) {
+      bellBtn.addEventListener('click', function () {
+        var badge = document.getElementById('bellBadge');
+        if (badge && badge.style.display !== 'none' && parseInt(badge.textContent || '0', 10) > 0) {
+          fetch(BASE + 'api/notifications/mark_all_read', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          });
+          prevCount = 0;
+          badge.style.display = 'none';
+          badge.textContent = '';
+        }
+      });
+    }
+  });
 
   // ── อัปเดต bell badge + dropdown list ──────────────────────────
   function updateBell(count, items) {
@@ -300,7 +328,7 @@ setTimeout(function(){
   startSSE();
 })();
 </script>
-
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.14.2/themes/base/jquery-ui.css">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {

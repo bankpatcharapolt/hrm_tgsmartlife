@@ -29,6 +29,11 @@ class Notifications extends MY_Controller {
         $this->json_ok();
     }
 
+    public function mark_all_read() {
+        $this->Notification_model->mark_all_read($this->current_user->user_id);
+        $this->json_ok(array('count' => 0));
+    }
+
     // ── SSE stream ───────────────────────────────────────────────────
     public function stream() {
         $uid   = $this->current_user->user_id;

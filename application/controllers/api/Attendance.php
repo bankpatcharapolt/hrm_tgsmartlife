@@ -186,6 +186,68 @@ class Attendance extends MY_Controller
         $msg = 'ลงเวลาออกงานสำเร็จ';
         if ($early_out) $msg .= ' (ออกก่อนเวลา ' . $early_min . ' นาที)';
 
+        // ── แจ้งเตือนออกก่อนหมดกะ ────────────────────────────────────
+        if ($early_out) {
+            $emp = $this->db->where('id', $uid)->get('users')->row();
+            $emp_name = $emp
+                ? ($emp->first_name . ' ' . $emp->last_name . ' (' . ($emp->employee_id ?? '') . ')')
+                : 'พนักงาน';
+            $notif_title = 'แจ้งเตือน: ออกก่อนหมดกะ';
+            $notif_msg   = $emp_name . ' ออกก่อนหมดกะ ' . $early_min . ' นาที'
+                         . ' (กะ ' . ($shift->name ?? '') . ' สิ้นสุด ' . substr($shift->end_time, 0, 5) . ')';
+            $notif_link  = base_url('admin/attendance');
+            $notified    = array();
+
+            // 1. หัวหน้างานในทีมเดียวกันเท่านั้น (role = manager + team_id เดียวกัน)
+            if (!empty($emp) && !empty($emp->team_id)) {
+                $team_managers = $this->db
+                    ->select('u.id')
+                    ->from('users u')
+                    ->join('roles r', 'r.id = u.role_id')
+                    ->where('r.slug', 'manager')
+                    ->where('u.team_id', $emp->team_id)
+                    ->where('u.status', 'active')
+                    ->where('u.id !=', $uid)
+                    ->get()->result();
+                foreach ($team_managers as $m) {
+                    if (!in_array($m->id, $notified)) {
+                        $this->Notification_model->create(array(
+                            'user_id'   => $m->id,
+                            'sender_id' => $uid,
+                            'type'      => 'early_checkout',
+                            'title'     => $notif_title,
+                            'message'   => $notif_msg,
+                            'link'      => $notif_link,
+                        ));
+                        $notified[] = $m->id;
+                    }
+                }
+            }
+
+            // 2. admin และ owner เสมอ
+            $admins_owners = $this->db
+                ->select('u.id')
+                ->from('users u')
+                ->join('roles r', 'r.id = u.role_id')
+                ->where_in('r.slug', array('admin', 'owner'))
+                ->where('u.status', 'active')
+                ->where('u.id !=', $uid)
+                ->get()->result();
+            foreach ($admins_owners as $a) {
+                if (!in_array($a->id, $notified)) {
+                    $this->Notification_model->create(array(
+                        'user_id'   => $a->id,
+                        'sender_id' => $uid,
+                        'type'      => 'early_checkout',
+                        'title'     => $notif_title,
+                        'message'   => $notif_msg,
+                        'link'      => $notif_link,
+                    ));
+                    $notified[] = $a->id;
+                }
+            }
+        }
+
         $this->json_ok(array(
             'time'          => date('H:i:s'),
             'is_early_out'  => (bool)$early_out,

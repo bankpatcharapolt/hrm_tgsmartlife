@@ -89,6 +89,7 @@ $route['api/attendance/checkout'] = 'api/attendance/checkout';
 
 // SSE notification stream
 $route['api/notifications/stream'] = 'api/notifications/stream';
+$route['api/notifications/mark_all_read'] = 'api/notifications/mark_all_read';
 
 // โบนัส 3 ประเภท
 $route['admin/salary/delete_bonus/(:num)'] = 'admin/salary/delete_bonus/$1';
