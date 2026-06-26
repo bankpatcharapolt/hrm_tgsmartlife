@@ -75,8 +75,15 @@ class Auth extends CI_Controller
     }
     private function _dash($slug = null)
     {
-        if (!$slug)
-            $slug = $this->session->userdata('role_slug');
-        return in_array($slug, array('owner', 'admin')) ? site_url('admin/dashboard') : (($slug === 'manager') ? site_url('manager/leave') : site_url('employee/dashboard'));
+        if (!$slug) $slug = $this->session->userdata('role_slug');
+        switch ($slug) {
+            case 'owner':
+            case 'admin':
+                return site_url('admin/dashboard');
+            case 'manager':
+                return site_url('employee/dashboard');
+            default:
+                return site_url('employee/dashboard');
+        }
     }
 }

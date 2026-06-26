@@ -78,27 +78,17 @@ foreach ($records as $r) {
     );
 }
 
-// เพิ่ม leave_rows (leave_requests table) — เฉพาะ filter=leave หรือ all
+// เพิ่ม leave_rows (leave_requests table) — 1 แถวต่อ 1 คำขอลา
 if (in_array($status_filter, array('leave', 'all'))) {
     foreach ($leave_rows as $lr) {
-        // วนทุกวันในช่วงที่ลา เพื่อแสดงทีละแถว
-        $sd = new DateTime($lr->start_date);
-        $ed = new DateTime($lr->end_date);
-        $ed->modify('+1 day'); // รวมวันสุดท้าย
-        $interval = new DateInterval('P1D');
-        $period   = new DatePeriod($sd, $interval, $ed);
-        foreach ($period as $dt) {
-            $dateStr = $dt->format('Y-m-d');
-            // ข้ามวันเสาร์-อาทิตย์
-            $dow = (int)$dt->format('N'); // 1=จ 7=อา
-            if ($dow >= 6) continue;
-            $key = $dateStr.'_leave_'.$lr->user_id.'_'.$lr->id;
-            $all_rows[$key] = array(
-                'type' => 'leave',
-                'date' => $dateStr,
-                'data' => $lr,
-            );
-        }
+        // ใช้ key เป็น leave_id เพื่อไม่ให้ซ้ำ
+        $key = 'leave_'.$lr->id;
+        // ใช้ start_date เป็นวันที่แสดงในตาราง
+        $all_rows[$key] = array(
+            'type' => 'leave',
+            'date' => $lr->start_date,
+            'data' => $lr,
+        );
     }
 }
 
