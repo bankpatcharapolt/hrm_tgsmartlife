@@ -47,19 +47,33 @@
     <?=form_close()?>
   </div>
 </div>
-<?php $extra_js='<script>
-// [แก้ไข ข้อ 2] calc() แยก base_salary + income fields อย่างถูกต้อง
-function calc(){
-  var base = parseFloat(document.getElementById("base_salary").value) || 0;
+
+<script>
+// ── Salary calc: Pure vanilla JS + DOMContentLoaded ────────────────────────
+function calcSalary() {
+  var base = parseFloat(document.getElementById('base_salary').value) || 0;
   var inc  = base;
-  document.querySelectorAll(".income").forEach(function(i){ inc += parseFloat(i.value) || 0; });
-  var ded  = 0;
-  document.querySelectorAll(".deduct").forEach(function(i){ ded += parseFloat(i.value) || 0; });
-  var fmt  = function(n){ return "฿" + n.toLocaleString("th-TH", {minimumFractionDigits:2}); };
-  document.getElementById("showGross").textContent = fmt(inc);
-  document.getElementById("showDed").textContent   = fmt(ded);
-  document.getElementById("showNet").textContent   = fmt(inc - ded);
+  document.querySelectorAll('.income').forEach(function(i) {
+    inc += parseFloat(i.value) || 0;
+  });
+  var ded = 0;
+  document.querySelectorAll('.deduct').forEach(function(i) {
+    ded += parseFloat(i.value) || 0;
+  });
+  function fmt(n) {
+    return '฿' + n.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+  }
+  document.getElementById('showGross').textContent = fmt(inc);
+  document.getElementById('showDed').textContent   = fmt(ded);
+  document.getElementById('showNet').textContent   = fmt(inc - ded);
 }
-document.querySelectorAll("input[type=number]").forEach(function(i){ i.addEventListener("input", calc); });
-calc(); // คำนวณทันทีตอนโหลดหน้า (สำคัญสำหรับ edit mode)
-</script>';?>
+
+document.addEventListener('DOMContentLoaded', function() {
+  // bind ทุก number input
+  document.querySelectorAll('input[type=number]').forEach(function(i) {
+    i.addEventListener('input', calcSalary);
+  });
+  // คำนวณทันทีตอนโหลด (สำคัญสำหรับ edit mode)
+  calcSalary();
+});
+</script>

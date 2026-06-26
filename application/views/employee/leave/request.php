@@ -2,9 +2,7 @@
 <div class="card" style="max-width:640px">
   <div class="card-header"><i class="bi bi-calendar-plus me-2"></i>ยื่นคำขอลา</div>
   <div class="card-body">
-    <?= form_open_multipart('employee/leave/store') ?>
-    
-    <div class="row g-3">
+    <?= form_open_multipart('employee/leave/store', array('id'=>'leaveForm')) ?>
       <div class="col-12">
         <label class="form-label">ประเภทการลา *</label>
         <select name="leave_type_id" class="form-select" id="leaveTypeId" required>
@@ -306,7 +304,56 @@ function calcDays() {
   }
 }
 
-// ── ตรวจใบรับรองแพทย์ ────────────────────────────────────────────────────
+// ── Form submit validation ────────────────────────────────────────────────
+// startDate/endDate เป็น readonly text ดังนั้น browser ไม่ validate required
+// ต้องตรวจเองก่อน submit
+document.addEventListener('DOMContentLoaded', function() {
+  var form = document.getElementById('leaveForm');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      var sd = document.getElementById('startDateHidden').value;
+      var ed = document.getElementById('endDateHidden').value;
+
+      if (!sd) {
+        e.preventDefault();
+        // highlight field
+        var sdEl = document.getElementById('startDate');
+        if (sdEl) {
+          sdEl.style.borderColor = '#dc2626';
+          sdEl.placeholder = 'กรุณาเลือกวันที่เริ่มลา';
+          sdEl.focus();
+        }
+        alert('กรุณาเลือกวันที่เริ่มลา');
+        return false;
+      }
+
+      if (!ed) {
+        e.preventDefault();
+        var edEl = document.getElementById('endDate');
+        if (edEl) {
+          edEl.style.borderColor = '#dc2626';
+          edEl.placeholder = 'กรุณาเลือกวันที่สิ้นสุดการลา';
+          edEl.focus();
+        }
+        alert('กรุณาเลือกวันที่สิ้นสุดการลา');
+        return false;
+      }
+
+      // ตรวจว่า end >= start
+      if (ed < sd) {
+        e.preventDefault();
+        alert('วันที่สิ้นสุดการลาต้องไม่น้อยกว่าวันที่เริ่มลา');
+        return false;
+      }
+    });
+  }
+
+  // reset border color เมื่อ datepicker เลือกวันที่แล้ว
+  var sdEl = document.getElementById('startDate');
+  var edEl = document.getElementById('endDate');
+  if (sdEl) sdEl.addEventListener('focus', function() { this.style.borderColor = ''; });
+  if (edEl) edEl.addEventListener('focus', function() { this.style.borderColor = ''; });
+});
 var sickNames = ['ลาป่วย', 'sick', 'ป่วย'];
 function checkMedCert() {
   var sel  = document.getElementById('leaveTypeId');
