@@ -9,7 +9,34 @@
         <form method="POST" action="<?=base_url('admin/salary/upload_tax')?>" enctype="multipart/form-data" id="taxUploadForm">
           <input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
 
-          <!-- ปีภาษี (อยู่บนสุด เพราะใช้ร่วมกันทุกไฟล์) -->
+          <!-- รูปแบบชื่อไฟล์ -->
+          <div class="alert alert-info py-2 px-3 mb-3" style="font-size:.83rem">
+            <i class="bi bi-info-circle me-1"></i>
+            <strong>รูปแบบชื่อไฟล์:</strong>
+            <code>{เลขบัตร13หลัก}_{MON}{ปีค.ศ.}.pdf</code><br>
+            <strong>ตัวอย่าง:</strong> <code>1101800657588_MAY2026.pdf</code>
+          </div>
+          <!-- ตารางตัวย่อเดือน -->
+          <div class="mb-3 p-2 rounded" style="background:#f8fafc;border:1px solid #e2e8f0;font-size:.78rem">
+            <div class="fw-semibold mb-1" style="color:#475569"><i class="bi bi-calendar3 me-1"></i>ตัวย่อเดือน (MON) ที่ใช้ในชื่อไฟล์</div>
+            <div class="row g-1">
+              <?php
+              $months = array(
+                'JAN'=>'ม.ค. (มกราคม)',  'FEB'=>'ก.พ. (กุมภาพันธ์)',
+                'MAR'=>'มี.ค. (มีนาคม)',  'APR'=>'เม.ย. (เมษายน)',
+                'MAY'=>'พ.ค. (พฤษภาคม)', 'JUN'=>'มิ.ย. (มิถุนายน)',
+                'JUL'=>'ก.ค. (กรกฎาคม)', 'AUG'=>'ส.ค. (สิงหาคม)',
+                'SEP'=>'ก.ย. (กันยายน)',  'OCT'=>'ต.ค. (ตุลาคม)',
+                'NOV'=>'พ.ย. (พฤศจิกายน)','DEC'=>'ธ.ค. (ธันวาคม)',
+              );
+              foreach ($months as $abbr => $name): ?>
+              <div class="col-6">
+                <span class="badge me-1" style="background:#1a56db;font-size:.72rem"><?=$abbr?></span>
+                <span style="color:#374151"><?=$name?></span>
+              </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
           <div class="mb-3">
             <label class="form-label">ปีภาษี <span class="text-danger">*</span></label>
             <input type="number" name="tax_year" class="form-control" value="<?=$year?>" required>

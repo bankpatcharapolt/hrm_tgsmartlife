@@ -136,6 +136,27 @@ $mn_list = array('0'=>'ทุกเดือน','1'=>'ม.ค.','2'=>'ก.พ.'
             <code>{เลขบัตร13หลัก}_{MON}{ปีค.ศ.}.pdf</code><br>
             <strong>ตัวอย่าง:</strong> <code>1101800657588_MAY2026.pdf</code>
           </div>
+          <!-- ตารางตัวย่อเดือน -->
+          <div class="mb-3 p-2 rounded" style="background:#f8fafc;border:1px solid #e2e8f0;font-size:.78rem">
+            <div class="fw-semibold mb-1" style="color:#475569"><i class="bi bi-calendar3 me-1"></i>ตัวย่อเดือน (MON) ที่ใช้ในชื่อไฟล์</div>
+            <div class="row g-1">
+              <?php
+              $months = array(
+                'JAN'=>'ม.ค. (มกราคม)',  'FEB'=>'ก.พ. (กุมภาพันธ์)',
+                'MAR'=>'มี.ค. (มีนาคม)',  'APR'=>'เม.ย. (เมษายน)',
+                'MAY'=>'พ.ค. (พฤษภาคม)', 'JUN'=>'มิ.ย. (มิถุนายน)',
+                'JUL'=>'ก.ค. (กรกฎาคม)', 'AUG'=>'ส.ค. (สิงหาคม)',
+                'SEP'=>'ก.ย. (กันยายน)',  'OCT'=>'ต.ค. (ตุลาคม)',
+                'NOV'=>'พ.ย. (พฤศจิกายน)','DEC'=>'ธ.ค. (ธันวาคม)',
+              );
+              foreach ($months as $abbr => $name): ?>
+              <div class="col-6">
+                <span class="badge me-1" style="background:#1a56db;font-size:.72rem"><?=$abbr?></span>
+                <span style="color:#374151"><?=$name?></span>
+              </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
           <label class="form-label fw-semibold">เลือกไฟล์ PDF (หลายไฟล์ได้)</label>
           <input type="file" name="slip_files[]" id="slipFiles" class="form-control" accept=".pdf" multiple required>
           <div id="slipPreview" class="mt-2" style="display:none">

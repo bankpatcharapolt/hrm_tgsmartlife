@@ -22,6 +22,7 @@
     .ui-state-highlight{background:#eff6ff!important;color:#1a56db!important;border:1px solid #bae6fd!important;border-radius:5px}
     .ui-state-active{background:#1a56db!important;color:#fff!important;border:none!important;border-radius:5px}
     .ui-datepicker select.ui-datepicker-month,.ui-datepicker select.ui-datepicker-year{font-family:Sarabun,sans-serif;font-size:.8rem;border-radius:4px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:#fff;padding:1px 2px}
+    .ui-datepicker select.ui-datepicker-month option,.ui-datepicker select.ui-datepicker-year option{background:#1a56db;color:#fff}
     /* ── jQuery datepicker datetime widget ── */
     .dt-hidden{display:none!important}
     .jq-dt-wrap{display:flex;flex-wrap:nowrap;gap:6px;align-items:stretch}
