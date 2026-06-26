@@ -18,15 +18,21 @@ class Attendance extends Manager_Controller {
         $y             = $this->input->get('year')          ?: date('Y');
         $m             = $this->input->get('month')         ?: date('n');
         $uid_filter    = $this->input->get('user_id')       ?: null;
-        $status_filter = $this->input->get('status_filter') ?: 'present'; // default = มาทำงาน
+        $status_filter = $this->input->get('status_filter') ?: 'present';
 
-        // ดึงรายชื่อพนักงานในทีม
+        // ดึงรายชื่อพนักงานในทีม (รวม manager ตัวเอง)
         $team_members = $this->_get_team_members($team_id);
 
-        // ดึงข้อมูลการเข้างานทีม (ดึงทั้งหมดก่อน filter ใน view เพราะ absent ต้องคำนวณแยก)
+        // ดึงข้อมูลการเข้างาน
         $records = $this->_get_team_attendance($team_id, $y, $m, $uid_filter);
 
-        // คำนวณวันขาดงานสำหรับพนักงานแต่ละคน
+        // ดึง leave_requests (approved+pending) สำหรับ filter=leave หรือ all
+        $leave_rows = array();
+        if (in_array($status_filter, array('leave', 'all'))) {
+            $leave_rows = $this->_get_team_leaves($team_id, $y, $m, $uid_filter);
+        }
+
+        // คำนวณวันขาดงาน
         $absent_map = array();
         $targets = $uid_filter
             ? array_filter($team_members, function($mem) use ($uid_filter) { return $mem->id == $uid_filter; })
@@ -49,6 +55,7 @@ class Attendance extends Manager_Controller {
             'title'         => 'การเข้างานทีม',
             'page_title'    => 'การเข้างานของทีม',
             'records'       => $records,
+            'leave_rows'    => $leave_rows,
             'absent_map'    => $absent_map,
             'team_members'  => $team_members,
             'year'          => $y,
@@ -57,6 +64,42 @@ class Attendance extends Manager_Controller {
             'status_filter' => $status_filter,
             'my_team_id'    => $team_id,
         ));
+    }
+
+    // ดึง leave_requests ของทีม รายเดือน
+    private function _get_team_leaves($team_id, $y, $m, $uid_filter = null) {
+        $first = sprintf('%04d-%02d-01', $y, $m);
+        $last  = date('Y-m-t', strtotime($first));
+
+        $q = $this->db->select(
+                'lr.id, lr.user_id, lr.start_date, lr.end_date,
+                 lr.total_days, lr.leave_unit, lr.reason, lr.status AS leave_status,
+                 lr.total_hours, lr.start_time, lr.end_time,
+                 lt.name AS leave_type_name,
+                 u.first_name, u.last_name, u.employee_id'
+            )
+            ->from('leave_requests lr')
+            ->join('users u',       'u.id=lr.user_id')
+            ->join('leave_types lt','lt.id=lr.leave_type_id', 'left')
+            ->join('roles r',       'r.id=u.role_id', 'left')
+            ->where('u.status', 'active')
+            ->where('r.slug !=', 'admin')
+            ->where('r.slug !=', 'owner')
+            // คำขอที่ทับกับเดือนนี้
+            ->where('lr.start_date <=', $last)
+            ->where('lr.end_date >=',   $first)
+            ->where_in('lr.status', array('approved', 'pending'));
+
+        if ($team_id) {
+            $q->where('u.team_id', $team_id);
+        }
+        if ($uid_filter) {
+            $q->where('lr.user_id', $uid_filter);
+        }
+
+        return $q->order_by('lr.start_date', 'DESC')
+                 ->order_by('u.first_name', 'ASC')
+                 ->get()->result();
     }
 
     // ดึงพนักงานในทีม

@@ -65,11 +65,11 @@
 
 <?php
 // ─────────────────────────────────────────────────────────────────────────────
-// สร้าง all_rows รวม records + absent_map แล้ว filter ตาม status_filter
+// สร้าง all_rows รวม records + absent_map + leave_rows
 // ─────────────────────────────────────────────────────────────────────────────
 $all_rows = array();
 
-// เพิ่ม records
+// เพิ่ม records (attendance table)
 foreach ($records as $r) {
     $all_rows[$r->date.'_'.$r->user_id] = array(
         'type' => 'record',
@@ -78,7 +78,31 @@ foreach ($records as $r) {
     );
 }
 
-// เพิ่ม absent rows (เฉพาะ status_filter = absent หรือ all)
+// เพิ่ม leave_rows (leave_requests table) — เฉพาะ filter=leave หรือ all
+if (in_array($status_filter, array('leave', 'all'))) {
+    foreach ($leave_rows as $lr) {
+        // วนทุกวันในช่วงที่ลา เพื่อแสดงทีละแถว
+        $sd = new DateTime($lr->start_date);
+        $ed = new DateTime($lr->end_date);
+        $ed->modify('+1 day'); // รวมวันสุดท้าย
+        $interval = new DateInterval('P1D');
+        $period   = new DatePeriod($sd, $interval, $ed);
+        foreach ($period as $dt) {
+            $dateStr = $dt->format('Y-m-d');
+            // ข้ามวันเสาร์-อาทิตย์
+            $dow = (int)$dt->format('N'); // 1=จ 7=อา
+            if ($dow >= 6) continue;
+            $key = $dateStr.'_leave_'.$lr->user_id.'_'.$lr->id;
+            $all_rows[$key] = array(
+                'type' => 'leave',
+                'date' => $dateStr,
+                'data' => $lr,
+            );
+        }
+    }
+}
+
+// เพิ่ม absent rows — เฉพาะ filter=absent หรือ all
 if ($status_filter === 'absent' || $status_filter === 'all') {
     foreach ($absent_map as $date => $mems) {
         foreach ($mems as $idx => $mem) {
@@ -88,33 +112,30 @@ if ($status_filter === 'absent' || $status_filter === 'all') {
     }
 }
 
-// filter records ตาม status_filter
+// filter ตาม status_filter
 $filtered_rows = array();
 foreach ($all_rows as $key => $row) {
-    if ($row['type'] === 'absent') {
-        // แสดงเฉพาะตอน filter = absent หรือ all
-        if ($status_filter === 'absent' || $status_filter === 'all') {
-            $filtered_rows[$key] = $row;
-        }
-        continue;
-    }
-    // record rows
-    $r = $row['data'];
-    $is_present = in_array($r->status, array('present','half_day'));
-    $is_late    = (bool)$r->is_late;
-    $is_leave   = ($r->status === 'leave');
-
     switch ($status_filter) {
-        case 'present': // มาทำงานตรงเวลา (ไม่สาย)
-            if ($is_present && !$is_late) $filtered_rows[$key] = $row;
+        case 'present':
+            if ($row['type']==='record') {
+                $r = $row['data'];
+                if (in_array($r->status, array('present','half_day')) && !$r->is_late)
+                    $filtered_rows[$key] = $row;
+            }
             break;
-        case 'late':    // มาสาย (มาแต่สาย)
-            if ($is_present && $is_late)  $filtered_rows[$key] = $row;
+        case 'late':
+            if ($row['type']==='record') {
+                $r = $row['data'];
+                if (in_array($r->status, array('present','half_day')) && $r->is_late)
+                    $filtered_rows[$key] = $row;
+            }
             break;
         case 'leave':
-            if ($is_leave) $filtered_rows[$key] = $row;
+            // แสดงเฉพาะ leave_rows (จาก leave_requests)
+            if ($row['type']==='leave') $filtered_rows[$key] = $row;
             break;
-        case 'absent':  // แสดงเฉพาะ absent_map ไม่แสดง record
+        case 'absent':
+            if ($row['type']==='absent') $filtered_rows[$key] = $row;
             break;
         case 'all':
         default:
@@ -127,12 +148,16 @@ foreach ($all_rows as $key => $row) {
 uasort($filtered_rows, function($a, $b) {
     $dc = strcmp($b['date'], $a['date']);
     if ($dc !== 0) return $dc;
-    $na = $a['type']==='record' ? $a['data']->first_name : $a['member']['first_name'];
-    $nb = $b['type']==='record' ? $b['data']->first_name : $b['member']['first_name'];
+    if ($a['type'] === 'record')      $na = $a['data']->first_name;
+    elseif ($a['type'] === 'leave')   $na = $a['data']->first_name;
+    else                              $na = $a['member']['first_name'];
+    if ($b['type'] === 'record')      $nb = $b['data']->first_name;
+    elseif ($b['type'] === 'leave')   $nb = $b['data']->first_name;
+    else                              $nb = $b['member']['first_name'];
     return strcmp($na, $nb);
 });
 
-// สรุป (จาก records + absent_map ทั้งหมด ไม่ใช่ filtered)
+// สรุป (จาก records + absent_map + leave_rows ทั้งหมด ไม่ใช่ filtered)
 $sum_present = 0; $sum_late = 0; $sum_absent = 0; $sum_ot = 0.0; $sum_late_min = 0;
 foreach ($records as $r) {
     if (in_array($r->status, array('present','half_day'))) {
@@ -242,8 +267,44 @@ foreach ($absent_map as $d => $mems) $sum_absent += count($mems);
             <td>–</td><td>–</td>
           </tr>
 
+          <?php elseif ($row['type'] === 'leave'):
+            $lr = $row['data'];
+            $lstatus_badge = array('approved'=>'bg-success','pending'=>'bg-warning text-dark','rejected'=>'bg-danger');
+            $lstatus_label = array('approved'=>'อนุมัติ','pending'=>'รออนุมัติ','rejected'=>'ปฏิเสธ');
+            $lst = $lr->leave_status ?? 'pending';
+          ?>
+          <tr class="table-info">
+            <td style="font-size:.83rem;white-space:nowrap">
+              <?=date('d/m/Y', strtotime($row['date']))?>
+              <br><small class="text-info fw-semibold"><?=$dow?></small>
+            </td>
+            <td style="font-size:.83rem">
+              <span class="fw-semibold"><?=htmlspecialchars($lr->first_name.' '.$lr->last_name)?></span>
+              <br><small class="text-muted"><?=htmlspecialchars($lr->employee_id)?></small>
+            </td>
+            <td><span class="text-muted small">–</span></td>
+            <td><span class="text-muted small">–</span></td>
+            <td><span class="text-muted small">–</span></td>
+            <td>
+              <span class="badge bg-info text-dark">ลา</span>
+              <br><small><?=htmlspecialchars($lr->leave_type_name??'')?></small>
+            </td>
+            <td>–</td><td>–</td>
+            <td style="font-size:.8rem;max-width:120px">
+              <?=htmlspecialchars($lr->reason??'')?>
+              <?php if ($lr->total_days > 0): ?>
+                <br><small class="text-muted"><?=$lr->total_days?> วัน</small>
+              <?php endif; ?>
+            </td>
+            <td>
+              <span class="badge <?=$lstatus_badge[$lst]??'bg-secondary'?>">
+                <?=$lstatus_label[$lst]??$lst?>
+              </span>
+            </td>
+          </tr>
+
           <?php else:
-            $r = $row['data'];
+            $r   = $row['data'];
             $dow = $dow_th[date('D', strtotime($r->date))] ?? date('D', strtotime($r->date));
           ?>
           <tr>
