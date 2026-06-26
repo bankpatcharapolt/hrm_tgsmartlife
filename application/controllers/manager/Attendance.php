@@ -119,7 +119,11 @@ class Attendance extends Manager_Controller {
     // ดึงข้อมูลการเข้างานทีม รายเดือน
     private function _get_team_attendance($team_id, $y, $m, $uid_filter = null) {
         $q = $this->db->select(
-                'a.*, u.first_name, u.last_name, u.employee_id,
+                'a.id, a.user_id, a.date, a.check_in_time, a.check_out_time,
+                 a.status, a.is_late, a.late_minutes, a.ot_hours,
+                 a.note, a.is_manual, a.approval_status,
+                 a.shift_id, a.leave_hours,
+                 u.first_name, u.last_name, u.employee_id,
                  s.name AS shift_name, s.color AS shift_color'
             )
             ->from('attendance a')
@@ -141,7 +145,7 @@ class Attendance extends Manager_Controller {
 
         return $q->order_by('a.date', 'DESC')
                  ->order_by('u.first_name', 'ASC')
-                 ->limit(500)
+                 ->limit(2000)
                  ->get()->result();
     }
 }

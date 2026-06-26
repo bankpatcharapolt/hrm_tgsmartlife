@@ -69,9 +69,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 $all_rows = array();
 
-// เพิ่ม records (attendance table)
+// เพิ่ม records (attendance table) — ใช้ a.id เป็น key เพื่อไม่ให้ซ้ำ
 foreach ($records as $r) {
-    $all_rows[$r->date.'_'.$r->user_id] = array(
+    $key = 'att_'.$r->id;
+    $all_rows[$key] = array(
         'type' => 'record',
         'date' => $r->date,
         'data' => $r,
