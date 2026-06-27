@@ -13,55 +13,85 @@ class Notification_model extends CI_Model {
 
     /**
      * แจ้งเตือนเฉพาะหัวหน้าทีมเดียวกับ sender + admin + owner
-     * manager ทีมอื่นจะไม่ได้รับแจ้งเตือน
+     * manager ได้รับ link ของ manager, admin/owner ได้รับ link ของ admin
+     *
+     * @param int    $sid         sender user_id
+     * @param string $type        notification type
+     * @param string $title       หัวข้อ
+     * @param string $msg         ข้อความ
+     * @param string $manager_link  URL สำหรับ manager (เช่น manager/attendance)
+     * @param string $admin_link    URL สำหรับ admin/owner (เช่น admin/attendance) ถ้าว่างใช้ manager_link
      */
-    public function send_to_team_manager($sid,$type,$title,$msg,$link='') {
+    public function send_to_team_manager($sid, $type, $title, $msg, $manager_link = '', $admin_link = '') {
+        if (empty($admin_link)) $admin_link = $manager_link;
+
         // หา team_id ของ sender
-        $sender = $this->db->select('team_id')->where('id',$sid)->get('users')->row();
+        $sender  = $this->db->select('team_id')->where('id', $sid)->get('users')->row();
         $team_id = $sender ? $sender->team_id : null;
         $notified = array();
 
-        // หัวหน้าทีมเดียวกัน
+        // หัวหน้าทีมเดียวกัน → ใช้ manager_link
         if ($team_id) {
             $managers = $this->db->select('u.id')->from('users u')
-                ->join('roles r','r.id=u.role_id')
-                ->where('r.slug','manager')
-                ->where('u.team_id',$team_id)
-                ->where('u.status','active')
-                ->where('u.id !=',$sid)
+                ->join('roles r', 'r.id=u.role_id')
+                ->where('r.slug', 'manager')
+                ->where('u.team_id', $team_id)
+                ->where('u.status', 'active')
+                ->where('u.id !=', $sid)
                 ->get()->result();
             foreach ($managers as $u) {
-                if (!in_array($u->id,$notified)) {
-                    $this->create(array('user_id'=>$u->id,'sender_id'=>$sid,'type'=>$type,'title'=>$title,'message'=>$msg,'link'=>$link));
+                if (!in_array($u->id, $notified)) {
+                    $this->create(array(
+                        'user_id'   => $u->id,
+                        'sender_id' => $sid,
+                        'type'      => $type,
+                        'title'     => $title,
+                        'message'   => $msg,
+                        'link'      => $manager_link,
+                    ));
                     $notified[] = $u->id;
                 }
             }
         }
-        // ถ้าไม่มีหัวหน้าในทีม ส่งให้ manager ทุกคน
+        // ถ้าไม่มีหัวหน้าในทีม → ส่งให้ manager ทุกคน
         if (empty($notified)) {
             $all_mgr = $this->db->select('u.id')->from('users u')
-                ->join('roles r','r.id=u.role_id')
-                ->where('r.slug','manager')
-                ->where('u.status','active')
-                ->where('u.id !=',$sid)
+                ->join('roles r', 'r.id=u.role_id')
+                ->where('r.slug', 'manager')
+                ->where('u.status', 'active')
+                ->where('u.id !=', $sid)
                 ->get()->result();
             foreach ($all_mgr as $u) {
-                if (!in_array($u->id,$notified)) {
-                    $this->create(array('user_id'=>$u->id,'sender_id'=>$sid,'type'=>$type,'title'=>$title,'message'=>$msg,'link'=>$link));
+                if (!in_array($u->id, $notified)) {
+                    $this->create(array(
+                        'user_id'   => $u->id,
+                        'sender_id' => $sid,
+                        'type'      => $type,
+                        'title'     => $title,
+                        'message'   => $msg,
+                        'link'      => $manager_link,
+                    ));
                     $notified[] = $u->id;
                 }
             }
         }
-        // admin + owner เสมอ
+        // admin + owner → ใช้ admin_link
         $ao = $this->db->select('u.id')->from('users u')
-            ->join('roles r','r.id=u.role_id')
-            ->where_in('r.slug',array('admin','owner'))
-            ->where('u.status','active')
-            ->where('u.id !=',$sid)
+            ->join('roles r', 'r.id=u.role_id')
+            ->where_in('r.slug', array('admin', 'owner'))
+            ->where('u.status', 'active')
+            ->where('u.id !=', $sid)
             ->get()->result();
         foreach ($ao as $u) {
-            if (!in_array($u->id,$notified)) {
-                $this->create(array('user_id'=>$u->id,'sender_id'=>$sid,'type'=>$type,'title'=>$title,'message'=>$msg,'link'=>$link));
+            if (!in_array($u->id, $notified)) {
+                $this->create(array(
+                    'user_id'   => $u->id,
+                    'sender_id' => $sid,
+                    'type'      => $type,
+                    'title'     => $title,
+                    'message'   => $msg,
+                    'link'      => $admin_link,
+                ));
                 $notified[] = $u->id;
             }
         }

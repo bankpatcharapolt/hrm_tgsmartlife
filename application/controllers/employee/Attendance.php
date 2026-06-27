@@ -181,7 +181,8 @@ class Attendance extends Employee_Controller {
             'manual_attendance',
             'ขอบันทึกย้อนหลัง',
             $msg,
-            base_url('admin/attendance')
+            base_url('manager/attendance'),   // manager → หน้าการเข้างานทีม
+            base_url('admin/attendance')       // admin/owner → หน้า admin
         );
 
         $this->session->set_flashdata('success', 'ส่งคำขอบันทึกย้อนหลังสำเร็จ รอการอนุมัติจากหัวหน้างาน');

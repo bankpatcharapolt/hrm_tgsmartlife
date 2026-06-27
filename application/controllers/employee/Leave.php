@@ -170,7 +170,8 @@ class Leave extends Employee_Controller {
                 'leave_request',
                 'มีคำขอลาใหม่',
                 $this->current_user->full_name . ' ขอลา ' . $days . ' วัน (' . ($sd === $ed ? $sd : $sd . ' ถึง ' . $ed) . ')',
-                base_url('admin/leave')
+                base_url('manager/leave'),   // manager → หน้าอนุมัติการลา
+                base_url('admin/leave')      // admin/owner → หน้า admin
             );
             $this->session->set_flashdata('success', 'ส่งคำขอลาสำเร็จ รอการอนุมัติ');
         } else {

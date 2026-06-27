@@ -291,6 +291,20 @@ foreach ($absent_map as $d => $mems) $sum_absent += count($mems);
               <span class="badge <?=$lstatus_badge[$lst]??'bg-secondary'?>">
                 <?=$lstatus_label[$lst]??$lst?>
               </span>
+              <?php if ($lst === 'pending'): ?>
+              <div class="d-flex gap-1 mt-1">
+                <a href="<?=base_url('manager/attendance/approve_leave/'.$lr->id)?>"
+                   onclick="return confirm('อนุมัติการลาของ <?=htmlspecialchars($lr->first_name)?> ใช่ไหม?')"
+                   class="btn btn-success btn-sm py-0 px-1" style="font-size:.7rem">
+                  <i class="bi bi-check-lg"></i> อนุมัติ
+                </a>
+                <button type="button"
+                        onclick="rejectLeave(<?=$lr->id?>)"
+                        class="btn btn-outline-danger btn-sm py-0 px-1" style="font-size:.7rem">
+                  <i class="bi bi-x-lg"></i> ปฏิเสธ
+                </button>
+              </div>
+              <?php endif; ?>
             </td>
           </tr>
 
@@ -338,6 +352,20 @@ foreach ($absent_map as $d => $mems) $sum_absent += count($mems);
                 $st = $r->approval_status ?? 'pending';
               ?>
                 <span class="badge <?=$ab[$st]??'bg-secondary'?>"><?=$lb[$st]??$st?></span>
+                <?php if ($st === 'pending'): ?>
+                <div class="d-flex gap-1 mt-1">
+                  <a href="<?=base_url('manager/attendance/approve_attendance/'.$r->id)?>"
+                     onclick="return confirm('อนุมัติการบันทึกย้อนหลังของ <?=htmlspecialchars($r->first_name)?> ใช่ไหม?')"
+                     class="btn btn-success btn-sm py-0 px-1" style="font-size:.7rem">
+                    <i class="bi bi-check-lg"></i> อนุมัติ
+                  </a>
+                  <button type="button"
+                          onclick="rejectAtt(<?=$r->id?>)"
+                          class="btn btn-outline-danger btn-sm py-0 px-1" style="font-size:.7rem">
+                    <i class="bi bi-x-lg"></i> ปฏิเสธ
+                  </button>
+                </div>
+                <?php endif; ?>
               <?php else: ?>
                 <span class="text-muted small">–</span>
               <?php endif; ?>
@@ -356,3 +384,60 @@ foreach ($absent_map as $d => $mems) $sum_absent += count($mems);
     </div>
   </div>
 </div>
+
+<!-- Reject Attendance Modal -->
+<div class="modal fade" id="rejectAttModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title">ปฏิเสธการบันทึกย้อนหลัง</h6>
+        <button class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="rejectAttForm" method="POST" action="">
+        <div class="modal-body py-2">
+          <label class="form-label small">เหตุผล</label>
+          <input type="text" name="note" class="form-control form-control-sm" placeholder="ระบุเหตุผล (ถ้ามี)">
+        </div>
+        <div class="modal-footer py-2">
+          <button type="submit" class="btn btn-danger btn-sm">ยืนยันปฏิเสธ</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Reject Leave Modal -->
+<div class="modal fade" id="rejectLeaveModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title">ปฏิเสธคำขอลา</h6>
+        <button class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="rejectLeaveForm" method="POST" action="">
+        <div class="modal-body py-2">
+          <label class="form-label small">เหตุผล</label>
+          <input type="text" name="note" class="form-control form-control-sm" placeholder="ระบุเหตุผล (ถ้ามี)">
+        </div>
+        <div class="modal-footer py-2">
+          <button type="submit" class="btn btn-danger btn-sm">ยืนยันปฏิเสธ</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function rejectAtt(id) {
+  document.getElementById('rejectAttForm').action = '<?=base_url('manager/attendance/reject_attendance/')?>' + id;
+  var modal = new bootstrap.Modal(document.getElementById('rejectAttModal'));
+  modal.show();
+}
+function rejectLeave(id) {
+  document.getElementById('rejectLeaveForm').action = '<?=base_url('manager/attendance/reject_leave/')?>' + id;
+  var modal = new bootstrap.Modal(document.getElementById('rejectLeaveModal'));
+  modal.show();
+}
+</script>
