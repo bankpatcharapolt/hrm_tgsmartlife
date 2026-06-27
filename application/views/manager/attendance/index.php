@@ -3,10 +3,13 @@
 <!-- Filter bar -->
 <div class="card mb-3">
   <div class="card-body py-2">
-    <?= form_open('manager/attendance', array('method'=>'GET','class'=>'row g-2 align-items-end')) ?>
+    <?= form_open('manager/attendance', array('method'=>'GET','id'=>'filterForm','class'=>'row g-2 align-items-end')) ?>
+      <!-- hidden: คงค่า status_filter ไว้เมื่อ dropdown เปลี่ยน -->
+      <input type="hidden" name="status_filter" id="hiddenStatusFilter" value="<?=htmlspecialchars($status_filter)?>">
+
       <!-- ปี -->
       <div class="col-6 col-md-auto">
-        <select name="year" class="form-select form-select-sm">
+        <select name="year" class="form-select form-select-sm" onchange="autoSubmit()">
           <?php for ($yy = date('Y'); $yy >= date('Y')-2; $yy--): ?>
             <option value="<?=$yy?>" <?=$year==$yy?'selected':''?>><?=$yy?></option>
           <?php endfor; ?>
@@ -15,7 +18,7 @@
 
       <!-- เดือน -->
       <div class="col-6 col-md-auto">
-        <select name="month" class="form-select form-select-sm">
+        <select name="month" class="form-select form-select-sm" onchange="autoSubmit()">
           <?php
           $mn = array(1=>'มกราคม',2=>'กุมภาพันธ์',3=>'มีนาคม',4=>'เมษายน',
                       5=>'พฤษภาคม',6=>'มิถุนายน',7=>'กรกฎาคม',8=>'สิงหาคม',
@@ -28,7 +31,7 @@
 
       <!-- พนักงาน -->
       <div class="col-12 col-md-3">
-        <select name="user_id" class="form-select form-select-sm">
+        <select name="user_id" class="form-select form-select-sm" onchange="autoSubmit()">
           <option value="">-- พนักงานทุกคนในทีม --</option>
           <?php foreach ($team_members as $tm): ?>
             <option value="<?=$tm->id?>" <?=$uid_filter==$tm->id?'selected':''?>>
@@ -51,7 +54,8 @@
         ?>
         <div class="d-flex flex-wrap gap-1">
           <?php foreach ($sf_opts as $val => $opt): ?>
-            <button type="submit" name="status_filter" value="<?=$val?>"
+            <button type="button"
+                    onclick="setFilter('<?=$val?>')"
                     class="btn btn-sm <?= $status_filter===$val ? $opt['cls'] : 'btn-outline-'.str_replace('btn-','',$opt['cls']) ?>">
               <i class="bi <?=$opt['icon']?> me-1"></i><?=$opt['label']?>
             </button>
@@ -62,6 +66,16 @@
     <?= form_close() ?>
   </div>
 </div>
+
+<script>
+function autoSubmit() {
+  document.getElementById('filterForm').submit();
+}
+function setFilter(val) {
+  document.getElementById('hiddenStatusFilter').value = val;
+  document.getElementById('filterForm').submit();
+}
+</script>
 
 <?php
 // ─────────────────────────────────────────────────────────────────────────────

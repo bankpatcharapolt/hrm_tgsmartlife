@@ -71,20 +71,50 @@ class Attendance extends Manager_Controller {
     public function approve_attendance($id) {
         $a = $this->db->where('id', $id)->get('attendance')->row();
         if ($a && $this->_is_my_team_member($a->user_id)) {
-            $this->db->where('id', $id)->update('attendance', array(
+
+            // ── คำนวณ OT + is_late + late_minutes ใหม่หลัง approve ──────
+            $this->load->model('Shift_model');
+            $update = array(
                 'approval_status' => 'approved',
                 'approved_by'     => $this->current_user->user_id,
                 'updated_at'      => date('Y-m-d H:i:s'),
-            ));
+            );
+
+            $shift = $a->shift_id ? $this->Shift_model->get_by_id($a->shift_id) : null;
+            if ($shift && $a->check_in_time && $a->check_out_time) {
+                // is_late + late_minutes
+                $ci_time  = date('H:i:s', strtotime($a->check_in_time));
+                $diff_min = (strtotime($ci_time) - strtotime($shift->start_time)) / 60;
+                // กะดึก: ถ้า diff เป็น negative มาก (เข้าก่อนข้ามวัน) ให้ปรับ
+                if (!empty($shift->is_night_shift) && $diff_min < -360) {
+                    $diff_min += 1440;
+                }
+                $threshold = $shift->late_threshold_minutes ?? 15;
+                $update['is_late']      = ($diff_min > $threshold) ? 1 : 0;
+                $update['late_minutes'] = $update['is_late'] ? (int)round($diff_min) : 0;
+
+                // OT
+                $update['ot_hours'] = $this->Shift_model->calc_ot(
+                    $shift,
+                    $a->check_out_time,
+                    $a->check_in_time
+                );
+            }
+
+            $this->db->where('id', $id)->update('attendance', $update);
+
+            $ot_msg = (isset($update['ot_hours']) && $update['ot_hours'] > 0)
+                    ? ' (OT ' . $update['ot_hours'] . ' ชม.)' : '';
+
             $this->Notification_model->create(array(
                 'user_id'   => $a->user_id,
                 'sender_id' => $this->current_user->user_id,
                 'type'      => 'attendance_approved',
                 'title'     => 'การบันทึกย้อนหลังได้รับการอนุมัติ',
-                'message'   => 'การเข้างานวันที่ ' . $a->date . ' อนุมัติแล้ว',
+                'message'   => 'การเข้างานวันที่ ' . $a->date . ' อนุมัติแล้ว' . $ot_msg,
                 'link'      => base_url('employee/attendance'),
             ));
-            $this->session->set_flashdata('success', 'อนุมัติสำเร็จ');
+            $this->session->set_flashdata('success', 'อนุมัติสำเร็จ' . $ot_msg);
         } else {
             $this->session->set_flashdata('error', 'ไม่มีสิทธิ์อนุมัติ');
         }

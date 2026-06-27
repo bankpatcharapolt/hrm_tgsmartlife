@@ -241,11 +241,30 @@ class Attendance extends Admin_Controller {
         $att = $this->db->where('id',$id)->where('is_manual',1)->get('attendance')->row();
         if (!$att) { $this->session->set_flashdata('error','ไม่พบรายการ'); redirect('admin/attendance'); }
 
-        $this->db->where('id',$id)->update('attendance', array(
+        // คำนวณ OT + is_late ณ เวลาอนุมัติ
+        $this->load->model('Shift_model');
+        $update = array(
             'approval_status' => 'approved',
             'approved_by'     => $this->current_user->user_id,
             'approved_at'     => date('Y-m-d H:i:s'),
-        ));
+        );
+
+        $shift = $att->shift_id ? $this->Shift_model->get_by_id($att->shift_id) : null;
+        if ($shift && $att->check_in_time && $att->check_out_time) {
+            // is_late
+            $ci_time  = date('H:i:s', strtotime($att->check_in_time));
+            $diff_min = (strtotime($ci_time) - strtotime($shift->start_time)) / 60;
+            if (!empty($shift->is_night_shift) && $diff_min < -360) $diff_min += 1440;
+            $threshold = $shift->late_threshold_minutes ?? 15;
+            $update['is_late']      = ($diff_min > $threshold) ? 1 : 0;
+            $update['late_minutes'] = $update['is_late'] ? (int)round($diff_min) : 0;
+            // OT
+            $update['ot_hours'] = $this->Shift_model->calc_ot(
+                $shift, $att->check_out_time, $att->check_in_time
+            );
+        }
+
+        $this->db->where('id',$id)->update('attendance', $update);
 
         // แจ้งเตือนพนักงาน
         $this->load->model('Notification_model');

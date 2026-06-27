@@ -196,17 +196,8 @@
       <div class="modal-body">
         <div class="row g-3">
 
-          <!-- วันที่ -->
-          <div class="col-6">
-            <label class="form-label small">วันที่ *</label>
-            <input type="text" class="form-control form-control-sm" id="addDateDisp"
-                   placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer"
-                   value="<?=date('d/m/Y')?>" required>
-            <input type="hidden" name="date" id="addDateHidden" value="<?=date('Y-m-d')?>">
-          </div>
-
-          <!-- กะการทำงาน -->
-          <div class="col-6">
+          <!-- กะการทำงาน (แถวแรก) -->
+          <div class="col-12">
             <label class="form-label small">กะการทำงาน</label>
             <select name="shift_id" class="form-select form-select-sm" disabled>
               <?php foreach ($shifts as $s): ?>
@@ -218,22 +209,29 @@
             <input type="hidden" name="shift_id" value="<?= $default_shift_id ?>">
           </div>
 
-          <!-- เวลาเข้างาน: date + time แยกกัน -->
+          <!-- วันที่เข้างาน + เวลาเข้างาน -->
           <div class="col-6">
-            <label class="form-label small">เวลาเข้างาน</label>
-            <!-- วันที่ของเวลาเข้า (sync จาก addDateDisp อัตโนมัติ) -->
-            <div class="d-flex gap-1 align-items-center">
-              <div class="leave-time-wrap" id="ciTimeWrap" style="flex:1">
-                <input type="hidden" id="ciTimeHidden" value="08:30">
-              </div>
+            <label class="form-label small">วันที่เข้างาน *</label>
+            <input type="text" class="form-control form-control-sm mb-1" id="addCiDateDisp"
+                   placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer"
+                   value="<?=date('d/m/Y')?>" required>
+            <input type="hidden" name="date" id="addDateHidden" value="<?=date('Y-m-d')?>">
+            <input type="hidden" id="addCiDateHidden" value="<?=date('Y-m-d')?>">
+            <label class="form-label small mt-1">เวลาเข้างาน</label>
+            <div class="leave-time-wrap" id="ciTimeWrap" style="flex:1">
+              <input type="hidden" id="ciTimeHidden" value="08:30">
             </div>
-            <!-- hidden ที่ controller รับ: format YYYY-MM-DD HH:mm:ss -->
             <input type="hidden" name="check_in" id="checkInFull" value="">
           </div>
 
-          <!-- เวลาออกงาน -->
+          <!-- วันที่ออกงาน + เวลาออกงาน -->
           <div class="col-6">
-            <label class="form-label small">เวลาออกงาน</label>
+            <label class="form-label small">วันที่ออกงาน</label>
+            <input type="text" class="form-control form-control-sm mb-1" id="addCoDateDisp"
+                   placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer"
+                   value="<?=date('d/m/Y')?>">
+            <input type="hidden" id="addCoDateHidden" value="<?=date('Y-m-d')?>">
+            <label class="form-label small mt-1">เวลาออกงาน</label>
             <div class="leave-time-wrap" id="coTimeWrap" style="flex:1">
               <input type="hidden" id="coTimeHidden" value="17:30">
             </div>
@@ -363,13 +361,18 @@ function buildTimeWidget(wrapId, hiddenId, initVal, onChangeCb) {
 
 // sync เวลาเข้า+ออก รวมกับวันที่ → hidden field ที่ controller รับ
 function syncFullDatetime() {
-  var dateVal = document.getElementById('addDateHidden').value; // YYYY-MM-DD
-  var ciTime  = document.getElementById('ciTimeHidden').value;  // HH:mm
-  var coTime  = document.getElementById('coTimeHidden').value;  // HH:mm
-  if (dateVal) {
-    document.getElementById('checkInFull').value  = ciTime  ? dateVal + ' ' + ciTime  + ':00' : '';
-    document.getElementById('checkOutFull').value = coTime  ? dateVal + ' ' + coTime  + ':00' : '';
-  }
+  var ciDate = document.getElementById('addCiDateHidden').value; // YYYY-MM-DD
+  var coDate = document.getElementById('addCoDateHidden').value;
+  var ciTime = document.getElementById('ciTimeHidden').value;    // HH:mm
+  var coTime = document.getElementById('coTimeHidden').value;
+
+  // check_in
+  document.getElementById('checkInFull').value  = (ciDate && ciTime) ? ciDate + ' ' + ciTime + ':00' : '';
+  // check_out
+  document.getElementById('checkOutFull').value = (coDate && coTime) ? coDate + ' ' + coTime + ':00' : '';
+  // name="date" ใช้วันที่เข้างาน (checkin date)
+  document.getElementById('addDateHidden').value = ciDate || '';
+
   calcHourly();
 }
 
@@ -400,20 +403,44 @@ document.addEventListener('DOMContentLoaded', function() {
 var _addModalEl = document.getElementById('addModal');
 if (_addModalEl) {
   _addModalEl.addEventListener('shown.bs.modal', function() {
-    // init datepicker ผ่าน jQuery ที่โหลดแล้วตอน modal เปิด
     if (typeof $ !== 'undefined' && typeof $.fn.datepicker !== 'undefined') {
-      var $d = $('#addDateDisp');
-      if ($d.length && !$d.hasClass('hasDatepicker')) {
-        $d.datepicker({
+
+      // datepicker วันที่เข้างาน
+      var $ci = $('#addCiDateDisp');
+      if ($ci.length && !$ci.hasClass('hasDatepicker')) {
+        $ci.datepicker({
           dateFormat: 'dd/mm/yy',
-          maxDate: 0, // ย้อนหลังได้อย่างเดียว
+          maxDate: 0,
           onSelect: function(d) {
             var p = d.split('/');
-            document.getElementById('addDateHidden').value = p[2] + '-' + p[1] + '-' + p[0];
+            var iso = p[2] + '-' + p[1] + '-' + p[0];
+            document.getElementById('addCiDateHidden').value = iso;
+            document.getElementById('addDateHidden').value   = iso;
+            // ถ้า checkout date ยังไม่ถูกแตะ → set เท่ากับ checkin date
+            var coDisp = document.getElementById('addCoDateDisp').value;
+            if (!coDisp || coDisp === document.getElementById('addCiDateDisp').value) {
+              document.getElementById('addCoDateDisp').value  = d;
+              document.getElementById('addCoDateHidden').value = iso;
+            }
             syncFullDatetime();
           }
         });
       }
+
+      // datepicker วันที่ออกงาน
+      var $co = $('#addCoDateDisp');
+      if ($co.length && !$co.hasClass('hasDatepicker')) {
+        $co.datepicker({
+          dateFormat: 'dd/mm/yy',
+          maxDate: 1, // ออกงานได้ถึงวันถัดไป (กะดึก)
+          onSelect: function(d) {
+            var p = d.split('/');
+            document.getElementById('addCoDateHidden').value = p[2] + '-' + p[1] + '-' + p[0];
+            syncFullDatetime();
+          }
+        });
+      }
+
     }
   });
 }

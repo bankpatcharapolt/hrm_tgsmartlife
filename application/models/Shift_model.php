@@ -78,52 +78,54 @@ class Shift_model extends CI_Model {
     public function calc_ot($shift, $checkout_time, $checkin_time = null) {
         if (!$checkout_time) return 0;
 
-        $date = date('Y-m-d', strtotime($checkout_time));
         $cout = strtotime($checkout_time);
+        $cin  = $checkin_time ? strtotime($checkin_time) : null;
 
-        // ── Sanity check: checkout ต้องไม่น้อยกว่า checkin ──────────────
-        if ($checkin_time) {
-            $cin = strtotime($checkin_time);
-            if ($cout <= $cin) return 0;
-            // ถ้าทำงานไม่ถึง ot_starts_after_minutes หลัง end_time → 0
+        // Sanity: checkout ต้องหลัง checkin
+        // กะดึกข้ามวัน: checkout อาจถูกบันทึกเป็นวันเดียวกับ checkin
+        // (เช่น checkin=27 21:30, checkout=27 09:30 แทนที่จะเป็น 28 09:30)
+        // → แก้โดย +86400 ให้ checkout ถ้าเป็นกะดึกและ cout < cin
+        if ($cin !== null && $cout <= $cin) {
+            if (!empty($shift->is_night_shift)) {
+                $cout += 86400; // เพิ่ม 1 วัน
+            } else {
+                return 0; // กะปกติ checkout ก่อน checkin = ข้อมูลผิด
+            }
         }
 
-        // ── คำนวณ shift_end timestamp ───────────────────────────────────
-        $end = strtotime($date . ' ' . $shift->end_time);
-
-        // Night shift ข้ามวัน: end_time อยู่วันถัดไป
-        if (!empty($shift->is_night_shift)) {
-            $start = strtotime($date . ' ' . $shift->start_time);
-            if ($end <= $start) $end += 86400; // end ข้ามวัน
+        // ── เลือก base_date ──────────────────────────────────────────────────
+        // กะดึก: ใช้ checkin_date เป็นฐาน (เพราะกะเริ่มวัน X สิ้นสุดวัน X+1)
+        if (!empty($shift->is_night_shift) && $checkin_time) {
+            $base_date = date('Y-m-d', strtotime($checkin_time));
+        } else {
+            $base_date = date('Y-m-d', strtotime($checkout_time));
         }
 
-        // ── ตรวจ workday: ถ้าวันเสาร์หรืออาทิตย์ ────────────────────────
-        // กะที่ไม่ใช่ night shift และ start/end อยู่ช่วงกลางวัน (08:00-20:00)
-        // → ถือเป็นกะจ-ศ → วันหยุดสุดสัปดาห์ไม่ควรมี OT จาก shift end
-        $day_of_week = (int)date('N', strtotime($date)); // 1=Mon ... 7=Sun
+        // ── คำนวณ shift_end timestamp ────────────────────────────────────────
+        $shift_start = strtotime($base_date . ' ' . $shift->start_time);
+        $shift_end   = strtotime($base_date . ' ' . $shift->end_time);
+
+        // กะดึกข้ามวัน: end_time <= start_time → end วันถัดไป
+        if (!empty($shift->is_night_shift) && $shift_end <= $shift_start) {
+            $shift_end += 86400;
+        }
+
+        // ── Weekend check ────────────────────────────────────────────────────
+        $day_of_week = (int)date('N', strtotime($base_date));
         $is_weekend  = ($day_of_week >= 6);
 
         if ($is_weekend && empty($shift->is_night_shift)) {
-            // วันเสาร์/อาทิตย์ + กะกลางวัน:
-            // ถ้ามาทำงาน → OT = ชั่วโมงที่ทำจริง (check_in ถึง check_out) หัก ot_starts_after_minutes
-            // แต่ถ้าไม่มี checkin_time → ไม่สามารถคำนวณได้ → 0
-            if (!$checkin_time) return 0;
-
-            $cin = strtotime($checkin_time);
-            if ($cout <= $cin) return 0;
-
-            $work_sec = $cout - $cin;
+            // กะกลางวัน วันหยุด: OT = ชั่วโมงทำจริง - ot_delay
+            if (!$cin) return 0;
+            $work_sec     = $cout - $cin;
+            if ($work_sec <= 0) return 0;
             $ot_delay_sec = ($shift->ot_starts_after_minutes ?? 0) * 60;
-
-            // OT เริ่มหลังจากทำงานครบ ot_starts_after_minutes
-            $ot_sec = $work_sec - $ot_delay_sec;
-            return max(0, round($ot_sec / 3600, 2));
+            return max(0, round(($work_sec - $ot_delay_sec) / 3600, 2));
         }
 
-        // ── กะปกติ (วันทำงาน) ───────────────────────────────────────────
-        // OT = เวลาที่เกิน (shift_end + ot_starts_after_minutes)
+        // ── กะปกติ / กะดึก: OT = เวลาที่เกิน shift_end + ot_delay ────────
         $ot_delay_sec = ($shift->ot_starts_after_minutes ?? 0) * 60;
-        $diff = ($cout - $end - $ot_delay_sec);
+        $diff         = $cout - $shift_end - $ot_delay_sec;
         return max(0, round($diff / 3600, 2));
     }
 
