@@ -7,8 +7,8 @@
     <div class="mb-3"><label class="form-label">ส่งถึง</label>
       <select name="target_type" class="form-select" id="ttype" onchange="toggleTarget(this.value)">
         <option value="all">ทุกคนในระบบ</option>
-        <option value="role">เฉพาะบทบาท</option>
-        <option value="individual">เฉพาะบุคคล</option>
+        <!-- <option value="role">เฉพาะบทบาท</option>
+        <option value="individual">เฉพาะบุคคล</option> -->
       </select>
     </div>
     <div id="t_role" class="mb-3" style="display:none">

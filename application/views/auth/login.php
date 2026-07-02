@@ -41,11 +41,11 @@ body{font-family:Sarabun,sans-serif;background:#0f172a;min-height:100vh;display:
     <input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
     <div class="mb-3">
       <label class="form-label">ชื่อผู้ใช้</label>
-      <div class="iw"><i class="bi bi-person pre"></i><input type="text" name="username" class="form-control" placeholder="กรอกชื่อผู้ใช้" value="<?=set_value('username','owner')?>" autocomplete="username" required></div>
+      <div class="iw"><i class="bi bi-person pre"></i><input type="text" name="username" class="form-control" placeholder="กรอกชื่อผู้ใช้" value="" autocomplete="off" required></div>
     </div>
     <div class="mb-3">
       <label class="form-label">รหัสผ่าน</label>
-      <div class="iw"><i class="bi bi-lock pre"></i><input type="password" name="password" id="pw" class="form-control" placeholder="กรอกรหัสผ่าน" autocomplete="current-password" required><button type="button" class="tpw" id="tpw"><i class="bi bi-eye" id="pwi"></i></button></div>
+      <div class="iw"><i class="bi bi-lock pre"></i><input type="password" name="password" id="pw" class="form-control" placeholder="กรอกรหัสผ่าน" autocomplete="off" required><button type="button" class="tpw" id="tpw"><i class="bi bi-eye" id="pwi"></i></button></div>
     </div>
     <button type="submit" class="btn-lg" id="bl"><i class="bi bi-box-arrow-in-right"></i><span id="blt">เข้าสู่ระบบ</span></button>
     <?=form_close()?>

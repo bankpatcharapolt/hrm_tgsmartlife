@@ -112,13 +112,13 @@ class Attendance extends Manager_Controller {
                 'type'      => 'attendance_approved',
                 'title'     => 'การบันทึกย้อนหลังได้รับการอนุมัติ',
                 'message'   => 'การเข้างานวันที่ ' . $a->date . ' อนุมัติแล้ว' . $ot_msg,
-                'link'      => base_url('employee/attendance'),
+                'link'      => base_url('manager/attendance?status_filter=all&year=' . date('Y', strtotime($a->date)) . '&month=' . date('n', strtotime($a->date))),
             ));
             $this->session->set_flashdata('success', 'อนุมัติสำเร็จ' . $ot_msg);
         } else {
             $this->session->set_flashdata('error', 'ไม่มีสิทธิ์อนุมัติ');
         }
-        redirect('manager/attendance?status_filter=all');
+        redirect('manager/attendance?status_filter=all&year=' . date('Y', strtotime($a->date)) . '&month=' . date('n', strtotime($a->date)));
     }
 
     public function reject_attendance($id) {
@@ -137,11 +137,11 @@ class Attendance extends Manager_Controller {
                 'type'      => 'attendance_rejected',
                 'title'     => 'การบันทึกย้อนหลังถูกปฏิเสธ',
                 'message'   => 'การเข้างานวันที่ ' . $a->date . ' ถูกปฏิเสธ' . ($note ? ': ' . $note : ''),
-                'link'      => base_url('employee/attendance'),
+                'link'      => base_url('manager/attendance?status_filter=all&year=' . date('Y', strtotime($a->date)) . '&month=' . date('n', strtotime($a->date))),
             ));
             $this->session->set_flashdata('warning', 'ปฏิเสธสำเร็จ');
         }
-        redirect('manager/attendance?status_filter=all');
+        redirect('manager/attendance?status_filter=all&year=' . date('Y', strtotime($a->date)) . '&month=' . date('n', strtotime($a->date)));
     }
 
     // ── อนุมัติ/ปฏิเสธการลา (shortcut จาก attendance view) ───────────────────
@@ -156,11 +156,11 @@ class Attendance extends Manager_Controller {
                 'type'      => 'leave_approved',
                 'title'     => 'คำขอลาได้รับการอนุมัติ',
                 'message'   => 'การลาวันที่ ' . $r->start_date . ' อนุมัติแล้ว',
-                'link'      => base_url('employee/leave'),
+                'link'      => base_url('manager/attendance?status_filter=leave&year=' . date('Y', strtotime($r->start_date)) . '&month=' . date('n', strtotime($r->start_date))),
             ));
             $this->session->set_flashdata('success', 'อนุมัติการลาสำเร็จ');
         }
-        redirect('manager/attendance?status_filter=leave');
+        redirect('manager/attendance?status_filter=leave&year=' . date('Y', strtotime($r->start_date)) . '&month=' . date('n', strtotime($r->start_date)));
     }
 
     public function reject_leave($id) {
@@ -175,11 +175,11 @@ class Attendance extends Manager_Controller {
                 'type'      => 'leave_rejected',
                 'title'     => 'คำขอลาถูกปฏิเสธ',
                 'message'   => 'การลาวันที่ ' . $r->start_date . ' ถูกปฏิเสธ: ' . $note,
-                'link'      => base_url('employee/leave'),
+                'link'      => base_url('manager/attendance?status_filter=leave&year=' . date('Y', strtotime($r->start_date)) . '&month=' . date('n', strtotime($r->start_date))),
             ));
             $this->session->set_flashdata('warning', 'ปฏิเสธการลาสำเร็จ');
         }
-        redirect('manager/attendance?status_filter=leave');
+        redirect('manager/attendance?status_filter=leave&year=' . date('Y', strtotime($r->start_date)) . '&month=' . date('n', strtotime($r->start_date)));
     }
 
     // ── Private query methods ──────────────────────────────────────────────────

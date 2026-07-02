@@ -31,13 +31,15 @@ class Attendance extends Employee_Controller {
             if ($shift) return $shift;
         }
         $shift = $this->db->order_by('id', 'ASC')->get('shifts')->row();
+      
         if ($shift) return $shift;
         return (object)[
             'id'               => null,
             'start_time'       => '08:30:00',
             'end_time'         => '17:30:00',
             'break_start_time' => '12:00:00',
-            'break_end_time'   => '13:00:00'
+            'break_end_time'   => '13:00:00',
+            'is_night_shift'   => 0,
         ];
     }
 
@@ -102,8 +104,9 @@ class Attendance extends Employee_Controller {
             'leave_types'     => $this->Leave_model->get_types(),
             'year'            => $y,
             'month'           => $m,
-            'absent_days'     => $absent_days,           // [ข้อ 3] ส่งวันขาดงาน
-            'default_shift_id'=> $this->_get_user_default_shift($uid), // [ข้อ 7]
+            'absent_days'     => $absent_days,
+            'default_shift_id'=> $this->_get_user_default_shift($uid),
+            'default_shift'   => $this->_resolve_shift($uid), // ส่ง shift object เต็มๆ
         ));
     }
 
@@ -176,13 +179,20 @@ class Attendance extends Employee_Controller {
         $emp      = $this->db->where('id', $uid)->get('users')->row();
         $emp_name = $emp ? ($emp->first_name . ' ' . $emp->last_name) : 'พนักงาน';
         $msg      = $emp_name . ' ขอบันทึกการเข้างานย้อนหลัง วันที่ ' . $date . ' รอการอนุมัติ';
+
+        // link ชี้ไปเดือน/ปีที่ขอ + filter=all เพื่อให้เห็น pending record
+        $att_year  = date('Y', strtotime($date));
+        $att_month = date('n', strtotime($date));
+        $mgr_link  = base_url('manager/attendance?status_filter=all&year=' . $att_year . '&month=' . $att_month);
+        $adm_link  = base_url('admin/attendance?year=' . $att_year . '&month=' . $att_month);
+
         $this->Notification_model->send_to_team_manager(
             $uid,
             'manual_attendance',
             'ขอบันทึกย้อนหลัง',
             $msg,
-            base_url('manager/attendance'),   // manager → หน้าการเข้างานทีม
-            base_url('admin/attendance')       // admin/owner → หน้า admin
+            $mgr_link,
+            $adm_link
         );
 
         $this->session->set_flashdata('success', 'ส่งคำขอบันทึกย้อนหลังสำเร็จ รอการอนุมัติจากหัวหน้างาน');

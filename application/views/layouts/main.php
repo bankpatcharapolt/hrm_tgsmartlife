@@ -132,7 +132,7 @@
               <?php if(!empty($recent_notifications)):foreach($recent_notifications as $n):?>
               <a href="<?=$n->link??'#'?>" class="dropdown-item py-2 border-bottom <?=!$n->is_read?'bg-light':''?>" style="white-space:normal">
                 <div style="font-size:.82rem;font-weight:<?=!$n->is_read?600:400?>"><?=htmlspecialchars($n->title)?></div>
-                <div style="font-size:.76rem;color:var(--mu)"><?=htmlspecialchars(mb_substr($n->message,0,55))?><?=mb_strlen($n->message)>55?'...':''?></div>
+                <div style="font-size:.76rem;color:var(--mu)"><?=htmlspecialchars(mb_substr($n->message,0,100))?><?=mb_strlen($n->message)>100?'...':''?></div>
                 <div style="font-size:.69rem;color:var(--mu)"><?=date('d/m H:i',strtotime($n->created_at))?></div>
               </a>
               <?php endforeach;else:?>
@@ -268,7 +268,7 @@ setTimeout(function(){
 
     list.innerHTML = items.map(function (n) {
       var msg  = esc(n.message || '');
-      var short = msg.length > 55 ? msg.substring(0, 55) + '…' : msg;
+      var short = msg.length > 100 ? msg.substring(0, 100) + '…' : msg;
       return '<a href="' + esc(n.link || '#') + '" '
            + 'class="dropdown-item py-2 border-bottom' + (n.is_read ? '' : ' bg-light') + '" '
            + 'style="white-space:normal">'
@@ -291,7 +291,7 @@ setTimeout(function(){
       + '<div>'
       + '<div class="fw-semibold" style="font-size:.83rem">🔔 ' + esc(n.title || '') + '</div>'
       + '<div style="font-size:.78rem;color:var(--mu);margin-top:2px">'
-      +   esc((n.message || '').substring(0, 70))
+      +   esc((n.message || '').substring(0, 100))
       + '</div>'
       + '</div>'
       + '<button type="button" class="btn-close" style="font-size:.55rem;flex-shrink:0"></button>'

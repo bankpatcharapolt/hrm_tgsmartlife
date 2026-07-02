@@ -219,7 +219,7 @@
             <input type="hidden" id="addCiDateHidden" value="<?=date('Y-m-d')?>">
             <label class="form-label small mt-1">เวลาเข้างาน</label>
             <div class="leave-time-wrap" id="ciTimeWrap" style="flex:1">
-              <input type="hidden" id="ciTimeHidden" value="08:30">
+              <input type="hidden" id="ciTimeHidden" value="<?=substr($default_shift->start_time ?? '08:30:00', 0, 5)?>">
             </div>
             <input type="hidden" name="check_in" id="checkInFull" value="">
           </div>
@@ -227,13 +227,25 @@
           <!-- วันที่ออกงาน + เวลาออกงาน -->
           <div class="col-6">
             <label class="form-label small">วันที่ออกงาน</label>
+            <?php
+              // กะดึก → วันที่ออกงาน default = พรุ่งนี้
+              $shift_is_night = isset($default_shift->is_night_shift)
+                                ? (int)$default_shift->is_night_shift
+                                : 0;
+              $co_default_date = ($shift_is_night === 1)
+                ? date('Y-m-d', mktime(0,0,0, date('n'), date('j')+1, date('Y')))
+                : date('Y-m-d');
+              $co_default_disp = ($shift_is_night === 1)
+                ? date('d/m/Y', mktime(0,0,0, date('n'), date('j')+1, date('Y')))
+                : date('d/m/Y');
+            ?>
             <input type="text" class="form-control form-control-sm mb-1" id="addCoDateDisp"
                    placeholder="dd/mm/yyyy" autocomplete="off" readonly style="cursor:pointer"
-                   value="<?=date('d/m/Y')?>">
-            <input type="hidden" id="addCoDateHidden" value="<?=date('Y-m-d')?>">
+                   value="<?=$co_default_disp?>">
+            <input type="hidden" id="addCoDateHidden" value="<?=$co_default_date?>">
             <label class="form-label small mt-1">เวลาออกงาน</label>
             <div class="leave-time-wrap" id="coTimeWrap" style="flex:1">
-              <input type="hidden" id="coTimeHidden" value="17:30">
+              <input type="hidden" id="coTimeHidden" value="<?=substr($default_shift->end_time ?? '17:30:00', 0, 5)?>">
             </div>
             <input type="hidden" name="check_out" id="checkOutFull" value="">
           </div>
@@ -391,10 +403,51 @@ function calcHourly() {
   }
 }
 
-// init เมื่อ DOM พร้อม
+// ── ข้อมูลกะ default ของพนักงาน (inject จาก PHP) ──────────────────────────
+var _defShift = {
+  start_time:    '<?= substr($default_shift->start_time ?? '08:30:00', 0, 5) ?>',
+  end_time:      '<?= substr($default_shift->end_time   ?? '17:30:00', 0, 5) ?>',
+  is_night_shift: <?= ((int)($default_shift->is_night_shift ?? 0) === 1) ? 'true' : 'false' ?>
+};
+
+// helper: format Date → dd/mm/yyyy
+function _fmtDate(d) {
+  var dd = String(d.getDate()).padStart(2,'0');
+  var mm = String(d.getMonth()+1).padStart(2,'0');
+  return dd+'/'+mm+'/'+d.getFullYear();
+}
+function _fmtISO(d) {
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+// set default วันที่+เวลา เมื่อเปิด modal
+function resetModalDefaults() {
+  var today    = new Date();
+  var tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+
+  // วันที่เข้างาน = วันนี้เสมอ
+  document.getElementById('addCiDateDisp').value  = _fmtDate(today);
+  document.getElementById('addCiDateHidden').value = _fmtISO(today);
+  document.getElementById('addDateHidden').value   = _fmtISO(today);
+
+  // วันที่ออกงาน: กะดึก = พรุ่งนี้, กะปกติ = วันนี้
+  var coDate = _defShift.is_night_shift ? tomorrow : today;
+  document.getElementById('addCoDateDisp').value  = _fmtDate(coDate);
+  document.getElementById('addCoDateHidden').value = _fmtISO(coDate);
+
+  // เวลา: ใช้ start_time / end_time ของกะ
+  buildTimeWidget('ciTimeWrap', 'ciTimeHidden', _defShift.start_time, calcHourly);
+  buildTimeWidget('coTimeWrap', 'coTimeHidden', _defShift.end_time,   calcHourly);
+  syncFullDatetime();
+}
+
+// init เมื่อ DOM พร้อม — ใช้ค่า default ที่ PHP render ไว้แล้ว
 document.addEventListener('DOMContentLoaded', function() {
-  buildTimeWidget('ciTimeWrap', 'ciTimeHidden', '08:30', calcHourly);
-  buildTimeWidget('coTimeWrap', 'coTimeHidden', '17:30', calcHourly);
+  // อ่าน default time จาก hidden fields ที่ PHP render
+  var ciDefault = document.getElementById('ciTimeHidden').value || '08:30';
+  var coDefault = document.getElementById('coTimeHidden').value || '17:30';
+  buildTimeWidget('ciTimeWrap', 'ciTimeHidden', ciDefault, calcHourly);
+  buildTimeWidget('coTimeWrap', 'coTimeHidden', coDefault, calcHourly);
   syncFullDatetime();
 });
 
