@@ -89,9 +89,9 @@
               </div>
             </div>
             <div class="col-md-4 d-flex align-items-end">
-              <div class="alert alert-info py-1 px-2 mb-0 small w-100" id="hoursResult" style="display:none">
+              <!-- <div class="alert alert-info py-1 px-2 mb-0 small w-100" id="hoursResult" style="display:none">
                 รวม <strong id="hoursNum">0</strong> ชั่วโมง
-              </div>
+              </div> -->
             </div>
           </div>
         </div>
@@ -242,11 +242,11 @@ function calcHours() {
   if (!sEl || !eEl || !res || !num) return;
   var s = sEl.value;
   var e = eEl.value;
-  if (s && e) {
-    var h = (new Date('2000-01-01 ' + e) - new Date('2000-01-01 ' + s)) / 3600000;
-    if (h > 0) { num.textContent = h.toFixed(1); res.style.display = ''; return; }
-  }
-  res.style.display = 'none';
+  // if (s && e) {
+  //   var h = (new Date('2000-01-01 ' + e) - new Date('2000-01-01 ' + s)) / 3600000;
+  //   if (h > 0) { num.textContent = h.toFixed(1); res.style.display = ''; return; }
+  // }
+  // res.style.display = 'none';
 }
 
 function buildLeaveTimeWidget(wrapId, hiddenId) {

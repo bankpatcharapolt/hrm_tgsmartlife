@@ -610,7 +610,7 @@
         <!-- <a href="<?= base_url('admin/roles') ?>" class="<?= $ctrl === 'roles' ? 'on' : '' ?>"><i
             class="bi bi-shield-check"></i>บทบาทและสิทธิ์</a> -->
       <?php endif; ?>
-      <a href="<?= base_url('employee/profile') ?>"><i class="bi bi-person-circle"></i>โปรไฟล์ของฉัน</a>
+      <a href="<?= base_url('admin/profile') ?>"><i class="bi bi-person-circle"></i>โปรไฟล์ของฉัน</a>
       <a href="<?= base_url('auth/logout') ?>" onclick="return confirm('ออกจากระบบ?')"><i
           class="bi bi-box-arrow-right"></i>ออกจากระบบ</a>
     </div>
@@ -662,7 +662,7 @@
           </button>
           <ul class="dropdown-menu dropdown-menu-end shadow">
             <li class="px-3 py-2 border-bottom"><small class="text-muted"><?= $current_user->role_name ?? '' ?></small></li>
-            <li><a class="dropdown-item" href="<?= base_url('employee/profile') ?>"><i
+            <li><a class="dropdown-item" href="<?= base_url('admin/profile') ?>"><i
                   class="bi bi-person me-2"></i>โปรไฟล์</a></li>
             <li>
               <hr class="dropdown-divider">

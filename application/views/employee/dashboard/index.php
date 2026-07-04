@@ -379,6 +379,25 @@ function _gpsErr(msg) {
 function _skipGPS() { _gpsData = null; _toCamera(); }
 
 // ── Camera ──────────────────────────────────────────────────────────
+function _startStream(constraints) {
+  return navigator.mediaDevices.getUserMedia(constraints)
+    .then(function(s) {
+      _camStream = s;
+      var v = document.getElementById('camVideo');
+      if (v) { v.srcObject = s; }
+      var sb = document.getElementById('shutterBtn');
+      if (sb) sb.style.display = '';
+    });
+}
+
+function _camError(msg) {
+  var lw = document.getElementById('camLiveWrap');
+  lw.innerHTML = '<div class="text-center py-4 text-muted">'
+    + '<i class="bi bi-camera-video-off d-block fs-2 mb-2"></i>' + msg + '</div>';
+  // ไม่เพิ่มปุ่มใน _footer เพราะ btnSkipPhoto inline มีอยู่แล้ว — ป้องกันซ้อน
+  _setText2('btnSkipPhoto','display','');
+}
+
 function _toCamera() {
   _step('Camera');
   _photoB64 = null;
@@ -387,18 +406,28 @@ function _toCamera() {
   _setText2('btnUsePhoto','display','none');
   document.getElementById('camPreviewWrap').style.display = 'none';
   document.getElementById('camLiveWrap').style.display    = '';
+
+  // ซ่อน shutter จนกว่ากล้องจะเปิด
+  var sb = document.getElementById('shutterBtn');
+  if (sb) sb.style.display = 'none';
   _footer([]);
 
-  navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user' }, audio:false })
-    .then(function(s) {
-      _camStream = s;
-      document.getElementById('camVideo').srcObject = s;
-    })
+  // ตรวจสอบ browser support
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    _camError('browser ไม่รองรับกล้อง กด "ข้ามรูปถ่าย" เพื่อดำเนินการต่อ');
+    return;
+  }
+
+  // ลอง front camera → fallback ไม่ระบุ facingMode (รองรับ LINE browser)
+  _startStream({ video: { facingMode: 'user' }, audio: false })
     .catch(function() {
-      document.getElementById('camLiveWrap').innerHTML =
-        '<div class="text-center py-4 text-muted">' +
-        '<i class="bi bi-camera-video-off d-block fs-2 mb-2"></i>ไม่สามารถเปิดกล้องได้</div>';
-      _footer([{ t:'ข้ามรูปถ่าย', c:'btn-outline-secondary', f:'_skipPhoto()' }]);
+      return _startStream({ video: true, audio: false });
+    })
+    .catch(function(err) {
+      var msg = (err && err.name === 'NotAllowedError')
+        ? 'ไม่ได้รับอนุญาตใช้กล้อง<br><small style="font-size:.75rem">กรุณาอนุญาตกล้องในการตั้งค่า browser แล้วโหลดหน้าใหม่</small>'
+        : 'ไม่สามารถเปิดกล้องได้ กด "ข้ามรูปถ่าย" เพื่อดำเนินการต่อ';
+      _camError(msg);
     });
 }
 
@@ -424,10 +453,22 @@ function retakePhoto() {
   _setText2('btnSkipPhoto','display','');
   _setText2('btnRetake','display','none');
   _setText2('btnUsePhoto','display','none');
-  navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user' }, audio:false })
-    .then(function(s){
-      _camStream = s;
-      document.getElementById('camVideo').srcObject = s;
+  var sb = document.getElementById('shutterBtn');
+  if (sb) sb.style.display = 'none';
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    _camError('browser ไม่รองรับกล้อง กด "ข้ามรูปถ่าย" เพื่อดำเนินการต่อ');
+    return;
+  }
+  _startStream({ video: { facingMode: 'user' }, audio: false })
+    .catch(function() {
+      return _startStream({ video: true, audio: false });
+    })
+    .catch(function(err) {
+      var msg = (err && err.name === 'NotAllowedError')
+        ? 'ไม่ได้รับอนุญาตใช้กล้อง<br><small style="font-size:.75rem">กรุณาอนุญาตกล้องในการตั้งค่า browser แล้วโหลดหน้าใหม่</small>'
+        : 'ไม่สามารถเปิดกล้องได้ กด "ข้ามรูปถ่าย" เพื่อดำเนินการต่อ';
+      _camError(msg);
     });
 }
 
