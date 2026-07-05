@@ -313,6 +313,21 @@ class Employees_import extends Admin_Controller {
         $role    = $this->db->where('slug','employee')->get('roles')->row();
         $role_id = $role ? $role->id : 1;
 
+        // map gender จาก title อัตโนมัติ
+        $gender_map = array(
+            'นาย'     => 'male',
+            'ดร.'     => 'male',  // default ดร. เป็น male (อาจ override ได้)
+        );
+        $female_titles = array('นาง','นางสาว','Miss','Mrs','Ms');
+        $male_titles   = array('นาย','Mr');
+        $gender_from_title = 'other';
+        foreach ($male_titles as $t) {
+            if (mb_strpos($title, $t) !== false) { $gender_from_title = 'male'; break; }
+        }
+        foreach ($female_titles as $t) {
+            if (mb_strpos($title, $t) !== false) { $gender_from_title = 'female'; break; }
+        }
+
         $data = array(
             'employee_id'            => $emp_id,
             'title'                  => $title,
@@ -344,6 +359,7 @@ class Employees_import extends Admin_Controller {
             'payment_channel'        => $pay_channel,
             'bank_account'           => $bank_acc,
             'status'                 => $status,
+            'gender'                 => $gender_from_title,
             'updated_at'             => date('Y-m-d H:i:s'),
         );
 
