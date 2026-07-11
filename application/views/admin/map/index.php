@@ -476,4 +476,6 @@ setInterval(function() {
 </script>
 
 <!-- Google Maps JS: โหลดหลัง JS block เพื่อให้ callback พร้อมก่อน -->
-<script src="https://maps.googleapis.com/maps/api/js?v=weekly&callback=__gmMapInit" async defer></script>
+<!-- <script src="https://maps.googleapis.com/maps/api/js?v=weekly&callback=__gmMapInit" async defer></script>
+  -->
+<script src="https://maps.googleapis.com/maps/api/js?v=weekly&key=AIzaSyB61sU7WZRpxfJsVqgVKf-ZE4K8jX1t6ns&callback=__gmMapInit" async defer></script>
