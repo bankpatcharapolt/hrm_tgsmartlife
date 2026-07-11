@@ -573,6 +573,8 @@
       <a href="<?= base_url('admin/dashboard') ?>" class="<?= $ctrl === 'dashboard' ? 'on' : '' ?>">
         <i
           class="bi bi-speedometer2"></i>แดชบอร์ด</a>
+      <a href="<?= base_url('admin/map') ?>" class="<?= $ctrl === 'map' ? 'on' : '' ?>"><i
+          class="bi bi-map"></i>แผนที่พนักงาน</a>
       <div class="sb-sec">พนักงาน</div>
       <a href="<?= base_url('admin/employees') ?>" class="<?= ($ctrl === 'employees') ? 'on' : '' ?>"><i
           class="bi bi-people-fill"></i>ข้อมูลพนักงาน</a>

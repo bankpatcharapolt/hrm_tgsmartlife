@@ -24,13 +24,18 @@ class Teams extends Admin_Controller {
         if ($this->input->method()!=='post') redirect('admin/teams');
         $id = $this->input->post('team_id');
         $data = array(
-            'team_code'      => strtoupper(trim($this->input->post('team_code',TRUE))),
-            'team_name'      => trim($this->input->post('team_name',TRUE)),
-            'location'       => trim($this->input->post('location',TRUE)),
-            'monthly_target' => (float)$this->input->post('monthly_target'),
-            'manager_emp_id' => trim($this->input->post('manager_emp_id',TRUE)) ?: null,
-            'is_active'      => $this->input->post('is_active') ? 1 : 0,
-            'updated_at'     => date('Y-m-d H:i:s'),
+            'team_code'          => strtoupper(trim($this->input->post('team_code',TRUE))),
+            'team_name'          => trim($this->input->post('team_name',TRUE)),
+            'location'           => trim($this->input->post('location',TRUE)),
+            'place_name'         => trim($this->input->post('place_name',TRUE)) ?: null,
+            'address'            => trim($this->input->post('address',TRUE))    ?: null,
+            'monthly_target'     => (float)$this->input->post('monthly_target'),
+            'manager_emp_id'     => trim($this->input->post('manager_emp_id',TRUE)) ?: null,
+            'lat'                => $this->input->post('lat') !== '' ? (float)$this->input->post('lat') : null,
+            'lng'                => $this->input->post('lng') !== '' ? (float)$this->input->post('lng') : null,
+            'checkin_radius_km'  => $this->input->post('checkin_radius_km') !== '' ? (float)$this->input->post('checkin_radius_km') : 5.00,
+            'is_active'          => $this->input->post('is_active') ? 1 : 0,
+            'updated_at'         => date('Y-m-d H:i:s'),
         );
         if ($id) {
             $this->db->where('id',$id)->update('teams',$data);

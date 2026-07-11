@@ -292,20 +292,50 @@ function _doGPS() {
 
   if (!navigator.geolocation) { _gpsErr('เบราว์เซอร์ไม่รองรับ GPS'); return; }
 
+  // ── พิกัดทีมที่ตั้งค่าไว้ (inject จาก PHP) ──────────────────────────
+  var _teamLat    = <?= $team_lat    !== null ? $team_lat    : 'null' ?>;
+  var _teamLng    = <?= $team_lng    !== null ? $team_lng    : 'null' ?>;
+  var _teamRadius = <?= $team_radius_km !== null ? $team_radius_km : 'null' ?>;
+
+  // ── Haversine: คำนวณระยะห่างระหว่างสองจุด (กิโลเมตร) ────────────────
+  function _calcDistKm(lat1, lng1, lat2, lng2) {
+    var R  = 6371;
+    var dL = (lat2 - lat1) * Math.PI / 180;
+    var dG = (lng2 - lng1) * Math.PI / 180;
+    var a  = Math.sin(dL/2) * Math.sin(dL/2)
+           + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180)
+           * Math.sin(dG/2) * Math.sin(dG/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
   navigator.geolocation.getCurrentPosition(
     function(pos) {
       _gpsData = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       if (sp) sp.style.display = 'none';
+
+      // ── ตรวจสอบพื้นที่ checkin ────────────────────────────────────────
+      if (_teamLat !== null && _teamLng !== null && _teamRadius !== null) {
+        var distKm = _calcDistKm(_gpsData.lat, _gpsData.lng, _teamLat, _teamLng);
+        if (distKm > _teamRadius) {
+          // อยู่นอกพื้นที่ → ปิด modal และแสดง alert
+          var modalEl = document.getElementById('checkinModal') || document.getElementById('checkoutModal');
+          if (modalEl && typeof bootstrap !== 'undefined') {
+            bootstrap.Modal.getInstance(modalEl)?.hide();
+          }
+          alert('ไม่สามารถลงเวลาเข้างานได้ เนื่องจากอยู่นอกพื้นที่\nกรุณาลงเวลาเข้างานอีกครั้งเมื่ออยู่ในพื้นที่ทำงาน\n\n(ระยะห่างจากสาขา: ' + distKm.toFixed(2) + ' กม. / รัศมีที่อนุญาต: ' + _teamRadius + ' กม.)');
+          return;
+        }
+      }
+
+      // ── อยู่ในพื้นที่ หรือ ทีมไม่ได้ตั้งค่าพิกัด → ดำเนินการต่อ ──────
       if (re) re.style.display = '';
       _setText('gpsResultIcon', '');
-      // แสดง lat,lng ก่อนระหว่างรอชื่อสถานที่
       _setText('gpsResultCoords', _gpsData.lat.toFixed(5) + ', ' + _gpsData.lng.toFixed(5));
       _setText('gpsTitleTxt', 'ระบุตำแหน่งสำเร็จ');
       _setText('gpsDescTxt', 'กำลังค้นหาชื่อสถานที่...');
       _footer([{ t:'ถัดไป → ถ่ายรูป', c:'btn-primary', f:'_toCamera()' }]);
 
       // ── Reverse geocode ด้วย Nominatim (OpenStreetMap) ────────────
-      // ฟรี ไม่ต้อง API key — ขอแค่ส่ง User-Agent ที่บ่งบอกตัวตน
       fetch(
         'https://nominatim.openstreetmap.org/reverse'
         + '?format=json'
@@ -314,44 +344,28 @@ function _doGPS() {
         + '&zoom=16'
         + '&addressdetails=1'
         + '&accept-language=th',
-        {
-          headers: {
-            'User-Agent': 'HRM-TGSmartLife/1.0 (internal)'
-          }
-        }
+        { headers: { 'User-Agent': 'HRM-TGSmartLife/1.0 (internal)' } }
       )
       .then(function(r){ return r.json(); })
       .then(function(d) {
         if (!d || !d.address) { _setText('gpsDescTxt',''); return; }
-        var a    = d.address;
+        var a = d.address;
         var parts = [];
-
-        // ลำดับ: อาคาร/สถานที่ → ถนน/ซอย → แขวง/ตำบล → เขต/อำเภอ → จังหวัด
         if (a.amenity || a.building || a.shop || a.office)
           parts.push(a.amenity || a.building || a.shop || a.office);
-        if (a.road || a.pedestrian)
-          parts.push(a.road || a.pedestrian);
+        if (a.road || a.pedestrian) parts.push(a.road || a.pedestrian);
         if (a.suburb || a.subdistrict || a.quarter)
           parts.push(a.suburb || a.subdistrict || a.quarter);
-        if (a.city_district || a.district)
-          parts.push(a.city_district || a.district);
+        if (a.city_district || a.district) parts.push(a.city_district || a.district);
         if (a.city || a.town || a.village || a.county)
           parts.push(a.city || a.town || a.village || a.county);
-        if (a.state || a.province)
-          parts.push(a.state || a.province);
-
+        if (a.state || a.province) parts.push(a.state || a.province);
         var placeName = parts.length > 0 ? parts.join(', ') : (d.display_name || '');
-        // ตัดให้ไม่ยาวเกิน 60 ตัวอักษร
         if (placeName.length > 120) placeName = placeName.substring(0, 120) + '…';
-
         _setText('gpsDescTxt', placeName);
-        // เก็บชื่อสถานที่ไว้ใน _gpsData เพื่อส่งไปพร้อม check-in/out
         _gpsData.place_name = placeName;
       })
-      .catch(function() {
-        // geocode ล้มเหลว — ไม่ error แค่ไม่แสดงชื่อ
-        _setText('gpsDescTxt', '');
-      });
+      .catch(function() { _setText('gpsDescTxt', ''); });
     },
     function(err) {
       var msg = err.code===1 ? 'ไม่ได้รับอนุญาต GPS'
