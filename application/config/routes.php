@@ -120,3 +120,7 @@ $route['admin/leave_types/delete/(:num)']= 'admin/leave_types/delete/$1';
 // Attendance manual approval
 $route['admin/attendance/approve_manual/(:num)'] = 'admin/attendance/approve_manual/$1';
 $route['admin/attendance/reject_manual/(:num)']  = 'admin/attendance/reject_manual/$1';
+
+// ── Public Map (ไม่ต้อง login) ──────────────────────────────────────────
+$route['map/live']      = 'mappublic/index';
+$route['map/live/data'] = 'mappublic/data';
