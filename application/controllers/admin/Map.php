@@ -114,24 +114,24 @@ class Map extends Admin_Controller {
 
             // กำหนดสถานะ
             if ($is_today) {
-                // วันนี้
-                if ($att && $att->check_in_time && $att->check_out_time && $att->checkout_lat) {
+                // วันนี้ — ตรวจ leave ก่อน (priority สูงสุด)
+                if ($leave || ($att && $att->status === 'leave')) {
+                    $status = 'on_leave';
+                } elseif ($att && $att->check_in_time && $att->check_out_time && $att->checkout_lat) {
                     $status = 'checked_out';
                 } elseif ($att && $att->check_in_time && !$att->check_out_time) {
                     $status = 'checked_in';
-                } elseif ($leave || ($att && $att->status === 'leave')) {
-                    $status = 'on_leave';
                 } else {
                     $status = 'not_in';
                 }
             } else {
-                // วันก่อนหน้า
-                if ($att && $att->check_in_time && $att->check_out_time) {
+                // วันก่อนหน้า — ตรวจ leave ก่อนเช่นกัน
+                if ($leave || ($att && $att->status === 'leave')) {
+                    $status = 'on_leave'; // ลา
+                } elseif ($att && $att->check_in_time && $att->check_out_time) {
                     $status = 'checked_in'; // มาทำงาน (มีทั้ง checkin และ checkout)
                 } elseif ($att && $att->check_in_time && !$att->check_out_time) {
                     $status = 'forgot_checkout'; // มาทำงาน แต่ลืมลงเวลาออก
-                } elseif ($leave || ($att && $att->status === 'leave')) {
-                    $status = 'on_leave'; // ลา
                 } else {
                     $status = 'not_in'; // ยังไม่เข้างาน/ขาดงาน
                 }
