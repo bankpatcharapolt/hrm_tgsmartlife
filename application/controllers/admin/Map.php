@@ -82,13 +82,15 @@ class Map extends Admin_Controller {
         // ── ดึงยอดขาย (เฉพาะแผนกการขาย) ─────────────────────────────
         $sale_month = (int)date('m', strtotime($date));
         $sale_year  = (int)date('Y', strtotime($date));
-        $sales_data = array();
+        $sales_data      = array(); // ยอดขายรายเดือน
+        $sales_year_data = array(); // ยอดขายรวมทั้งปี
 
         $emp_dept6_ids = array_map(function($e){ return $e->id; },
             array_filter($employees, function($e){ return (int)$e->department_id === self::SALES_DEPT_ID; })
         );
 
         if (!empty($emp_dept6_ids)) {
+            // ── ยอดขายรายเดือน (เดือนที่เลือก) ───────────────────────────
             $sales_rows = $this->db->select('user_id, actual_amount, target_amount')
                 ->from('sales_records')
                 ->where('record_year',  $sale_year)
@@ -101,6 +103,18 @@ class Map extends Admin_Controller {
                     'actual' => (float)$s->actual_amount,
                     'target' => (float)$s->target_amount,
                 );
+            }
+
+            // ── ยอดขายรวมทั้งปี (ปีที่เลือก SUM ทุกเดือน) ────────────────
+            $sales_year_rows = $this->db->select('user_id, SUM(actual_amount) AS year_actual')
+                ->from('sales_records')
+                ->where('record_year',  $sale_year)
+                ->where('sales_type',   'individual')
+                ->where_in('user_id',   $emp_dept6_ids)
+                ->group_by('user_id')
+                ->get()->result();
+            foreach ($sales_year_rows as $s) {
+                $sales_year_data[$s->user_id] = (float)$s->year_actual;
             }
         }
 
@@ -170,10 +184,11 @@ class Map extends Admin_Controller {
 
             if ($is_sales) {
                 $sd = $sales_data[$emp->id] ?? array('actual'=>0,'target'=>0);
-                $marker['sales_actual'] = $sd['actual'];
-                $marker['sales_target'] = $sd['target'];
-                $marker['sales_pct']    = $sd['target'] > 0
+                $marker['sales_actual']      = $sd['actual'];
+                $marker['sales_target']      = $sd['target'];
+                $marker['sales_pct']         = $sd['target'] > 0
                     ? round($sd['actual'] / $sd['target'] * 100, 2) : 0;
+                $marker['sales_year_actual'] = $sales_year_data[$emp->id] ?? 0;
             }
 
             $markers[] = $marker;

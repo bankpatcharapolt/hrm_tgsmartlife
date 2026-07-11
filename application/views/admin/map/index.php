@@ -383,17 +383,28 @@ function buildPopup(d, isToday) {
   // ยอดขาย (แผนกการขาย)
   if (d.is_sales) {
     var thMonth = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-    var mLabel  = thMonth[d.sale_month] || d.sale_month;
-    var actual  = parseFloat(d.sales_actual || 0);
-    var target  = parseFloat(d.sales_target || 0);
-    var pct     = d.sales_pct || 0;
-    html += '<div style="margin-top:.5rem">'
-          + '<div style="font-size:.75rem;color:#6b7280">ยอดขายรวม (' + mLabel + ' ' + d.sale_year + ')</div>'
-          + '<div style="font-size:1.1rem;font-weight:700;color:#16a34a">฿' + actual.toLocaleString('th-TH') + '</div>'
-          + '<div style="font-size:.75rem;color:#6b7280">เป้าหมาย: ฿' + target.toLocaleString('th-TH') + '</div>'
-          + '<div style="background:#f3f4f6;border-radius:4px;height:8px;margin:.3rem 0;overflow:hidden">'
-          + '<div style="width:' + Math.min(pct,100) + '%;height:8px;border-radius:4px;background:linear-gradient(90deg,#22c55e,#16a34a)"></div></div>'
-          + '<div style="font-size:.75rem;font-weight:700;color:#16a34a">' + pct + '%</div>'
+    var mLabel     = thMonth[d.sale_month] || d.sale_month;
+    var actual     = parseFloat(d.sales_actual || 0);
+    var target     = parseFloat(d.sales_target || 0);
+    var pct        = d.sales_pct || 0;
+    var yearActual = parseFloat(d.sales_year_actual || 0);
+
+    html += '<div style="margin-top:.5rem;border-top:1px solid #f3f4f6;padding-top:.4rem">'
+
+          // ── ยอดขายรายเดือน ──
+          + '<div style="font-size:.72rem;color:#6b7280;font-weight:600">ยอดขายรวม (' + mLabel + ' ' + d.sale_year + ')</div>'
+          + '<div style="font-size:1.05rem;font-weight:700;color:#16a34a">฿' + actual.toLocaleString('th-TH') + '</div>'
+          + '<div style="font-size:.72rem;color:#6b7280">เป้าหมาย: ฿' + target.toLocaleString('th-TH') + '</div>'
+          + '<div style="background:#f3f4f6;border-radius:4px;height:7px;margin:.25rem 0;overflow:hidden">'
+          + '<div style="width:' + Math.min(pct,100) + '%;height:7px;border-radius:4px;background:linear-gradient(90deg,#22c55e,#16a34a)"></div></div>'
+          + '<div style="font-size:.72rem;font-weight:700;color:#16a34a">' + pct + '%</div>'
+
+          // ── ยอดขายสะสมทั้งปี ──
+          + '<div style="margin-top:.4rem;padding-top:.35rem;border-top:1px dashed #e5e7eb">'
+          + '<div style="font-size:.72rem;color:#6b7280;font-weight:600">ยอดขายสะสมทั้งปี ' + d.sale_year + '</div>'
+          + '<div style="font-size:1.05rem;font-weight:700;color:#1a56db">฿' + yearActual.toLocaleString('th-TH') + '</div>'
+          + '</div>'
+
           + '</div>';
   }
 
@@ -477,5 +488,7 @@ setInterval(function() {
 
 <!-- Google Maps JS: โหลดหลัง JS block เพื่อให้ callback พร้อมก่อน -->
 <!-- <script src="https://maps.googleapis.com/maps/api/js?v=weekly&callback=__gmMapInit" async defer></script>
-  -->
+
+
+  <!-- production -->
 <script src="https://maps.googleapis.com/maps/api/js?v=weekly&key=AIzaSyB61sU7WZRpxfJsVqgVKf-ZE4K8jX1t6ns&callback=__gmMapInit" async defer></script>
