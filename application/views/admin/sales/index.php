@@ -164,7 +164,18 @@ foreach ($records_team as $r) {
                   <small><?=number_format($pct,1)?>%</small>
                 </td>
                 <td><span class="badge bg-<?=$r->sales_type==='individual'?'primary':'success'?>"><?=$r->sales_type==='individual'?'รายบุคคล':'ทีม'?></span></td>
-                <td><a href="<?=base_url('admin/sales/delete/'.$r->id)?>" onclick="return confirm('ลบรายการนี้?')" class="btn btn-outline-danger btn-sm px-2 py-0"><i class="bi bi-trash"></i></a></td>
+                <td>
+                  <button type="button"
+                    onclick="openEditSales(<?=$r->id?>,<?=$r->target_amount?>,<?=$r->actual_amount?>,<?=$r->customer_count??0?>)"
+                    class="btn btn-outline-secondary btn-sm px-2 py-0 me-1">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <a href="<?=base_url('admin/sales/delete/'.$r->id)?>"
+                     onclick="return confirm('ลบรายการนี้?')"
+                     class="btn btn-outline-danger btn-sm px-2 py-0">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </td>
               </tr>
               <?php endforeach;else:?>
               <tr><td colspan="8" class="text-center text-muted py-4">ไม่มีข้อมูลยอดขาย</td></tr>
@@ -454,4 +465,53 @@ new Chart(document.getElementById('salesChart').getContext('2d'),{
   options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'Sarabun'}}}},
     scales:{y:{ticks:{callback:function(v){return '฿'+Number(v).toLocaleString();},font:{family:'Sarabun'}}}}}
 });
+</script>
+
+<!-- ── Edit Sales Modal ─────────────────────────────────────────── -->
+<div class="modal fade" id="editSalesModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title"><i class="bi bi-pencil me-2"></i>แก้ไขยอดขาย</h6>
+        <button class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="editSalesForm" method="POST" action="">
+        <input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">เป้าหมาย (฿)</label>
+            <input type="number" name="target_amount" id="editTarget"
+                   class="form-control form-control-sm" min="0" step="1000" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">ยอดขายจริง (฿)</label>
+            <input type="number" name="actual_amount" id="editActual"
+                   class="form-control form-control-sm" min="0" step="1000" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">จำนวนลูกค้า</label>
+            <input type="number" name="customer_count" id="editCustomer"
+                   class="form-control form-control-sm" min="0" step="1">
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-save me-1"></i>บันทึก
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function openEditSales(id, target, actual, customer) {
+  document.getElementById('editSalesForm').action = '<?=base_url('admin/sales/update/')?>' + id;
+  document.getElementById('editTarget').value   = target;
+  document.getElementById('editActual').value   = actual;
+  document.getElementById('editCustomer').value = customer;
+  var modal = new bootstrap.Modal(document.getElementById('editSalesModal'));
+  modal.show();
+}
 </script>

@@ -96,6 +96,24 @@ class Sales extends Admin_Controller {
         $this->session->set_flashdata('success','บันทึกยอดขายสำเร็จ');
         redirect('admin/sales');
     }
+    public function update($id) {
+        if ($this->input->method() !== 'post') redirect('admin/sales');
+        $target = (float)$this->input->post('target_amount');
+        $actual = (float)$this->input->post('actual_amount');
+        $pct    = $target > 0 ? round($actual / $target * 100, 2) : 0;
+        $this->db->where('id', $id)->update('sales_records', array(
+            'target_amount'   => $target,
+            'actual_amount'   => $actual,
+            'customer_count'  => (int)($this->input->post('customer_count') ?: 0),
+            'achievement_pct' => $pct,
+            'updated_at'      => date('Y-m-d H:i:s'),
+        ));
+        $this->session->set_flashdata('success', 'อัปเดตยอดขายสำเร็จ');
+        redirect('admin/sales?' . http_build_query(array(
+            'year'  => $this->input->get('year')  ?: date('Y'),
+            'month' => $this->input->get('month') ?: date('n'),
+        )));
+    }
     public function delete($id) {
         $this->db->where('id',$id)->delete('sales_records');
         $this->session->set_flashdata('success','ลบสำเร็จ');
