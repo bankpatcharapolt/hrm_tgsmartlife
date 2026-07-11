@@ -169,7 +169,9 @@ class Mappublic extends MY_Controller {
                 'name'        => $emp->first_name . ' ' . $emp->last_name,
                 'position'    => $emp->position ?? '',
                 'team_name'   => $emp->team_name ?? '',
-                'photo'       => $emp->photo ? base_url($emp->photo) : null,
+                'photo'       => $emp->photo
+                    ? base_url('thumb.php?src=' . rawurlencode($emp->photo) . '&s=80')
+                    : null,
                 'status'      => $status,
                 'lat'         => $lat,
                 'lng'         => $lng,
