@@ -8,12 +8,17 @@ class Dashboard extends Employee_Controller {
         $uid = $this->current_user->user_id;
 
         // ดึง team lat/lng/radius ของพนักงานคนนี้
-        $user_team = $this->db
-            ->select('t.lat, t.lng, t.checkin_radius_km')
-            ->from('users u')
-            ->join('teams t', 't.id = u.team_id', 'left')
-            ->where('u.id', $uid)
-            ->get()->row();
+        // ป้องกัน error กรณียังไม่ได้รัน ALTER TABLE เพิ่ม column
+        $user_team = null;
+        $has_geo   = $this->db->field_exists('lat', 'teams');
+        if ($has_geo) {
+            $user_team = $this->db
+                ->select('t.lat, t.lng, t.checkin_radius_km')
+                ->from('users u')
+                ->join('teams t', 't.id = u.team_id', 'left')
+                ->where('u.id', $uid)
+                ->get()->row();
+        }
 
         $this->render('employee/dashboard/index', array(
             'title'      => 'หน้าหลัก',

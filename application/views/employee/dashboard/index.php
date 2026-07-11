@@ -313,21 +313,25 @@ function _doGPS() {
       _gpsData = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       if (sp) sp.style.display = 'none';
 
-      // ── ตรวจสอบพื้นที่ checkin ────────────────────────────────────────
+      // ── ตรวจสอบพื้นที่ (ทั้ง check-in และ check-out)
+      // ข้ามการตรวจถ้าทีมไม่มีพิกัด (_teamLat === null)
       if (_teamLat !== null && _teamLng !== null && _teamRadius !== null) {
         var distKm = _calcDistKm(_gpsData.lat, _gpsData.lng, _teamLat, _teamLng);
         if (distKm > _teamRadius) {
-          // อยู่นอกพื้นที่ → ปิด modal และแสดง alert
-          var modalEl = document.getElementById('checkinModal') || document.getElementById('checkoutModal');
+          var modalEl = document.getElementById('attendModal');
           if (modalEl && typeof bootstrap !== 'undefined') {
-            bootstrap.Modal.getInstance(modalEl)?.hide();
+            var bsModal = bootstrap.Modal.getInstance(modalEl);
+            if (bsModal) bsModal.hide();
           }
-          alert('ไม่สามารถลงเวลาเข้างานได้ เนื่องจากอยู่นอกพื้นที่\nกรุณาลงเวลาเข้างานอีกครั้งเมื่ออยู่ในพื้นที่ทำงาน\n\n(ระยะห่างจากสาขา: ' + distKm.toFixed(2) + ' กม. / รัศมีที่อนุญาต: ' + _teamRadius + ' กม.)');
+          if (_mode === 'in') {
+            alert('ไม่สามารถลงเวลาเข้างานได้ เนื่องจากอยู่นอกพื้นที่\nกรุณาลงเวลาเข้างานอีกครั้งเมื่ออยู่ในพื้นที่ทำงาน\n\n(ระยะห่างจากสาขา: ' + distKm.toFixed(2) + ' กม. / รัศมีที่อนุญาต: ' + _teamRadius + ' กม.)');
+          } else {
+            alert('ไม่สามารถลงเวลาออกงานได้ เนื่องจากอยู่นอกพื้นที่\nกรุณาลงเวลาออกงานอีกครั้งเมื่ออยู่ในพื้นที่ทำงาน\n\n(ระยะห่างจากสาขา: ' + distKm.toFixed(2) + ' กม. / รัศมีที่อนุญาต: ' + _teamRadius + ' กม.)');
+          }
           return;
         }
       }
-
-      // ── อยู่ในพื้นที่ หรือ ทีมไม่ได้ตั้งค่าพิกัด → ดำเนินการต่อ ──────
+      // ── ถ้าไม่มีพิกัดทีม หรืออยู่ในพื้นที่ → ดำเนินการต่อ ─────────────
       if (re) re.style.display = '';
       _setText('gpsResultIcon', '');
       _setText('gpsResultCoords', _gpsData.lat.toFixed(5) + ', ' + _gpsData.lng.toFixed(5));
