@@ -96,6 +96,14 @@
     <span class="dot" style="background:#16a34a"></span>
     <span id="sc-checked_in">มาทำงาน 0</span>
   </div>
+  <div class="sum-pill" id="sp-late" onclick="filterStatus('late')" style="background:#fff7ed;color:#c2410c">
+    <span class="dot" style="background:#f97316"></span>
+    <span id="sc-late">สาย 0</span>
+  </div>
+  <div class="sum-pill" id="sp-checked_in_late" onclick="filterStatus('checked_in_late')" style="background:#fffbeb;color:#92400e">
+    <span class="dot" style="background:#d97706"></span>
+    <span id="sc-checked_in_late">เข้างานแล้ว (สาย) 0</span>
+  </div>
   <div class="sum-pill" id="sp-forgot_checkout" onclick="filterStatus('forgot_checkout')" style="background:#fff7ed;color:#c2410c">
     <span class="dot" style="background:#f97316"></span>
     <span id="sc-forgot_checkout">ลืมลงเวลาออก 0</span>
@@ -129,15 +137,19 @@ var API_URL  = BASE_URL + 'admin/map/data';
 
 var STATUS_COLOR = {
   checked_in:      '#16a34a',  // เขียว
+  late:            '#f97316',  // ส้ม (สาย วันนี้)
   checked_out:     '#94a3b8',  // เทา
   forgot_checkout: '#f97316',  // ส้ม
+  checked_in_late: '#d97706',  // เหลืองเข้ม (สาย วันก่อน)
   on_leave:        '#eab308',  // เหลือง
   not_in:          '#dc2626',  // แดง
 };
 var STATUS_LABEL = {
   checked_in:      'เข้างานแล้ว',
+  late:            'สาย',
   checked_out:     'ออกงานแล้ว',
   forgot_checkout: 'เข้างานแล้ว (ลืมลงเวลาออก)',
+  checked_in_late: 'เข้างานแล้ว (สาย)',
   on_leave:        'ลา',
   not_in:          'ยังไม่เข้างาน(ขาดงาน)',
 };
@@ -380,7 +392,21 @@ function buildPopup(d, isToday) {
   html += '<span style="display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:.72rem;font-weight:600;background:' + statusColor + '22;color:' + statusColor + '">'
         + statusLabel + '</span>';
 
-  // ยอดขาย (แผนกการขาย)
+  // ── เวลาเข้า/ออกงาน ──────────────────────────────────────────────────
+  var timeHtml = '';
+  if (d.check_in_time) {
+    timeHtml += '<span style="font-size:.75rem;color:#374151"><i style="display:inline-block;width:14px;text-align:center">🕐</i> เข้า: <b>' + d.check_in_time + '</b></span>';
+    if (d.is_late && d.late_minutes > 0) {
+      timeHtml += ' <span style="font-size:.72rem;color:#f97316;font-weight:600">สาย ' + d.late_minutes + ' น.</span>';
+    }
+  }
+  if (d.check_out_time) {
+    timeHtml += (timeHtml ? '<br>' : '')
+              + '<span style="font-size:.75rem;color:#374151"><i style="display:inline-block;width:14px;text-align:center">🕕</i> ออก: <b>' + d.check_out_time + '</b></span>';
+  }
+  if (timeHtml) {
+    html += '<div style="margin-top:.35rem;padding:.25rem .4rem;background:#f8fafc;border-radius:6px;line-height:1.6">' + timeHtml + '</div>';
+  }
   if (d.is_sales) {
     var thMonth = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
     var mLabel     = thMonth[d.sale_month] || d.sale_month;
@@ -417,10 +443,10 @@ function updateSummary(sum, isToday) {
   document.getElementById('sumBar').style.display = '';
 
   // pill ที่แสดงแต่ละกรณี
-  var todayPills    = ['checked_in', 'checked_out', 'on_leave', 'not_in'];
-  var prevDayPills  = ['checked_in', 'forgot_checkout', 'on_leave', 'not_in'];
+  var todayPills    = ['checked_in', 'late', 'checked_out', 'on_leave', 'not_in'];
+  var prevDayPills  = ['checked_in', 'checked_in_late', 'forgot_checkout', 'on_leave', 'not_in'];
   var activePills   = isToday ? todayPills : prevDayPills;
-  var allStatuses   = ['checked_in', 'forgot_checkout', 'checked_out', 'on_leave', 'not_in'];
+  var allStatuses   = ['checked_in', 'late', 'checked_out', 'forgot_checkout', 'checked_in_late', 'on_leave', 'not_in'];
 
   // อัปเดตตัวเลขทุก pill
   var total = 0;
@@ -487,8 +513,17 @@ setInterval(function() {
 </script>
 
 <!-- Google Maps JS: โหลดหลัง JS block เพื่อให้ callback พร้อมก่อน -->
-<!-- <script src="https://maps.googleapis.com/maps/api/js?v=weekly&callback=__gmMapInit" async defer></script>
+ 
 
 
   <!-- production -->
-<script src="https://maps.googleapis.com/maps/api/js?v=weekly&key=AIzaSyB61sU7WZRpxfJsVqgVKf-ZE4K8jX1t6ns&callback=__gmMapInit" async defer></script>
+   <!--
+
+        -->
+
+<?php
+$_gmap_key = $this->config->item('google_maps_api_key');
+$_gmap_src = 'https://maps.googleapis.com/maps/api/js?v=weekly&callback=__gmMapInit'
+           . ($_gmap_key ? '&key=' . htmlspecialchars($_gmap_key) : '');
+?>
+<script src="<?=$_gmap_src?>" async defer></script>

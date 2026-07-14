@@ -51,6 +51,7 @@ class Map extends Admin_Controller {
         // ── ดึง attendance ของวันนั้น ──────────────────────────────────
         $att_q = $this->db->select(
                 'a.user_id, a.status, a.check_in_time, a.check_out_time,
+                 a.is_late, a.late_minutes,
                  a.checkin_lat, a.checkin_lng, a.checkout_lat, a.checkout_lng'
             )
             ->from('attendance a')
@@ -134,20 +135,20 @@ class Map extends Admin_Controller {
                 } elseif ($att && $att->check_in_time && $att->check_out_time && $att->checkout_lat) {
                     $status = 'checked_out';
                 } elseif ($att && $att->check_in_time && !$att->check_out_time) {
-                    $status = 'checked_in';
+                    $status = !empty($att->is_late) ? 'late' : 'checked_in';
                 } else {
                     $status = 'not_in';
                 }
             } else {
                 // วันก่อนหน้า — ตรวจ leave ก่อนเช่นกัน
                 if ($leave || ($att && $att->status === 'leave')) {
-                    $status = 'on_leave'; // ลา
+                    $status = 'on_leave';
                 } elseif ($att && $att->check_in_time && $att->check_out_time) {
-                    $status = 'checked_in'; // มาทำงาน (มีทั้ง checkin และ checkout)
+                    $status = !empty($att->is_late) ? 'checked_in_late' : 'checked_in';
                 } elseif ($att && $att->check_in_time && !$att->check_out_time) {
-                    $status = 'forgot_checkout'; // มาทำงาน แต่ลืมลงเวลาออก
+                    $status = 'forgot_checkout';
                 } else {
-                    $status = 'not_in'; // ยังไม่เข้างาน/ขาดงาน
+                    $status = 'not_in';
                 }
             }
 
@@ -156,7 +157,7 @@ class Map extends Admin_Controller {
             if ($status === 'checked_out' && $att && $att->checkout_lat) {
                 $lat = (float)$att->checkout_lat;
                 $lng = (float)$att->checkout_lng;
-            } elseif (in_array($status, array('checked_in', 'forgot_checkout')) && $att && $att->checkin_lat) {
+            } elseif (in_array($status, array('checked_in', 'late', 'checked_in_late', 'forgot_checkout')) && $att && $att->checkin_lat) {
                 $lat = (float)$att->checkin_lat;
                 $lng = (float)$att->checkin_lng;
             } elseif (in_array($status, array('not_in', 'on_leave'))) {
@@ -168,18 +169,24 @@ class Map extends Admin_Controller {
             if ($lat === null || $lng === null) continue; // ไม่มีพิกัด ข้ามไป
 
             $marker = array(
-                'user_id'     => $emp->id,
-                'employee_id' => $emp->employee_id,
-                'name'        => $emp->first_name . ' ' . $emp->last_name,
-                'position'    => $emp->position ?? '',
-                'team_name'   => $emp->team_name ?? '',
-                'photo'       => $emp->photo ? base_url($emp->photo) : null,
-                'status'      => $status,
-                'lat'         => $lat,
-                'lng'         => $lng,
-                'is_sales'    => $is_sales,
-                'sale_month'  => $sale_month,
-                'sale_year'   => $sale_year,
+                'user_id'      => $emp->id,
+                'employee_id'  => $emp->employee_id,
+                'name'         => $emp->first_name . ' ' . $emp->last_name,
+                'position'     => $emp->position ?? '',
+                'team_name'    => $emp->team_name ?? '',
+                'photo'        => $emp->photo ? base_url($emp->photo) : null,
+                'status'       => $status,
+                'lat'          => $lat,
+                'lng'          => $lng,
+                'is_sales'     => $is_sales,
+                'sale_month'   => $sale_month,
+                'sale_year'    => $sale_year,
+                'is_late'      => !empty($att->is_late) ? true : false,
+                'late_minutes' => $att ? (int)($att->late_minutes ?? 0) : 0,
+                'check_in_time'  => $att && $att->check_in_time
+                    ? date('H:i', strtotime($att->check_in_time)) : null,
+                'check_out_time' => $att && $att->check_out_time
+                    ? date('H:i', strtotime($att->check_out_time)) : null,
             );
 
             if ($is_sales) {
@@ -197,8 +204,10 @@ class Map extends Admin_Controller {
         // สรุปจำนวน
         $summary = array(
             'checked_in'      => 0,
+            'late'            => 0,
             'forgot_checkout' => 0,
             'checked_out'     => 0,
+            'checked_in_late' => 0,
             'on_leave'        => 0,
             'not_in'          => 0,
         );

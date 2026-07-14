@@ -54,3 +54,6 @@ $config['reverse_proxy_ips'] = '';
 // รูปแบบ: 'YYYY-MM-DD' หรือ '' (ว่าง = นับทุกวันตั้งแต่ต้นเดือน)
 // ตัวอย่าง: deploy วันที่ 1 ส.ค. 2026 → ตั้งเป็น '2026-08-01'
 $config['attendance_track_start'] = '2026-08-01';
+
+
+$config['google_maps_api_key'] = '';
