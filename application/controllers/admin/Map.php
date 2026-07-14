@@ -157,9 +157,16 @@ class Map extends Admin_Controller {
             if ($status === 'checked_out' && $att && $att->checkout_lat) {
                 $lat = (float)$att->checkout_lat;
                 $lng = (float)$att->checkout_lng;
-            } elseif (in_array($status, array('checked_in', 'late', 'checked_in_late', 'forgot_checkout')) && $att && $att->checkin_lat) {
-                $lat = (float)$att->checkin_lat;
-                $lng = (float)$att->checkin_lng;
+            } elseif (in_array($status, array('checked_in', 'late', 'checked_in_late', 'forgot_checkout'))) {
+                if ($att && $att->checkin_lat) {
+                    // มีพิกัด checkin → ใช้พิกัดจริง
+                    $lat = (float)$att->checkin_lat;
+                    $lng = (float)$att->checkin_lng;
+                } else {
+                    // ไม่มีพิกัด checkin → fallback ใช้พิกัดสาขา
+                    $lat = $emp->team_lat ? (float)$emp->team_lat : null;
+                    $lng = $emp->team_lng ? (float)$emp->team_lng : null;
+                }
             } elseif (in_array($status, array('not_in', 'on_leave'))) {
                 // ใช้พิกัดทีม
                 $lat = $emp->team_lat ? (float)$emp->team_lat : null;

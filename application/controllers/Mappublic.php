@@ -154,9 +154,15 @@ class Mappublic extends MY_Controller {
             if ($status === 'checked_out' && $att && $att->checkout_lat) {
                 $lat = (float)$att->checkout_lat;
                 $lng = (float)$att->checkout_lng;
-            } elseif (in_array($status, array('checked_in','late','checked_in_late','forgot_checkout')) && $att && $att->checkin_lat) {
-                $lat = (float)$att->checkin_lat;
-                $lng = (float)$att->checkin_lng;
+            } elseif (in_array($status, array('checked_in','late','checked_in_late','forgot_checkout'))) {
+                if ($att && $att->checkin_lat) {
+                    $lat = (float)$att->checkin_lat;
+                    $lng = (float)$att->checkin_lng;
+                } else {
+                    // fallback ใช้พิกัดสาขา
+                    $lat = $emp->team_lat ? (float)$emp->team_lat : null;
+                    $lng = $emp->team_lng ? (float)$emp->team_lng : null;
+                }
             } elseif (in_array($status, array('not_in','on_leave'))) {
                 $lat = $emp->team_lat ? (float)$emp->team_lat : null;
                 $lng = $emp->team_lng ? (float)$emp->team_lng : null;
