@@ -10,6 +10,10 @@ class Attendance_model extends CI_Model {
             ->join('shifts s','s.id=a.shift_id','left')
             ->where('a.id',$id)->get()->row();
     }
+    // [เพิ่ม] เช็คว่าพนักงานคนนี้มี record ของวันที่ระบุอยู่แล้วหรือยัง (ตาราง attendance มี UNIQUE KEY user_id+date)
+    public function get_by_user_date($uid, $date) {
+        return $this->db->where('user_id',$uid)->where('date',$date)->get('attendance')->row();
+    }
     public function checkin($uid,$role = null, $shift_id=null) {
         $this->load->model('Shift_model');
         $shift = null;
@@ -79,7 +83,7 @@ class Attendance_model extends CI_Model {
             ->order_by('a.date','ASC')->get()->result();
     }
 
-    public function get_all_monthly($y,$m,$dept=null,$shift_id=null,$status=null,$limit=50,$offset=0) {
+    public function get_all_monthly($y,$m,$dept=null,$shift_id=null,$status=null,$limit=50,$offset=0,$search=null) {
         $this->db->select('a.*,u.first_name,u.last_name,u.employee_id,d.name AS dept_name,s.name AS shift_name,s.color AS shift_color,lt.name AS leave_type_name')
             ->from('attendance a')
             ->join('users u','u.id=a.user_id')
@@ -96,11 +100,18 @@ class Attendance_model extends CI_Model {
                 $this->db->where('a.status', $status);
             }
         }
+        if (!empty($search)) {
+            $this->db->group_start()
+                ->like('u.first_name', $search)
+                ->or_like('u.last_name', $search)
+                ->or_like('u.employee_id', $search)
+                ->group_end();
+        }
         if ($limit > 0) $this->db->limit($limit, $offset);
         return $this->db->order_by('a.date DESC,u.employee_id ASC')->get()->result();
     }
 
-    public function count_all_monthly_filtered($y,$m,$dept=null,$shift_id=null,$status=null) {
+    public function count_all_monthly_filtered($y,$m,$dept=null,$shift_id=null,$status=null,$search=null) {
         $this->db->from('attendance a')
             ->join('users u','u.id=a.user_id')
             ->where('YEAR(a.date)',$y)->where('MONTH(a.date)',$m);
@@ -112,6 +123,13 @@ class Attendance_model extends CI_Model {
             } else {
                 $this->db->where('a.status', $status);
             }
+        }
+        if (!empty($search)) {
+            $this->db->group_start()
+                ->like('u.first_name', $search)
+                ->or_like('u.last_name', $search)
+                ->or_like('u.employee_id', $search)
+                ->group_end();
         }
         return $this->db->count_all_results();
     }

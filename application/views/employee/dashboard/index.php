@@ -388,13 +388,25 @@ function _gpsErr(msg) {
   _setText('gpsResultIcon','⚠️');
   _setText('gpsResultCoords', msg);
   _setText('gpsTitleTxt','ไม่ได้รับตำแหน่ง GPS');
-  _setText('gpsDescTxt','');
-  _footer([
-    { t:'ข้ามตำแหน่ง', c:'btn-outline-secondary', f:'_skipGPS()' },
-    { t:'ลองใหม่',      c:'btn-primary',            f:'_doGPS()'  }
-  ]);
+
+  // [FIX] ออกงานต้องมีตำแหน่ง GPS เสมอ ห้ามข้าม — ไม่แสดงปุ่ม "ข้ามตำแหน่ง" ตอน checkout
+  if (_mode === 'out') {
+    _setText('gpsDescTxt','การลงเวลาออกงานต้องเปิดตำแหน่ง GPS กรุณาอนุญาตการเข้าถึงตำแหน่งแล้วลองใหม่');
+    _footer([
+      { t:'ลองใหม่', c:'btn-primary', f:'_doGPS()' }
+    ]);
+  } else {
+    _setText('gpsDescTxt','');
+    _footer([
+      { t:'ข้ามตำแหน่ง', c:'btn-outline-secondary', f:'_skipGPS()' },
+      { t:'ลองใหม่',      c:'btn-primary',            f:'_doGPS()'  }
+    ]);
+  }
 }
-function _skipGPS() { _gpsData = null; _toCamera(); }
+function _skipGPS() {
+  if (_mode === 'out') return; // [FIX] กันอีกชั้น ห้ามข้าม GPS ตอนออกงานไม่ว่าจะถูกเรียกจากที่ไหน
+  _gpsData = null; _toCamera();
+}
 
 // ── Camera ──────────────────────────────────────────────────────────
 function _startStream(constraints) {
@@ -529,6 +541,12 @@ function _toConfirm() {
 
 // ── Submit ───────────────────────────────────────────────────────────
 function _submit() {
+  // [FIX] กันอีกชั้นสุดท้ายก่อนส่ง: ออกงานต้องมี GPS เท่านั้น ห้ามข้าม
+  if (_mode === 'out' && !_gpsData) {
+    alert('ไม่สามารถลงเวลาออกงานได้ เนื่องจากไม่มีตำแหน่ง GPS กรุณาลองใหม่');
+    _step('GPS'); _doGPS();
+    return;
+  }
   _footer([]);
   document.getElementById('confirmSpinner').style.display = '';
   var payload = {}; payload[CSRF_NAME] = CSRF_HASH;

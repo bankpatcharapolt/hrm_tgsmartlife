@@ -11,13 +11,14 @@ class Attendance extends Admin_Controller {
         $dept       = $this->input->get('dept');
         $sid        = $this->input->get('shift_id');
         $sel_status = $this->input->get('status') ?: '';
+        $search     = trim($this->input->get('search', TRUE)) ?: '';
         $per_page   = 50;
         $page       = max(1, (int)($this->input->get('page') ?: 1));
         $offset     = ($page - 1) * $per_page;
 
         // ── กรณีพิเศษ: ขาดงาน ──────────────────────────────────────
         if ($sel_status === 'absent') {
-            $user_filters = array('status' => 'active');
+            $user_filters = array('status' => 'active', 'search' => $search);
             if ($dept) $user_filters['department_id'] = $dept;
             $all_users = $this->User_model->get_all($user_filters, 500);
 
@@ -51,8 +52,8 @@ class Attendance extends Admin_Controller {
             $total   = count($all_absent);
             $records = array_slice($all_absent, $offset, $per_page);
         } else {
-            $total   = $this->Attendance_model->count_all_monthly_filtered($y,$m,$dept,$sid,$sel_status);
-            $records = $this->Attendance_model->get_all_monthly($y,$m,$dept,$sid,$sel_status,$per_page,$offset);
+            $total   = $this->Attendance_model->count_all_monthly_filtered($y,$m,$dept,$sid,$sel_status,$search);
+            $records = $this->Attendance_model->get_all_monthly($y,$m,$dept,$sid,$sel_status,$per_page,$offset,$search);
         }
 
         $total_pages = $per_page > 0 ? (int)ceil($total / $per_page) : 1;
@@ -69,6 +70,7 @@ class Attendance extends Admin_Controller {
             'dept'        => $dept,
             'shift_id'    => $sid,
             'sel_status'  => $sel_status,
+            'search'      => $search,
             'total'       => $total,
             'page'        => $page,
             'per_page'    => $per_page,
@@ -78,6 +80,23 @@ class Attendance extends Admin_Controller {
     // บันทึกด้วยตนเอง (รองรับลาชั่วโมง)
     public function manual() {
         if ($this->input->method()==='post') {
+            $uid  = $this->input->post('user_id');
+            $date = $this->input->post('date');
+
+            // [FIX] กันชนกับ UNIQUE KEY (user_id+date): ถ้าพนักงานคนนี้มีข้อมูลวันที่เลือกอยู่แล้ว
+            // (เคสหลัก: self check-in ผ่านมือถือสำเร็จ แต่ checkout ไม่ได้เพราะ GPS มีปัญหา
+            //  จึงขอให้ admin ช่วยลงเวลาออกงานแทน) ให้พาไปหน้า "แก้ไข" ของ record เดิมแทน
+            // ไม่พยายาม insert ซ้ำ ซึ่งจะชน unique key แล้วได้ error ที่ไม่ชัดเจนว่าให้ทำอะไรต่อ
+            if ($uid && $date) {
+                $existing = $this->Attendance_model->get_by_user_date($uid, $date);
+                if ($existing) {
+                    $this->session->set_flashdata('info',
+                        'พนักงานคนนี้มีข้อมูลวันที่ ' . date('d/m/Y', strtotime($date)) . ' อยู่แล้ว '
+                        . 'ระบบพาไปหน้าแก้ไขให้แทน (เช่น เติมเวลาออกงานที่นี่ได้เลย)');
+                    redirect('admin/attendance/edit/' . $existing->id);
+                }
+            }
+
             $status = $this->input->post('status') ?: 'present';
             $data = array(
                 'user_id'        => $this->input->post('user_id'),

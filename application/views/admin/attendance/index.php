@@ -27,7 +27,10 @@
         <option value="late" <?= isset($sel_status) && $sel_status === 'late' ? 'selected' : '' ?>>มาสาย</option>
 
       </select></div>
-    <div class="col-auto"><button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+    <div class="col-md-2"><input type="text" name="search"
+        value="<?= htmlspecialchars($search ?? '', ENT_QUOTES, 'UTF-8') ?>"
+        class="form-control form-control-sm" placeholder="ค้นหาชื่อ/รหัสพนักงาน..."></div>
+    <div class="col-auto"><button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i>&nbsp;ค้นหาข้อมูล</button>
     </div>
     <?= form_close() ?>
   </div>
@@ -141,6 +144,7 @@ if ($total_pages > 1):
     'dept' => $dept,
     'shift_id' => $shift_id,
     'status' => $sel_status,
+    'search' => $search ?? '',
   );
   $base_q = http_build_query(array_filter($q, function ($v) {
     return $v !== '' && $v !== null; }));

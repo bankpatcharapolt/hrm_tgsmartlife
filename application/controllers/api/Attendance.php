@@ -162,6 +162,14 @@ class Attendance extends MY_Controller
         $lat  = isset($json['lat']) ? (float)$json['lat'] : (float)($this->input->post('lat') ?: 0);
         $lng  = isset($json['lng']) ? (float)$json['lng'] : (float)($this->input->post('lng') ?: 0);
 
+        // [FIX] บังคับต้องมีตำแหน่ง GPS ทุกครั้งตอนลงเวลาออกงาน ห้ามข้าม (ตามคำขอ)
+        // ถ้าไม่มี lat/lng ส่งมา (หรือเป็น 0,0) ปฏิเสธทันที ไม่บันทึก check_out_time ลง DB เด็ดขาด
+        // กันทั้งกรณี client ข้าม GPS เอง และกรณีมีคนยิง API ตรงๆ โดยไม่ผ่านหน้าเว็บ
+        if (!$lat || !$lng) {
+            $this->json_err('ไม่สามารถลงเวลาออกงานได้ กรุณาเปิดตำแหน่ง GPS แล้วลองใหม่');
+            return;
+        }
+
         $this->Attendance_model->checkout($today->id, $uid);
 
         // [ข้อ 2] ตรวจออกก่อนเวลา

@@ -131,7 +131,11 @@ class Mappublic extends MY_Controller {
             if ($is_today) {
                 if ($leave || ($att && $att->status === 'leave')) {
                     $status = 'on_leave';
-                } elseif ($att && $att->check_in_time && $att->check_out_time && $att->checkout_lat) {
+                } elseif ($att && $att->check_in_time && $att->check_out_time) {
+                    // [FIX] เดิมบังคับต้องมี checkout_lat ด้วยถึงจะนับว่าออกงานแล้ว
+                    // ถ้า GPS ตอน checkout ส่งมาไม่ได้ (ปิด location, timeout ฯลฯ)
+                    // check_out_time มีค่าแล้วแต่ checkout_lat เป็น NULL จะหลุดไป else -> 'not_in' (ขาดงาน) ทั้งที่ออกงานจริง
+                    // ให้ตัดสินจาก check_in_time/check_out_time เท่านั้น เหมือน branch ของวันก่อนหน้า (บรรทัดล่าง)
                     $status = 'checked_out';
                 } elseif ($att && $att->check_in_time && !$att->check_out_time) {
                     $status = !empty($att->is_late) ? 'late' : 'checked_in';
@@ -151,9 +155,21 @@ class Mappublic extends MY_Controller {
             }
 
             $lat = null; $lng = null;
-            if ($status === 'checked_out' && $att && $att->checkout_lat) {
-                $lat = (float)$att->checkout_lat;
-                $lng = (float)$att->checkout_lng;
+            if ($status === 'checked_out') {
+                if ($att && $att->checkout_lat) {
+                    // มีพิกัด checkout → ใช้พิกัดจริงตอนออกงาน
+                    $lat = (float)$att->checkout_lat;
+                    $lng = (float)$att->checkout_lng;
+                } elseif ($att && $att->checkin_lat) {
+                    // [FIX] ไม่มีพิกัด checkout (GPS ส่งไม่มาตอนออกงาน) → fallback ใช้พิกัด checkin แทน
+                    // เดิมถ้าไม่มี checkout_lat จะไม่เข้าเงื่อนไขนี้เลย ทำให้ lat/lng เป็น null แล้วโดน continue ข้ามไปทั้ง marker
+                    $lat = (float)$att->checkin_lat;
+                    $lng = (float)$att->checkin_lng;
+                } else {
+                    // ไม่มีพิกัดทั้ง checkout และ checkin → fallback ใช้พิกัดสาขา
+                    $lat = $emp->team_lat ? (float)$emp->team_lat : null;
+                    $lng = $emp->team_lng ? (float)$emp->team_lng : null;
+                }
             } elseif (in_array($status, array('checked_in','late','checked_in_late','forgot_checkout'))) {
                 if ($att && $att->checkin_lat) {
                     $lat = (float)$att->checkin_lat;
