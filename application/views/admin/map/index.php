@@ -366,6 +366,13 @@ function createMarker(d, isToday) {
   return { gmarker: gmarker, infoWindow: infoWindow, data: d };
 }
 
+// [เพิ่ม] escape ข้อความอิสระ (เช่น เหตุผลออกก่อนเวลา) ก่อนใส่ใน popup HTML
+function _escHtml(s) {
+  return String(s).replace(/[&<>"']/g, function(c) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
 function buildPopup(d, isToday) {
   var statusLabel = STATUS_LABEL[d.status] || d.status;
   var statusColor = STATUS_COLOR[d.status] || '#6b7280';
@@ -403,6 +410,17 @@ function buildPopup(d, isToday) {
   if (d.check_out_time) {
     timeHtml += (timeHtml ? '<br>' : '')
               + '<span style="font-size:.75rem;color:#374151"><i style="display:inline-block;width:14px;text-align:center">🕕</i> ออก: <b>' + d.check_out_time + '</b></span>';
+    // [เพิ่ม] ออกก่อนเวลา — แสดงทั้งวันปัจจุบันและวันย้อนหลัง
+    if (d.is_early_out) {
+      timeHtml += ' <span style="font-size:.72rem;color:#dc2626;font-weight:600">ออกก่อนเวลา' + (d.early_out_minutes ? ' ' + d.early_out_minutes + ' น.' : '') + '</span>';
+      if (d.early_out_reason) {
+        timeHtml += '<br><span style="font-size:.72rem;color:#dc2626">เหตุผล: ' + _escHtml(d.early_out_reason) + '</span>';
+      }
+    }
+    // [เพิ่ม] ออกนอกสถานที่ปฏิบัติงาน — คนละเงื่อนไขกับออกก่อนเวลา แสดงแยกเป็นอีกบรรทัดเสมอถ้ามี
+    if (d.offsite_reason) {
+      timeHtml += '<br><span style="font-size:.72rem;color:#dc2626">ออกนอกสถานที่: ' + _escHtml(d.offsite_reason) + '</span>';
+    }
   }
   if (timeHtml) {
     html += '<div style="margin-top:.35rem;padding:.25rem .4rem;background:#f8fafc;border-radius:6px;line-height:1.6">' + timeHtml + '</div>';

@@ -157,10 +157,13 @@ class Attendance extends MY_Controller
         }
 
         // [ข้อ 2] GPS checkout
-        $raw  = file_get_contents('php://input');
-        $json = json_decode($raw, true);
-        $lat  = isset($json['lat']) ? (float)$json['lat'] : (float)($this->input->post('lat') ?: 0);
-        $lng  = isset($json['lng']) ? (float)$json['lng'] : (float)($this->input->post('lng') ?: 0);
+        $raw    = file_get_contents('php://input');
+        $json   = json_decode($raw, true);
+        $lat    = isset($json['lat']) ? (float)$json['lat'] : (float)($this->input->post('lat') ?: 0);
+        $lng    = isset($json['lng']) ? (float)$json['lng'] : (float)($this->input->post('lng') ?: 0);
+        // [เพิ่ม] เหตุผลออกก่อนเวลา / เหตุผลออกนอกพื้นที่ (ถ้ามีการกรอกมา — คนละช่องกัน)
+        $reason         = isset($json['reason']) ? trim((string)$json['reason']) : trim((string)($this->input->post('reason') ?: ''));
+        $offsite_reason = isset($json['offsite_reason']) ? trim((string)$json['offsite_reason']) : trim((string)($this->input->post('offsite_reason') ?: ''));
 
         // [FIX] บังคับต้องมีตำแหน่ง GPS ทุกครั้งตอนลงเวลาออกงาน ห้ามข้าม (ตามคำขอ)
         // ถ้าไม่มี lat/lng ส่งมา (หรือเป็น 0,0) ปฏิเสธทันที ไม่บันทึก check_out_time ลง DB เด็ดขาด
@@ -170,9 +173,7 @@ class Attendance extends MY_Controller
             return;
         }
 
-        $this->Attendance_model->checkout($today->id, $uid);
-
-        // [ข้อ 2] ตรวจออกก่อนเวลา
+        // [ข้อ 2] ตรวจออกก่อนเวลา — ต้องคำนวณก่อนบันทึก checkout เพื่อให้บังคับกรอกเหตุผลได้ทันก่อนเขียนลง DB
         $early_out = 0; $early_min = 0;
         $this->load->model('Shift_model');
         $shift = $this->db->where('id', $today->shift_id)->get('shifts')->row();
@@ -185,14 +186,71 @@ class Attendance extends MY_Controller
             }
         }
 
-        // อัปเดต GPS + early_out
+        // [เพิ่ม] ตรวจเช็คเอาท์นอกพื้นที่ปฏิบัติงาน (รัศมีของทีม) — ไม่บล็อกการลงเวลา แค่บังคับกรอกเหตุผล
+        // เช็คระยะห่างซ้ำฝั่ง server เสมอ (client เป็นแค่ UX ช่วยเตือนก่อน — server เป็นคนตัดสินจริง กันกรณีปิด JS/ยิง API ตรงๆ)
+        // [สำคัญ] ใช้ truthy check แบบเดียวกับ employee/Dashboard.php::index() ทุกประการ (ไม่ใช่ !== null)
+        // เพื่อให้ client กับ server ตัดสิน "มีรัศมีกำหนดไว้หรือไม่" ตรงกันเป๊ะ
+        $is_offsite = false; $offsite_dist = 0.0; $radius_km = null;
+        $has_geo = $this->db->field_exists('lat', 'teams');
+        if ($has_geo) {
+            $team = $this->db->select('t.lat, t.lng, t.checkin_radius_km')
+                ->from('users u')->join('teams t', 't.id = u.team_id', 'left')
+                ->where('u.id', $uid)->get()->row();
+            $team_lat  = ($team && $team->lat)               ? (float)$team->lat               : null;
+            $team_lng  = ($team && $team->lng)               ? (float)$team->lng               : null;
+            $radius_km = ($team && $team->checkin_radius_km) ? (float)$team->checkin_radius_km : null;
+            if ($team_lat !== null && $team_lng !== null && $radius_km !== null) {
+                $offsite_dist = $this->_distance_km($lat, $lng, $team_lat, $team_lng);
+                if ($offsite_dist > $radius_km) $is_offsite = true;
+            }
+        }
+
+        // [เพิ่ม] ออกก่อนเวลา และ/หรือ ออกนอกพื้นที่ → บังคับกรอกเหตุผลของแต่ละอย่างที่เข้าเงื่อนไข
+        // ปฏิเสธก่อนบันทึก check_out_time ถ้ายังขาดเหตุผลอย่างใดอย่างหนึ่ง — ไม่บันทึกบางส่วนเด็ดขาด
+        $need_reason          = $early_out  && $reason === '';
+        $need_location_reason = $is_offsite && $offsite_reason === '';
+        if ($need_reason || $need_location_reason) {
+            $parts = array();
+            if ($need_reason)          $parts[] = 'ออกก่อนเวลา ' . $early_min . ' นาที';
+            if ($need_location_reason) $parts[] = 'ออกนอกพื้นที่ปฏิบัติงาน (ห่าง ' . round($offsite_dist, 2) . ' กม. / รัศมีที่กำหนด ' . $radius_km . ' กม.)';
+            $resp = array(
+                'success' => false,
+                'message' => implode(' และ', $parts) . ' กรุณาระบุเหตุผลก่อนลงเวลาออกงาน',
+            );
+            if ($need_reason) {
+                $resp['need_reason']   = true;
+                $resp['early_minutes'] = $early_min;
+            }
+            if ($need_location_reason) {
+                $resp['need_location_reason'] = true;
+                $resp['distance_km']          = round($offsite_dist, 2);
+                $resp['radius_km']            = $radius_km;
+            }
+            $this->output
+                ->set_status_header(400)
+                ->set_content_type('application/json', 'utf-8')
+                ->set_output(json_encode($resp, JSON_UNESCAPED_UNICODE));
+            return;
+        }
+
+        $this->Attendance_model->checkout($today->id, $uid);
+
+        // อัปเดต GPS + early_out + เหตุผล + นอกพื้นที่
         $upd = array();
         if ($lat) { $upd['checkout_lat'] = $lat; $upd['checkout_lng'] = $lng; }
-        if ($early_out) { $upd['is_early_out'] = 1; $upd['early_out_minutes'] = $early_min; }
+        if ($early_out) {
+            $upd['is_early_out']      = 1;
+            $upd['early_out_minutes'] = $early_min;
+            $upd['early_out_reason']  = $reason;
+        }
+        if ($is_offsite) {
+            $upd['checkout_out_of_radius_reason'] = $offsite_reason;
+        }
         if (!empty($upd)) $this->db->where('id', $today->id)->update('attendance', $upd);
 
         $msg = 'ลงเวลาออกงานสำเร็จ';
-        if ($early_out) $msg .= ' (ออกก่อนเวลา ' . $early_min . ' นาที)';
+        if ($early_out)  $msg .= ' (ออกก่อนเวลา ' . $early_min . ' นาที)';
+        if ($is_offsite) $msg .= ' (นอกพื้นที่ปฏิบัติงาน)';
 
         // ── แจ้งเตือนออกก่อนหมดกะ ────────────────────────────────────
         if ($early_out) {
@@ -202,7 +260,8 @@ class Attendance extends MY_Controller
                 : 'พนักงาน';
             $notif_title = 'แจ้งเตือน: ออกก่อนหมดกะ';
             $notif_msg   = $emp_name . ' ออกก่อนหมดกะ ' . $early_min . ' นาที'
-                         . ' (กะ ' . ($shift->name ?? '') . ' สิ้นสุด ' . substr($shift->end_time, 0, 5) . ')';
+                         . ' (กะ ' . ($shift->name ?? '') . ' สิ้นสุด ' . substr($shift->end_time, 0, 5) . ')'
+                         . ($reason !== '' ? ' — เหตุผล: ' . $reason : '');
             $notif_link  = base_url('admin/attendance');
             $notified    = array();
 
@@ -260,7 +319,20 @@ class Attendance extends MY_Controller
             'time'          => date('H:i:s'),
             'is_early_out'  => (bool)$early_out,
             'early_minutes' => $early_min,
+            'is_offsite'    => (bool)$is_offsite,
+            'distance_km'   => $is_offsite ? round($offsite_dist, 2) : 0,
         ), $msg);
+    }
+
+    // [เพิ่ม] ระยะห่าง Haversine (กม.) — สูตรเดียวกับ _calcDistKm() ฝั่ง JS ทุกประการ เพื่อให้ผลตรงกัน
+    private function _distance_km($lat1, $lng1, $lat2, $lng2)
+    {
+        $R    = 6371;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $a    = sin($dLat / 2) * sin($dLat / 2)
+              + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) * sin($dLng / 2);
+        return $R * 2 * atan2(sqrt($a), sqrt(1 - $a));
     }
 
     // ── บันทึกรูปถ่าย base64 ────────────────────────────────────────

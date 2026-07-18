@@ -25,11 +25,13 @@ class User_model extends CI_Model {
     }
     public function get_all($filters=array(),$limit=20,$offset=0) {
         $this->db->select('u.id,u.employee_id,u.first_name,u.last_name,u.nickname,u.phone,u.email,
-            u.start_date,u.base_salary,u.status,u.photo,u.team_id,r.name AS role_name,r.slug AS role_slug,
-            d.name AS department_name,t.team_name')
+            u.start_date,u.base_salary,u.status,u.photo,u.team_id,u.shift_id,r.name AS role_name,r.slug AS role_slug,
+            d.name AS department_name,t.team_name,s.name AS shift_name,s.color AS shift_color,
+            s.start_time AS shift_start,s.end_time AS shift_end')
             ->from('users u')->join('roles r','r.id=u.role_id','left')
             ->join('departments d','d.id=u.department_id','left')
-            ->join('teams t','t.id=u.team_id','left');
+            ->join('teams t','t.id=u.team_id','left')
+            ->join('shifts s','s.id=u.shift_id','left');
         if (!empty($filters['department_id'])) $this->db->where('u.department_id',$filters['department_id']);
         if (!empty($filters['role_id'])) $this->db->where('u.role_id',$filters['role_id']);
         if (!empty($filters['status'])) $this->db->where('u.status',$filters['status']);

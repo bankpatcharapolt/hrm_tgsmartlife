@@ -19,7 +19,7 @@
   <div class="card-body p-0">
     <div class="table-responsive">
       <table class="table table-hover mb-0">
-        <thead><tr><th>รหัส</th><th>ชื่อ-สกุล</th><th>แผนก</th><th>ตำแหน่ง</th><th>เบอร์โทร</th><th>เงินเดือน</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+        <thead><tr><th>รหัส</th><th>ชื่อ-สกุล</th><th>แผนก</th><th>ตำแหน่ง</th><th>กะ</th><th>เบอร์โทร</th><th>เงินเดือน</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
         <tbody>
           <?php if(!empty($employees)):foreach($employees as $e):?>
           <tr>
@@ -32,6 +32,14 @@
             </td>
             <td style="font-size:.83rem"><?=$e->department_name??'–'?></td>
             <td><span class="badge bg-light text-dark border"><?=$e->role_name?></span></td>
+            <td style="font-size:.83rem">
+              <?php if(!empty($e->shift_name)):?>
+                <span class="badge" style="background:<?=$e->shift_color??'#6b7280'?>;font-size:.68rem"><?=$e->shift_name?></span>
+                <?php if(!empty($e->shift_start) && !empty($e->shift_end)):?>
+                <div style="font-size:.68rem;color:#6b7280;margin-top:.15rem"><?=substr($e->shift_start,0,5)?>–<?=substr($e->shift_end,0,5)?></div>
+                <?php endif;?>
+              <?php else:?><span class="text-muted small">–</span><?php endif;?>
+            </td>
             <td style="font-size:.83rem"><?=$e->phone??'–'?></td>
             <td style="font-size:.83rem">฿<?=number_format($e->base_salary,0)?></td>
             <td><span class="badge bg-<?=$e->status==='active'?'success':($e->status==='inactive'?'secondary':'danger')?>"><?=$e->status==='active'?'ใช้งาน':($e->status==='inactive'?'ไม่ใช้งาน':'ระงับ')?></span></td>
@@ -53,7 +61,7 @@
               <?php endif;?>
             </td>
           </tr>
-          <?php endforeach;else:?><tr><td colspan="8" class="text-center text-muted py-5"><i class="bi bi-people fs-1 d-block mb-2 text-muted"></i>ไม่พบข้อมูลพนักงาน</td></tr><?php endif;?>
+          <?php endforeach;else:?><tr><td colspan="9" class="text-center text-muted py-5"><i class="bi bi-people fs-1 d-block mb-2 text-muted"></i>ไม่พบข้อมูลพนักงาน</td></tr><?php endif;?>
         </tbody>
       </table>
     </div>

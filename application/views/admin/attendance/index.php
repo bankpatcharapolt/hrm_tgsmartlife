@@ -83,7 +83,15 @@
                 <td class="<?= $r->is_late ? 'text-danger fw-semibold' : '' ?>" style="font-size:.83rem">
                   <?= $r->check_in_time ? date('H:i', strtotime($r->check_in_time)) : '–' ?>
                 </td>
-                <td style="font-size:.83rem"><?= $r->check_out_time ? date('H:i', strtotime($r->check_out_time)) : '–' ?></td>
+                <td class="<?= (!empty($r->is_early_out) || !empty($r->checkout_out_of_radius_reason)) ? 'text-danger fw-semibold' : '' ?>" style="font-size:.83rem">
+                  <?= $r->check_out_time ? date('H:i', strtotime($r->check_out_time)) : '–' ?>
+                  <?php if (!empty($r->is_early_out)): ?>
+                    <br><small class="text-danger">(ออกก่อนเวลา<?= !empty($r->early_out_reason) ? ': ' . htmlspecialchars($r->early_out_reason, ENT_QUOTES, 'UTF-8') : '' ?>)</small>
+                  <?php endif; ?>
+                  <?php if (!empty($r->checkout_out_of_radius_reason)): ?>
+                    <br><small class="text-danger">(ออกนอกสถานที่: <?= htmlspecialchars($r->checkout_out_of_radius_reason, ENT_QUOTES, 'UTF-8') ?>)</small>
+                  <?php endif; ?>
+                </td>
                 <td>
                   <?php
                   $sc = array('present' => 'success', 'absent' => 'danger', 'leave' => 'info text-dark', 'holiday' => 'warning text-dark', 'half_day' => 'secondary');

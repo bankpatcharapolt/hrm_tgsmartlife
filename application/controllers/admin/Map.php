@@ -52,6 +52,8 @@ class Map extends Admin_Controller {
         $att_q = $this->db->select(
                 'a.user_id, a.status, a.check_in_time, a.check_out_time,
                  a.is_late, a.late_minutes,
+                 a.is_early_out, a.early_out_minutes, a.early_out_reason,
+                 a.checkout_out_of_radius_reason,
                  a.checkin_lat, a.checkin_lng, a.checkout_lat, a.checkout_lng'
             )
             ->from('attendance a')
@@ -206,6 +208,12 @@ class Map extends Admin_Controller {
                 'sale_year'    => $sale_year,
                 'is_late'      => !empty($att->is_late) ? true : false,
                 'late_minutes' => $att ? (int)($att->late_minutes ?? 0) : 0,
+                // [เพิ่ม] ออกก่อนเวลา + เหตุผล — แสดงทั้งวันปัจจุบันและวันย้อนหลัง
+                'is_early_out'      => !empty($att->is_early_out) ? true : false,
+                'early_out_minutes' => $att ? (int)($att->early_out_minutes ?? 0) : 0,
+                'early_out_reason'  => $att && !empty($att->early_out_reason) ? $att->early_out_reason : null,
+                // [เพิ่ม] เหตุผลเช็คเอาท์นอกพื้นที่ปฏิบัติงาน — คนละเงื่อนไขกับออกก่อนเวลา
+                'offsite_reason'    => $att && !empty($att->checkout_out_of_radius_reason) ? $att->checkout_out_of_radius_reason : null,
                 'check_in_time'  => $att && $att->check_in_time
                     ? date('H:i', strtotime($att->check_in_time)) : null,
                 'check_out_time' => $att && $att->check_out_time

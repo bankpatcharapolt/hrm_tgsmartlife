@@ -43,6 +43,9 @@
       <?php endif; ?>
       <?php if(!empty($today->is_early_out)): ?>
       <span class="badge bg-danger">ออกก่อน <?=$today->early_out_minutes?> นาที</span>
+      <?php if(!empty($today->early_out_reason)): ?>
+      <div style="font-size:.72rem;color:#dc2626;margin-top:.15rem">เหตุผล: <?=htmlspecialchars($today->early_out_reason, ENT_QUOTES, 'UTF-8')?></div>
+      <?php endif; ?>
       <?php endif; ?>
       <div class="mt-2"><span class="badge bg-success fs-6 px-3 py-2">✓ ลงเวลาแล้ว</span></div>
       <?php endif; ?>
@@ -209,6 +212,34 @@
           <div id="confirmPhotoRow" class="mb-2" style="display:none">
             <img id="confirmPhoto" style="width:100%;border-radius:8px;max-height:90px;object-fit:cover">
           </div>
+          <!-- [เพิ่ม] เหตุผลออกก่อนเวลา — บังคับกรอกถ้าออกก่อนเวลา -->
+          <div id="confirmReasonRow" class="mb-2" style="display:none">
+            <div class="d-flex align-items-center gap-1 mb-1">
+              <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+              <label class="form-label small fw-semibold text-danger mb-0">
+                ออกก่อนเวลา <span id="confirmEarlyMin">0</span> นาที — กรุณาระบุเหตุผล
+              </label>
+            </div>
+            <textarea id="confirmReasonInput" class="form-control form-control-sm" rows="2"
+                      placeholder="เช่น รีบไปรับลูก, ไปพบแพทย์ ฯลฯ" oninput="_onReasonInput()"></textarea>
+            <div id="confirmReasonErr" class="text-danger mt-1" style="font-size:.72rem;display:none">
+              กรุณาระบุเหตุผลก่อนยืนยัน
+            </div>
+          </div>
+          <!-- [เพิ่ม] เหตุผลเช็คเอาท์นอกพื้นที่ปฏิบัติงาน — บังคับกรอกถ้าออกนอกรัศมี (ไม่บล็อกการลงเวลา) -->
+          <div id="confirmOffsiteRow" class="mb-2" style="display:none">
+            <div class="d-flex align-items-center gap-1 mb-1">
+              <i class="bi bi-geo-alt-fill text-danger"></i>
+              <label class="form-label small fw-semibold text-danger mb-0">
+                ออกงานนอกพื้นที่ปฏิบัติงาน (ห่าง <span id="confirmOffsiteDist">0</span> กม.) — กรุณาระบุเหตุผล
+              </label>
+            </div>
+            <textarea id="confirmOffsiteInput" class="form-control form-control-sm" rows="2"
+                      placeholder="เช่น ไปส่งของให้ลูกค้าก่อนเข้าบูธ" oninput="_onOffsiteInput()"></textarea>
+            <div id="confirmOffsiteErr" class="text-danger mt-1" style="font-size:.72rem;display:none">
+              กรุณาระบุเหตุผลก่อนยืนยัน
+            </div>
+          </div>
           <!-- Spinner ส่ง -->
           <div id="confirmSpinner" class="text-center py-2" style="display:none">
             <div class="spinner-border text-primary spinner-border-sm me-2"></div>
@@ -229,6 +260,9 @@ var CSRF_NAME = '<?=$this->security->get_csrf_token_name()?>';
 var CSRF_HASH = '<?=$this->security->get_csrf_hash()?>';
 var API_CI    = '<?=base_url('api/attendance/checkin')?>';
 var API_CO    = '<?=base_url('api/attendance/checkout')?>';
+// [เพิ่ม] เวลาสิ้นสุดกะวันนี้ (HH:MM:SS) — ใช้ประเมินออกก่อนเวลาฝั่ง client เพื่อโชว์ช่องเหตุผลไว้ก่อน
+// เซิร์ฟเวอร์ยังเป็นคนตัดสินจริงเสมอ (กันเวลาเครื่อง client ผิด) ผ่าน need_reason ใน _submit()
+var SHIFT_END_TIME = <?= $shift_end_time ? "'" . $shift_end_time . "'" : 'null' ?>;
 
 // state
 var _mode      = 'in';
@@ -256,6 +290,12 @@ function openCheckoutModal() { _open('out'); }
 
 function _open(mode) {
   _mode = mode; _gpsData = null; _photoB64 = null;
+  var ta = document.getElementById('confirmReasonInput'); if (ta) ta.value = '';
+  var rr = document.getElementById('confirmReasonRow');   if (rr) rr.style.display = 'none';
+  var re = document.getElementById('confirmReasonErr');   if (re) re.style.display = 'none';
+  var ta2 = document.getElementById('confirmOffsiteInput'); if (ta2) ta2.value = '';
+  var rr2 = document.getElementById('confirmOffsiteRow');   if (rr2) rr2.style.display = 'none';
+  var re2 = document.getElementById('confirmOffsiteErr');   if (re2) re2.style.display = 'none';
   document.getElementById('modalTitle').textContent =
     mode === 'in' ? 'ลงเวลาเข้างาน' : 'ลงเวลาออกงาน';
   _bsModal = new bootstrap.Modal(document.getElementById('attendModal'));
@@ -313,29 +353,32 @@ function _doGPS() {
       _gpsData = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       if (sp) sp.style.display = 'none';
 
-      // ── ตรวจสอบพื้นที่ (ทั้ง check-in และ check-out)
+      // ── ตรวจสอบพื้นที่ ──────────────────────────────────────────────
       // ข้ามการตรวจถ้าทีมไม่มีพิกัด (_teamLat === null)
+      // [แก้] เช็คอินนอกพื้นที่ยังคงบล็อกเหมือนเดิม แต่เช็คเอาท์นอกพื้นที่ไม่บล็อกแล้ว
+      //       (ให้ลงเวลาออกงานได้ปกติ แต่บังคับกรอกเหตุผลที่ step ยืนยันแทน — ดู _updateOffsiteRow())
       if (_teamLat !== null && _teamLng !== null && _teamRadius !== null) {
         var distKm = _calcDistKm(_gpsData.lat, _gpsData.lng, _teamLat, _teamLng);
         if (distKm > _teamRadius) {
-          var modalEl = document.getElementById('attendModal');
-          if (modalEl && typeof bootstrap !== 'undefined') {
-            var bsModal = bootstrap.Modal.getInstance(modalEl);
-            if (bsModal) bsModal.hide();
-          }
           if (_mode === 'in') {
+            var modalEl = document.getElementById('attendModal');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+              var bsModal = bootstrap.Modal.getInstance(modalEl);
+              if (bsModal) bsModal.hide();
+            }
             alert('ไม่สามารถลงเวลาเข้างานได้ เนื่องจากอยู่นอกพื้นที่\nกรุณาลงเวลาเข้างานอีกครั้งเมื่ออยู่ในพื้นที่ทำงาน\n\n(ระยะห่างจากสาขา: ' + distKm.toFixed(2) + ' กม. / รัศมีที่อนุญาต: ' + _teamRadius + ' กม.)');
-          } else {
-            alert('ไม่สามารถลงเวลาออกงานได้ เนื่องจากอยู่นอกพื้นที่\nกรุณาลงเวลาออกงานอีกครั้งเมื่ออยู่ในพื้นที่ทำงาน\n\n(ระยะห่างจากสาขา: ' + distKm.toFixed(2) + ' กม. / รัศมีที่อนุญาต: ' + _teamRadius + ' กม.)');
+            return;
           }
-          return;
+          // [เพิ่ม] เช็คเอาท์นอกพื้นที่ — ไม่บล็อก แค่บันทึกไว้ ให้ไปกรอกเหตุผลบังคับที่ step ยืนยัน
+          _gpsData.is_offsite   = true;
+          _gpsData.distance_km  = distKm;
         }
       }
-      // ── ถ้าไม่มีพิกัดทีม หรืออยู่ในพื้นที่ → ดำเนินการต่อ ─────────────
+      // ── ถ้าไม่มีพิกัดทีม หรืออยู่ในพื้นที่ (หรือเช็คเอาท์นอกพื้นที่ที่ยอมให้ผ่าน) → ดำเนินการต่อ ─
       if (re) re.style.display = '';
       _setText('gpsResultIcon', '');
       _setText('gpsResultCoords', _gpsData.lat.toFixed(5) + ', ' + _gpsData.lng.toFixed(5));
-      _setText('gpsTitleTxt', 'ระบุตำแหน่งสำเร็จ');
+      _setText('gpsTitleTxt', _gpsData.is_offsite ? 'ระบุตำแหน่งสำเร็จ (นอกพื้นที่ปฏิบัติงาน)' : 'ระบุตำแหน่งสำเร็จ');
       _setText('gpsDescTxt', 'กำลังค้นหาชื่อสถานที่...');
       _footer([{ t:'ถัดไป → ถ่ายรูป', c:'btn-primary', f:'_toCamera()' }]);
 
@@ -530,6 +573,10 @@ function _toConfirm() {
     pr.style.display = '';
   } else { pr.style.display = 'none'; }
 
+  // [เพิ่ม] ออกก่อนเวลา / ออกนอกพื้นที่ → เปิดช่องกรอกเหตุผลไว้ล่วงหน้า (server จะเช็คซ้ำอีกทีตอน submit)
+  _updateReasonRow();
+  _updateOffsiteRow();
+
   document.getElementById('confirmSpinner').style.display = 'none';
 
   _footer([
@@ -537,6 +584,63 @@ function _toConfirm() {
     { t: _mode==='in' ? '✓ ยืนยันเข้างาน' : '✓ ยืนยันออกงาน',
       c:'btn-primary', f:'_submit()' }
   ]);
+}
+
+// ── ประเมินออกก่อนเวลาเบื้องต้นฝั่ง client (UX เท่านั้น — server ตัดสินจริงเสมอ) ──────
+function _computeEarlyOut() {
+  if (_mode !== 'out' || !SHIFT_END_TIME) return { early:false, minutes:0 };
+  var now = new Date();
+  var p   = SHIFT_END_TIME.split(':');
+  var end = new Date(now.getFullYear(), now.getMonth(), now.getDate(),
+                      parseInt(p[0],10) || 0, parseInt(p[1],10) || 0, p[2] ? parseInt(p[2],10) : 0);
+  if (now < end) {
+    return { early:true, minutes: Math.max(1, Math.round((end - now) / 60000)) };
+  }
+  return { early:false, minutes:0 };
+}
+
+// forceShow/earlyMin ใช้ตอนเซิร์ฟเวอร์ปฏิเสธกลับมา (need_reason) เพื่อเปิดช่องแน่ๆ ไม่พึ่ง client calc
+function _updateReasonRow(forceShow, earlyMin) {
+  var row = document.getElementById('confirmReasonRow');
+  if (!row) return;
+  var info = forceShow ? { early:true, minutes: earlyMin||0 } : _computeEarlyOut();
+  if (info.early) {
+    _setText('confirmEarlyMin', info.minutes);
+    row.style.display = '';
+  } else {
+    row.style.display = 'none';
+  }
+  document.getElementById('confirmReasonErr').style.display = 'none';
+}
+
+function _onReasonInput() {
+  var ta = document.getElementById('confirmReasonInput');
+  if (ta && ta.value.trim()) document.getElementById('confirmReasonErr').style.display = 'none';
+}
+
+// ── ประเมินเช็คเอาท์นอกพื้นที่ฝั่ง client (ตั้งค่าไว้ตอน GPS สำเร็จใน _doGPS()) ─────
+function _computeOffsite() {
+  if (_mode !== 'out' || !_gpsData || !_gpsData.is_offsite) return { offsite:false, distance:0 };
+  return { offsite:true, distance:_gpsData.distance_km || 0 };
+}
+
+// forceShow/distanceKm ใช้ตอนเซิร์ฟเวอร์ปฏิเสธกลับมา (need_location_reason) เพื่อเปิดช่องแน่ๆ
+function _updateOffsiteRow(forceShow, distanceKm) {
+  var row = document.getElementById('confirmOffsiteRow');
+  if (!row) return;
+  var info = forceShow ? { offsite:true, distance:distanceKm||0 } : _computeOffsite();
+  if (info.offsite) {
+    _setText('confirmOffsiteDist', info.distance.toFixed ? info.distance.toFixed(2) : info.distance);
+    row.style.display = '';
+  } else {
+    row.style.display = 'none';
+  }
+  document.getElementById('confirmOffsiteErr').style.display = 'none';
+}
+
+function _onOffsiteInput() {
+  var ta = document.getElementById('confirmOffsiteInput');
+  if (ta && ta.value.trim()) document.getElementById('confirmOffsiteErr').style.display = 'none';
 }
 
 // ── Submit ───────────────────────────────────────────────────────────
@@ -547,6 +651,31 @@ function _submit() {
     _step('GPS'); _doGPS();
     return;
   }
+
+  // [เพิ่ม] ถ้าช่องเหตุผลออกก่อนเวลาเปิดอยู่ ต้องกรอกก่อนถึงจะส่งได้
+  var reasonRow = document.getElementById('confirmReasonRow');
+  var reasonVal = '';
+  if (reasonRow && reasonRow.style.display !== 'none') {
+    reasonVal = (document.getElementById('confirmReasonInput').value || '').trim();
+    if (!reasonVal) {
+      document.getElementById('confirmReasonErr').style.display = '';
+      document.getElementById('confirmReasonInput').focus();
+      return;
+    }
+  }
+
+  // [เพิ่ม] ถ้าช่องเหตุผลนอกพื้นที่เปิดอยู่ ต้องกรอกก่อนถึงจะส่งได้เช่นกัน (คนละเหตุผลกับข้างบน)
+  var offsiteRow = document.getElementById('confirmOffsiteRow');
+  var offsiteVal = '';
+  if (offsiteRow && offsiteRow.style.display !== 'none') {
+    offsiteVal = (document.getElementById('confirmOffsiteInput').value || '').trim();
+    if (!offsiteVal) {
+      document.getElementById('confirmOffsiteErr').style.display = '';
+      document.getElementById('confirmOffsiteInput').focus();
+      return;
+    }
+  }
+
   _footer([]);
   document.getElementById('confirmSpinner').style.display = '';
   var payload = {}; payload[CSRF_NAME] = CSRF_HASH;
@@ -555,22 +684,52 @@ function _submit() {
     payload.lng = _gpsData.lng;
     if (_gpsData.place_name) payload.place_name = _gpsData.place_name;
   }
-  if (_photoB64) { payload.photo = _photoB64; }
+  if (_photoB64)  { payload.photo = _photoB64; }
+  if (reasonVal)  { payload.reason = reasonVal; }
+  if (offsiteVal) { payload.offsite_reason = offsiteVal; }
   fetch(_mode==='in' ? API_CI : API_CO, {
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify(payload)
   })
   .then(function(r){ return r.json(); })
   .then(function(d) {
-    if (_bsModal) _bsModal.hide();
     if (d.success) {
+      if (_bsModal) _bsModal.hide();
       var msg = d.message;
       if (_mode==='in' && d.data)
         msg += d.data.is_late ? '\n! มาสาย '+d.data.late_minutes+' นาที' : '\n✓ ตรงเวลา';
       if (_mode==='out' && d.data && d.data.is_early_out)
         msg += '\n⚠ ออกก่อนเวลา '+d.data.early_minutes+' นาที';
+      if (_mode==='out' && d.data && d.data.is_offsite)
+        msg += '\n📍 บันทึกเช็คเอาท์นอกพื้นที่ปฏิบัติงาน';
       alert(msg); location.reload();
-    } else { alert('❌ '+d.message); }
+    } else if (d.need_reason || d.need_location_reason) {
+      // [เพิ่ม] เซิร์ฟเวอร์ยืนยันว่ายังขาดเหตุผลอย่างน้อยหนึ่งอย่าง → เปิดเฉพาะช่องที่ยังขาด ไม่ปิด modal ไม่รีเซ็ตขั้นตอน
+      document.getElementById('confirmSpinner').style.display = 'none';
+      if (d.need_reason) {
+        _updateReasonRow(true, d.early_minutes);
+        document.getElementById('confirmReasonErr').textContent = 'กรุณาระบุเหตุผลก่อนยืนยัน';
+        document.getElementById('confirmReasonErr').style.display = '';
+      }
+      if (d.need_location_reason) {
+        _updateOffsiteRow(true, d.distance_km);
+        document.getElementById('confirmOffsiteErr').textContent = 'กรุณาระบุเหตุผลก่อนยืนยัน';
+        document.getElementById('confirmOffsiteErr').style.display = '';
+      }
+      // โฟกัสช่องแรกที่ยังว่าง
+      if (d.need_reason && !(document.getElementById('confirmReasonInput').value||'').trim()) {
+        document.getElementById('confirmReasonInput').focus();
+      } else if (d.need_location_reason) {
+        document.getElementById('confirmOffsiteInput').focus();
+      }
+      _footer([
+        { t:'← แก้ไข',  c:'btn-outline-secondary', f:'_toCamera()' },
+        { t:'✓ ยืนยันออกงาน', c:'btn-primary', f:'_submit()' }
+      ]);
+    } else {
+      if (_bsModal) _bsModal.hide();
+      alert('❌ '+d.message);
+    }
   })
   .catch(function(){ if(_bsModal)_bsModal.hide(); alert('เกิดข้อผิดพลาด กรุณาลองใหม่'); });
 }
