@@ -110,6 +110,7 @@
         <?php if(!empty($current_user->can_approve_leave)):?>
           <li class="nav-item"><a class="nav-link <?=($this->router->fetch_class()==='leave'&&$this->router->fetch_directory()==='manager/')?'on':''?>" href="<?=base_url('manager/leave')?>"><i class="bi bi-check2-circle me-1"></i>อนุมัติการลา</a></li>
           <li class="nav-item"><a class="nav-link <?=($this->router->fetch_class()==='attendance'&&$this->router->fetch_directory()==='manager/')?'on':''?>" href="<?=base_url('manager/attendance')?>"><i class="bi bi-people me-1"></i>การเข้างานทีม</a></li>
+          <li class="nav-item"><a class="nav-link <?=($this->router->fetch_class()==='map'&&$this->router->fetch_directory()==='manager/')?'on':''?>" href="<?=base_url('manager/map')?>"><i class="bi bi-geo-alt me-1"></i>แผนที่ทีม</a></li>
         <?php endif;?>
         <?php if(!empty($current_user->can_manage_employees)):?><li class="nav-item"><a class="nav-link" href="<?=base_url('admin/dashboard')?>"><i class="bi bi-gear me-1"></i>จัดการระบบ</a></li><?php endif;?>
       </ul>
